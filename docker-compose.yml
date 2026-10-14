@@ -1,0 +1,12 @@
+# NOTE: not verified in the development sandbox (no Docker daemon). One service serves the API and the dashboard.
+services:
+  neuroshield:
+    build: .
+    ports: ["8000:8000"]
+    env_file: [.env.example]
+    environment:
+      NS_DB_PATH: /app/backend/data/neuroshield.db
+      NS_CORS_ORIGINS: http://localhost:8000
+    volumes: ["ns-data:/app/backend/data"]
+volumes:
+  ns-data:

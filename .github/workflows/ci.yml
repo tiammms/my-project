@@ -1,0 +1,36 @@
+# NOTE: written but not executed (no CI runner was available while developing). Verifies on every push:
+# backend tests, frontend typecheck/build, Docker image build and the end-to-end UI check against the container.
+name: ci
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s backend/tests -t .
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm install
+        working-directory: frontend
+      - run: npm run typecheck && npm run build
+        working-directory: frontend
+  docker-e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t neuroshield .
+      - run: docker run -d -p 8000:8000 --name ns neuroshield
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm install playwright@1.56.0 && npx playwright install --with-deps chromium
+      - run: |
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/health && break; sleep 2; done
+          node scripts/e2e_check.mjs http://127.0.0.1:8000

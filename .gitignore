@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+backend/data/
+ml/data/generated/
+frontend/node_modules
+# frontend/dist is committed on purpose: the app runs without Node.js
+
+# large regenerable inputs
+ml/data/generated/
+# local tooling
+*.log
