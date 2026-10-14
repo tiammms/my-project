@@ -1,0 +1,113 @@
+{
+  "seen_evasions": [
+    "calm_behavior",
+    "aged_mule_account",
+    "small_amounts",
+    "no_call_no_admission"
+  ],
+  "unseen_evasions": [
+    "unreported_mule",
+    "slow_layering",
+    "own_device_and_region",
+    "daytime_only"
+  ],
+  "augmented_copies": 987,
+  "hyperparameters": {
+    "learning_rate": 0.05,
+    "max_leaf_nodes": 15,
+    "max_iter": 300
+  },
+  "adoption_rule": "adopt the augmented model if, versus the standard model,\n   (a) clean validation PR-AUC drops by at most 0.005,\n   (b) validation false-positive rate at the step-up threshold rises by at most 0.2 percentage points,\n   (c) mean validation recall over UNSEEN single evasions rises by at least 1 percentage point.",
+  "models": {
+    "standard": {
+      "medium_threshold": 8.061214178288877,
+      "high_threshold": 46.77259024042462,
+      "validation": {
+        "pr_auc": 0.9557918963133075,
+        "roc_auc": 0.9980053781719651,
+        "fpr_at_stepup": 0.012807730654191272,
+        "recall_at_stepup": 0.952755905511811,
+        "evasions": {
+          "calm_behavior": 0.8937007874015748,
+          "aged_mule_account": 0.8582677165354331,
+          "small_amounts": 0.9291338582677166,
+          "no_call_no_admission": 0.9409448818897638,
+          "unreported_mule": 0.8937007874015748,
+          "slow_layering": 0.9173228346456693,
+          "own_device_and_region": 0.952755905511811,
+          "daytime_only": 0.952755905511811,
+          "all_combined": 0.03937007874015748
+        },
+        "mean_seen": 0.9055118110236221,
+        "mean_unseen": 0.9291338582677166
+      },
+      "test": {
+        "pr_auc": 0.8789672509814768,
+        "roc_auc": 0.9897888001477118,
+        "fpr_at_stepup": 0.01042125348598268,
+        "recall_at_stepup": 0.8586572438162544,
+        "evasions": {
+          "calm_behavior": 0.7420494699646644,
+          "aged_mule_account": 0.7561837455830389,
+          "small_amounts": 0.7879858657243817,
+          "no_call_no_admission": 0.833922261484099,
+          "unreported_mule": 0.734982332155477,
+          "slow_layering": 0.8056537102473498,
+          "own_device_and_region": 0.833922261484099,
+          "daytime_only": 0.833922261484099,
+          "all_combined": 0.01060070671378092
+        },
+        "mean_seen": 0.780035335689046,
+        "mean_unseen": 0.8021201413427562
+      }
+    },
+    "evasion_augmented": {
+      "medium_threshold": 17.78842576796806,
+      "high_threshold": 61.0610230853352,
+      "validation": {
+        "pr_auc": 0.9554328371854707,
+        "roc_auc": 0.9977746952963037,
+        "fpr_at_stepup": 0.010890405705959045,
+        "recall_at_stepup": 0.952755905511811,
+        "evasions": {
+          "calm_behavior": 0.905511811023622,
+          "aged_mule_account": 0.9251968503937008,
+          "small_amounts": 0.9409448818897638,
+          "no_call_no_admission": 0.9448818897637795,
+          "unreported_mule": 0.8779527559055118,
+          "slow_layering": 0.9173228346456693,
+          "own_device_and_region": 0.952755905511811,
+          "daytime_only": 0.9488188976377953,
+          "all_combined": 0.03543307086614173
+        },
+        "mean_seen": 0.9291338582677166,
+        "mean_unseen": 0.9242125984251969
+      },
+      "test": {
+        "pr_auc": 0.8657368469898206,
+        "roc_auc": 0.98805883991268,
+        "fpr_at_stepup": 0.010127697049757816,
+        "recall_at_stepup": 0.8480565371024735,
+        "evasions": {
+          "calm_behavior": 0.7526501766784452,
+          "aged_mule_account": 0.8268551236749117,
+          "small_amounts": 0.8374558303886925,
+          "no_call_no_admission": 0.823321554770318,
+          "unreported_mule": 0.7208480565371025,
+          "slow_layering": 0.7703180212014135,
+          "own_device_and_region": 0.8127208480565371,
+          "daytime_only": 0.8127208480565371,
+          "all_combined": 0.038869257950530034
+        },
+        "mean_seen": 0.810070671378092,
+        "mean_unseen": 0.7791519434628975
+      }
+    }
+  },
+  "checks": {
+    "pr_auc_drop_le_0.005": true,
+    "fpr_rise_le_0.2pp": true,
+    "unseen_recall_gain_ge_1pp": false
+  },
+  "adopted": false
+}

@@ -1,0 +1,273 @@
+{
+  "currency": "KZT",
+  "scenarios": {
+    "conservative": {
+      "assumptions": {
+        "transfers_per_year": 20000000.0,
+        "fraud_rate": 0.0002,
+        "avg_fraud_loss": 300000,
+        "baseline_fpr": 0.005,
+        "baseline_recall": 0.5,
+        "fpr_reduction": 0.2,
+        "recall_uplift_pp": 0.0,
+        "stepup_share": 0.7,
+        "review_cost": 3000,
+        "stepup_cost": 300,
+        "prevention_hold": 0.7,
+        "prevention_stepup": 0.3,
+        "infra_per_year": 40000000.0,
+        "integration_one_time": 150000000.0,
+        "amortisation_years": 3,
+        "operating_per_year": 120000000.0
+      },
+      "result": {
+        "frauds_per_year": 4000.0,
+        "baseline_false_alerts": 99980.0,
+        "neuroshield_false_alerts": 79984.0,
+        "false_alerts_avoided": 19996.0,
+        "manual_reviews_baseline": 31994.000000000004,
+        "manual_reviews_neuroshield": 25995.200000000004,
+        "stepups_neuroshield": 55988.799999999996,
+        "avoided_fraud_losses": 0.0,
+        "reduced_fp_handling_costs": 22195560.0,
+        "infrastructure": 40000000.0,
+        "integration_amortised": 50000000.0,
+        "operating": 120000000.0,
+        "total_costs": 210000000.0,
+        "net_benefit": -187804440.0,
+        "roi": -0.8943068571428572,
+        "payback_months": null
+      }
+    },
+    "base": {
+      "assumptions": {
+        "transfers_per_year": 50000000.0,
+        "fraud_rate": 0.0005,
+        "avg_fraud_loss": 400000,
+        "baseline_fpr": 0.01,
+        "baseline_recall": 0.6,
+        "fpr_reduction": 0.35,
+        "recall_uplift_pp": 0.05,
+        "stepup_share": 0.8,
+        "review_cost": 2500,
+        "stepup_cost": 200,
+        "prevention_hold": 0.8,
+        "prevention_stepup": 0.4,
+        "infra_per_year": 30000000.0,
+        "integration_one_time": 120000000.0,
+        "amortisation_years": 3,
+        "operating_per_year": 100000000.0
+      },
+      "result": {
+        "frauds_per_year": 25000.0,
+        "baseline_false_alerts": 499750.0,
+        "neuroshield_false_alerts": 324837.5,
+        "false_alerts_avoided": 174912.5,
+        "manual_reviews_baseline": 114949.99999999997,
+        "manual_reviews_neuroshield": 81217.49999999999,
+        "stepups_neuroshield": 259870.0,
+        "avoided_fraud_losses": 200000000.0,
+        "reduced_fp_handling_costs": 112317249.99999997,
+        "infrastructure": 30000000.0,
+        "integration_amortised": 40000000.0,
+        "operating": 100000000.0,
+        "total_costs": 170000000.0,
+        "net_benefit": 142317250.0,
+        "roi": 0.837160294117647,
+        "payback_months": 7.898320098619303
+      }
+    },
+    "optimistic": {
+      "assumptions": {
+        "transfers_per_year": 100000000.0,
+        "fraud_rate": 0.001,
+        "avg_fraud_loss": 500000,
+        "baseline_fpr": 0.02,
+        "baseline_recall": 0.67,
+        "fpr_reduction": 0.6,
+        "recall_uplift_pp": 0.1,
+        "stepup_share": 0.88,
+        "review_cost": 2000,
+        "stepup_cost": 100,
+        "prevention_hold": 0.9,
+        "prevention_stepup": 0.5,
+        "infra_per_year": 25000000.0,
+        "integration_one_time": 100000000.0,
+        "amortisation_years": 3,
+        "operating_per_year": 80000000.0
+      },
+      "result": {
+        "frauds_per_year": 100000.0,
+        "baseline_false_alerts": 1998000.0,
+        "neuroshield_false_alerts": 799200.0,
+        "false_alerts_avoided": 1198800.0,
+        "manual_reviews_baseline": 306760.0,
+        "manual_reviews_neuroshield": 172904.0,
+        "stepups_neuroshield": 703296.0,
+        "avoided_fraud_losses": 2500000000.0,
+        "reduced_fp_handling_costs": 373206400.0,
+        "infrastructure": 25000000.0,
+        "integration_amortised": 33333333.333333332,
+        "operating": 80000000.0,
+        "total_costs": 138333333.3333333,
+        "net_benefit": 2734873066.6666665,
+        "roi": 19.770166746987954,
+        "payback_months": 0.43349368746492317
+      }
+    },
+    "synthetic_upper_bound": {
+      "assumptions": {
+        "transfers_per_year": 50000000.0,
+        "fraud_rate": 0.0005,
+        "avg_fraud_loss": 400000,
+        "baseline_fpr": 0.04777630999559666,
+        "baseline_recall": 0.6678445229681979,
+        "fpr_reduction": 0.9846390168970813,
+        "recall_uplift_pp": 0.0,
+        "stepup_share": 0.8,
+        "review_cost": 2500,
+        "stepup_cost": 200,
+        "prevention_hold": 0.8,
+        "prevention_stepup": 0.4,
+        "infra_per_year": 30000000.0,
+        "integration_one_time": 120000000.0,
+        "amortisation_years": 3,
+        "operating_per_year": 100000000.0
+      },
+      "result": {
+        "frauds_per_year": 25000.0,
+        "baseline_false_alerts": 2387621.092029943,
+        "neuroshield_false_alerts": 36676.20725084418,
+        "false_alerts_avoided": 2350944.884779099,
+        "manual_reviews_baseline": 494220.3314801935,
+        "manual_reviews_neuroshield": 24031.35452437378,
+        "stepups_neuroshield": 29340.965800675345,
+        "avoided_fraud_losses": 0.0,
+        "reduced_fp_handling_costs": 1551623623.954205,
+        "infrastructure": 30000000.0,
+        "integration_amortised": 40000000.0,
+        "operating": 100000000.0,
+        "total_costs": 170000000.0,
+        "net_benefit": 1381623623.954205,
+        "roi": 8.127197787965912,
+        "payback_months": 1.0129263299625548
+      },
+      "note": "Base bank parameters with the synthetic test-set rule baseline and the measured 98.5% FPR reduction. Shown only to illustrate how much the synthetic result overstates; not a forecast."
+    }
+  },
+  "tornado_base": [
+    {
+      "parameter": "transfers_per_year",
+      "label": "Transfers per year",
+      "low_value": 25000000.0,
+      "high_value": 75000000.0,
+      "net_at_low": -13841375.0,
+      "net_at_high": 298475875.00000006,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "stepup_share",
+      "label": "Share of false alerts closed by step-up instead of manual review (same for rules and NeuroShield)",
+      "low_value": 0.4,
+      "high_value": 1.0,
+      "net_at_low": 303236750.0,
+      "net_at_high": 61857500.0,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "avg_fraud_loss",
+      "label": "Average loss per fraud, KZT",
+      "low_value": 200000.0,
+      "high_value": 600000.0,
+      "net_at_low": 42317249.99999997,
+      "net_at_high": 242317250.0,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "prevention_stepup",
+      "label": "Loss prevented by step-up only",
+      "low_value": 0.2,
+      "high_value": 0.6000000000000001,
+      "net_at_low": 42317249.99999997,
+      "net_at_high": 242317250.0,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "recall_uplift_pp",
+      "label": "NeuroShield: extra recall (percentage points)",
+      "low_value": 0.025,
+      "high_value": 0.07500000000000001,
+      "net_at_low": 43879749.99999997,
+      "net_at_high": 240754750.0,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "fraud_rate",
+      "label": "Fraud rate (share of transfers)",
+      "low_value": 0.00025,
+      "high_value": 0.00075,
+      "net_at_low": 43908624.99999997,
+      "net_at_high": 240725874.99999994,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "baseline_fpr",
+      "label": "Current rules: false-positive rate",
+      "low_value": 0.005,
+      "high_value": 0.015,
+      "net_at_low": 84596124.99999997,
+      "net_at_high": 200038375.0,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "fpr_reduction",
+      "label": "NeuroShield: relative FPR reduction at equal recall",
+      "low_value": 0.175,
+      "high_value": 0.5249999999999999,
+      "net_at_low": 84596125.0,
+      "net_at_high": 200038374.99999994,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "operating_per_year",
+      "label": "Operating (team, monitoring) per year, KZT",
+      "low_value": 50000000.0,
+      "high_value": 150000000.0,
+      "net_at_low": 192317250.0,
+      "net_at_high": 92317250.0,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "review_cost",
+      "label": "Manual review cost per alert, KZT",
+      "low_value": 1250.0,
+      "high_value": 3750.0,
+      "net_at_low": 100151625.0,
+      "net_at_high": 184482875.0,
+      "base": 142317250.0
+    },
+    {
+      "parameter": "integration_one_time",
+      "label": "Integration (one-time), KZT",
+      "low_value": 60000000.0,
+      "high_value": 180000000.0,
+      "net_at_low": 162317250.0,
+      "net_at_high": 122317250.0,
+      "base": 142317250.0
+    }
+  ],
+  "break_even": {
+    "fpr_reduction_needed_base_without_recall_gain": 0.515409219761396,
+    "recall_uplift_needed_base_without_fpr_gain": 0.04317460317460315,
+    "fpr_reduction_needed_conservative": null,
+    "transfers_needed_base": 27215915.867599383,
+    "transfers_needed_conservative": 189227034.59610832
+  },
+  "measured_reference": {
+    "synthetic_relative_fpr_reduction_pct": 98.46390168970814,
+    "synthetic_baseline_fpr": 0.04777630999559666,
+    "synthetic_recall": 0.6678445229681979,
+    "balanced_policy_stepup_share_of_false_alerts": 0.8783783783783784
+  },
+  "disclaimer": "Scenario assumptions only. Model metrics alone do not prove savings; the effect depends on volume, error costs and implementation quality."
+}

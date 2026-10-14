@@ -1,0 +1,26 @@
+{
+  "no_persist": {
+    "n": 500,
+    "warmup": 30,
+    "p50_ms": 11.465626000131124,
+    "p95_ms": 15.654762700069112,
+    "p99_ms": 19.810200740193967,
+    "mean_ms": 12.273039073999826,
+    "throughput_rps_sequential": 81.47941141314207
+  },
+  "persist": {
+    "n": 200,
+    "warmup": 30,
+    "p50_ms": 11.539130499954808,
+    "p95_ms": 18.641964599999024,
+    "p99_ms": 21.34924538995847,
+    "mean_ms": 12.631906104993504,
+    "throughput_rps_sequential": 79.16461630479435
+  },
+  "environment": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "platform": "Linux-6.18.44-fc-v114-x86_64-with-glibc2.39",
+    "client": "urllib, sequential, same host",
+    "server": "uvicorn single worker, OMP_NUM_THREADS=1"
+  }
+}

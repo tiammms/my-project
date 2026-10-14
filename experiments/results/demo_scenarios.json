@@ -1,0 +1,127 @@
+{
+  "normal_transfer": {
+    "risk_score": 0.01,
+    "risk_level": "LOW",
+    "action": "ALLOW",
+    "behavioral_deviations": {
+      "typing_interval_mean_ms": 0.2,
+      "typing_interval_cv": 0.25,
+      "confirm_pause_s": -0.25,
+      "correction_rate": -0.33,
+      "screen_sequence_deviation": -0.25
+    },
+    "top_factors": []
+  },
+  "social_engineering": {
+    "risk_score": 97.172,
+    "risk_level": "HIGH",
+    "action": "REVIEW_OR_TEMPORARY_HOLD",
+    "behavioral_deviations": {
+      "typing_interval_mean_ms": 1.0,
+      "typing_interval_cv": 0.25,
+      "confirm_pause_s": 9.0,
+      "correction_rate": 5.0,
+      "screen_sequence_deviation": 2.88
+    },
+    "top_factors": [
+      "Recipient account age",
+      "Money-flow graph",
+      "Behavioral deviation",
+      "Social-engineering signals"
+    ]
+  },
+  "account_takeover": {
+    "risk_score": 99.862,
+    "risk_level": "HIGH",
+    "action": "REVIEW_OR_TEMPORARY_HOLD",
+    "behavioral_deviations": {
+      "typing_interval_mean_ms": -4.13,
+      "typing_interval_cv": -3.0,
+      "confirm_pause_s": -2.0,
+      "correction_rate": -1.33,
+      "screen_sequence_deviation": 4.13
+    },
+    "top_factors": [
+      "Behavioral deviation",
+      "Time of day",
+      "Device",
+      "Money-flow graph"
+    ]
+  },
+  "legit_large_first_transfer": {
+    "risk_score": 0.015,
+    "risk_level": "LOW",
+    "action": "ALLOW",
+    "behavioral_deviations": {
+      "typing_interval_mean_ms": 0.2,
+      "typing_interval_cv": 0.25,
+      "confirm_pause_s": 1.13,
+      "correction_rate": -0.33,
+      "screen_sequence_deviation": 0.25
+    },
+    "top_factors": [
+      "Social-engineering signals",
+      "Transaction amount",
+      "Time of day"
+    ]
+  },
+  "traveling_customer": {
+    "risk_score": 0.018,
+    "risk_level": "LOW",
+    "action": "ALLOW",
+    "behavioral_deviations": {
+      "typing_interval_mean_ms": 0.2,
+      "typing_interval_cv": 0.25,
+      "confirm_pause_s": -0.25,
+      "correction_rate": -0.33,
+      "screen_sequence_deviation": -0.25
+    },
+    "top_factors": [
+      "Time of day",
+      "Transaction amount"
+    ]
+  },
+  "new_phone": {
+    "risk_score": 0.121,
+    "risk_level": "LOW",
+    "action": "ALLOW",
+    "behavioral_deviations": {
+      "typing_interval_mean_ms": 2.13,
+      "typing_interval_cv": 1.0,
+      "confirm_pause_s": -0.25,
+      "correction_rate": -0.33,
+      "screen_sequence_deviation": -0.25
+    },
+    "top_factors": [
+      "Behavioral deviation",
+      "Device"
+    ]
+  },
+  "no_behavioral_data": {
+    "risk_score": 88.008,
+    "risk_level": "HIGH",
+    "action": "REVIEW_OR_TEMPORARY_HOLD",
+    "behavioral_deviations": {},
+    "top_factors": [
+      "Money-flow graph",
+      "Recipient account age",
+      "Social-engineering signals",
+      "Time of day"
+    ]
+  },
+  "changed_typing_habits": {
+    "risk_score": 0.332,
+    "risk_level": "LOW",
+    "action": "ALLOW",
+    "behavioral_deviations": {
+      "typing_interval_mean_ms": -3.33,
+      "typing_interval_cv": -1.75,
+      "confirm_pause_s": -0.25,
+      "correction_rate": -0.33,
+      "screen_sequence_deviation": -0.25
+    },
+    "top_factors": [
+      "Behavioral deviation"
+    ]
+  }
+}

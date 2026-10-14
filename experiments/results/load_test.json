@@ -1,0 +1,105 @@
+{
+  "endpoint": "POST /api/v1/risk/score (persist=false, full explanation)",
+  "runs": [
+    {
+      "concurrency": 1,
+      "requests": 730,
+      "errors": 0,
+      "seconds": 8.0,
+      "throughput_rps": 91.21189721932043,
+      "p50_ms": 10.233007000003624,
+      "p95_ms": 14.605319749999522,
+      "p99_ms": 16.010234679992568,
+      "workers": 1
+    },
+    {
+      "concurrency": 4,
+      "requests": 711,
+      "errors": 0,
+      "seconds": 8.03,
+      "throughput_rps": 88.50152016410952,
+      "p50_ms": 41.34098099999051,
+      "p95_ms": 58.634579999996106,
+      "p99_ms": 62.184957499994184,
+      "workers": 1
+    },
+    {
+      "concurrency": 8,
+      "requests": 686,
+      "errors": 0,
+      "seconds": 8.08,
+      "throughput_rps": 84.94015011711515,
+      "p50_ms": 89.57299349999914,
+      "p95_ms": 122.24688924999327,
+      "p99_ms": 125.93611184999958,
+      "workers": 1
+    },
+    {
+      "concurrency": 16,
+      "requests": 740,
+      "errors": 0,
+      "seconds": 8.16,
+      "throughput_rps": 90.71813375661263,
+      "p50_ms": 162.0495230000003,
+      "p95_ms": 248.42216615000225,
+      "p99_ms": 265.4004271599939,
+      "workers": 1
+    },
+    {
+      "concurrency": 1,
+      "requests": 660,
+      "errors": 0,
+      "seconds": 8.01,
+      "throughput_rps": 82.38147718277578,
+      "p50_ms": 11.19795349999464,
+      "p95_ms": 15.472674650000327,
+      "p99_ms": 19.448638229994206,
+      "workers": 2
+    },
+    {
+      "concurrency": 4,
+      "requests": 1327,
+      "errors": 0,
+      "seconds": 8.03,
+      "throughput_rps": 165.24373902549613,
+      "p50_ms": 28.310675000000174,
+      "p95_ms": 43.598358799988546,
+      "p99_ms": 47.36416211999824,
+      "workers": 2
+    },
+    {
+      "concurrency": 8,
+      "requests": 1300,
+      "errors": 0,
+      "seconds": 8.05,
+      "throughput_rps": 161.47291286984907,
+      "p50_ms": 47.0175429999955,
+      "p95_ms": 63.5232067999965,
+      "p99_ms": 66.15383248999905,
+      "workers": 2
+    },
+    {
+      "concurrency": 16,
+      "requests": 1368,
+      "errors": 0,
+      "seconds": 8.11,
+      "throughput_rps": 168.60124924838732,
+      "p50_ms": 115.27245249999396,
+      "p95_ms": 170.91152210000186,
+      "p99_ms": 194.83078422000537,
+      "workers": 2
+    }
+  ],
+  "environment": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "cpu_count": 2,
+    "platform": "Linux-6.18.44-fc-v114-x86_64-with-glibc2.39",
+    "note": "Client threads and server share the same machine; numbers are a lower bound."
+  },
+  "findings": [
+    "1 worker: ~85-91 req/s (CPU-bound on 2 vCPU shared with the client); p95 14.6 ms with one client, latency grows with queueing.",
+    "2 workers: ~165 req/s from 4 clients; p95 15.5 ms with one client, 43.6 ms with four. 0 errors at all levels.",
+    "Fixed in part 5: uvicorn's multi-worker socket has proto 0, so asyncio skipped TCP_NODELAY and every request waited ~44 ms for a delayed ACK (even GET /health). backend/app/main.py now enables TCP_NODELAY on all accepted TCP connections (regression test: backend/tests/test_server.py). Before: 2 workers, 1 client p50 56 ms; after: 11.2 ms.",
+    "Client threads and server share the same machine, so these are lower bounds."
+  ]
+}

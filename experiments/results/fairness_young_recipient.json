@@ -1,0 +1,225 @@
+{
+  "selection_rule": "choose the variant with the lowest VALIDATION false-alarm rate (step-up or higher) on young-recipient legit\n  transfers, among variants whose validation PR-AUC is within 0.01 of the best variant.",
+  "variants": {
+    "hybrid_all_features": {
+      "features": 20,
+      "validation_pr_auc": 0.9557918963133075,
+      "test_pr_auc": 0.8789672509814768,
+      "medium_threshold": 8.061214178288877,
+      "validation": {
+        "young_legit_n": 219,
+        "young_legit_flagged": 21,
+        "young_false_alarm_rate": 0.0958904109589041,
+        "young_false_alarm_95ci": [
+          0.06357475847056406,
+          0.14213907593019415
+        ],
+        "young_fraud_n": 63,
+        "young_fraud_recall": 0.9682539682539683,
+        "overall": {
+          "threshold": 8.061214178288877,
+          "tp": 242,
+          "fp": 167,
+          "fn": 12,
+          "tn": 12872,
+          "precision": 0.5916870415647921,
+          "recall": 0.952755905511811,
+          "f1": 0.7300150829562594,
+          "fpr": 0.012807730654191272,
+          "fnr": 0.047244094488188976,
+          "alert_rate": 0.030768073422101857
+        }
+      },
+      "test": {
+        "young_legit_n": 188,
+        "young_legit_flagged": 17,
+        "young_false_alarm_rate": 0.09042553191489362,
+        "young_false_alarm_95ci": [
+          0.057223255658268336,
+          0.14003114588967538
+        ],
+        "young_fraud_n": 48,
+        "young_fraud_recall": 0.9583333333333334,
+        "overall": {
+          "threshold": 8.061214178288877,
+          "tp": 243,
+          "fp": 142,
+          "fn": 40,
+          "tn": 13484,
+          "precision": 0.6311688311688312,
+          "recall": 0.8586572438162544,
+          "f1": 0.7275449101796407,
+          "fpr": 0.01042125348598268,
+          "fnr": 0.1413427561837456,
+          "alert_rate": 0.027679919476597887
+        }
+      }
+    },
+    "hybrid_without_direct_recipient_age": {
+      "features": 19,
+      "validation_pr_auc": 0.9269556579375583,
+      "test_pr_auc": 0.856677006695971,
+      "medium_threshold": 4.753629192301015,
+      "validation": {
+        "young_legit_n": 219,
+        "young_legit_flagged": 29,
+        "young_false_alarm_rate": 0.1324200913242009,
+        "young_false_alarm_95ci": [
+          0.09380494202431262,
+          0.18370877175264821
+        ],
+        "young_fraud_n": 63,
+        "young_fraud_recall": 0.9841269841269841,
+        "overall": {
+          "threshold": 4.753629192301015,
+          "tp": 242,
+          "fp": 277,
+          "fn": 12,
+          "tn": 12762,
+          "precision": 0.4662813102119461,
+          "recall": 0.952755905511811,
+          "f1": 0.6261319534282019,
+          "fpr": 0.021243960426413067,
+          "fnr": 0.047244094488188976,
+          "alert_rate": 0.039043105393816294
+        }
+      },
+      "test": {
+        "young_legit_n": 188,
+        "young_legit_flagged": 19,
+        "young_false_alarm_rate": 0.10106382978723404,
+        "young_false_alarm_95ci": [
+          0.06565805670534318,
+          0.15244687986732924
+        ],
+        "young_fraud_n": 48,
+        "young_fraud_recall": 1.0,
+        "overall": {
+          "threshold": 4.753629192301015,
+          "tp": 253,
+          "fp": 264,
+          "fn": 30,
+          "tn": 13362,
+          "precision": 0.48936170212765956,
+          "recall": 0.8939929328621908,
+          "f1": 0.6325,
+          "fpr": 0.019374724790841038,
+          "fnr": 0.10600706713780919,
+          "alert_rate": 0.037170177582860016
+        }
+      }
+    }
+  },
+  "selected": "hybrid_all_features",
+  "deployed_model_threshold_tradeoff": {
+    "chosen_by_validation_rule": "young false-alarm <= 1.5x other customers",
+    "chosen_young_threshold": 46.726227,
+    "shared_medium_threshold": 8.061,
+    "other_customers_val_false_alarm": 0.011388455538221529,
+    "rows": [
+      {
+        "target": "shared threshold (current default)",
+        "young_threshold": 8.061,
+        "validation": {
+          "young_false_alarm_rate": 0.0958904109589041,
+          "young_fraud_recall": 0.9682539682539683,
+          "overall_recall": 0.952755905511811,
+          "overall_fpr": 0.012807730654191272,
+          "young_frauds_missed": 2,
+          "young_legit_flagged": 21
+        },
+        "test": {
+          "young_false_alarm_rate": 0.09042553191489362,
+          "young_fraud_recall": 0.9583333333333334,
+          "overall_recall": 0.8586572438162544,
+          "overall_fpr": 0.01042125348598268,
+          "young_frauds_missed": 2,
+          "young_legit_flagged": 17
+        }
+      },
+      {
+        "target": "young false-alarm <= 1.5x other customers",
+        "young_threshold": 46.726227,
+        "validation": {
+          "young_false_alarm_rate": 0.0273972602739726,
+          "young_fraud_recall": 0.9523809523809523,
+          "overall_recall": 0.9488188976377953,
+          "overall_fpr": 0.011657335685251936,
+          "young_frauds_missed": 3,
+          "young_legit_flagged": 6
+        },
+        "test": {
+          "young_false_alarm_rate": 0.015957446808510637,
+          "young_fraud_recall": 0.8958333333333334,
+          "overall_recall": 0.8480565371024735,
+          "overall_fpr": 0.009393805959195655,
+          "young_frauds_missed": 5,
+          "young_legit_flagged": 3
+        }
+      },
+      {
+        "target": "young false-alarm <= 2x other customers",
+        "young_threshold": 46.726227,
+        "validation": {
+          "young_false_alarm_rate": 0.0273972602739726,
+          "young_fraud_recall": 0.9523809523809523,
+          "overall_recall": 0.9488188976377953,
+          "overall_fpr": 0.011657335685251936,
+          "young_frauds_missed": 3,
+          "young_legit_flagged": 6
+        },
+        "test": {
+          "young_false_alarm_rate": 0.015957446808510637,
+          "young_fraud_recall": 0.8958333333333334,
+          "overall_recall": 0.8480565371024735,
+          "overall_fpr": 0.009393805959195655,
+          "young_frauds_missed": 5,
+          "young_legit_flagged": 3
+        }
+      },
+      {
+        "target": "young false-alarm <= 3x other customers",
+        "young_threshold": 27.130401666225467,
+        "validation": {
+          "young_false_alarm_rate": 0.0365296803652968,
+          "young_fraud_recall": 0.9523809523809523,
+          "overall_recall": 0.9488188976377953,
+          "overall_fpr": 0.011810721681110515,
+          "young_frauds_missed": 3,
+          "young_legit_flagged": 8
+        },
+        "test": {
+          "young_false_alarm_rate": 0.026595744680851064,
+          "young_fraud_recall": 0.9583333333333334,
+          "overall_recall": 0.8586572438162544,
+          "overall_fpr": 0.009540584177308088,
+          "young_frauds_missed": 2,
+          "young_legit_flagged": 5
+        }
+      },
+      {
+        "target": "young false-alarm <= 5x other customers",
+        "young_threshold": 13.125741013242855,
+        "validation": {
+          "young_false_alarm_rate": 0.0593607305936073,
+          "young_fraud_recall": 0.9523809523809523,
+          "overall_recall": 0.9488188976377953,
+          "overall_fpr": 0.01219418667075696,
+          "young_frauds_missed": 3,
+          "young_legit_flagged": 13
+        },
+        "test": {
+          "young_false_alarm_rate": 0.047872340425531915,
+          "young_fraud_recall": 0.9583333333333334,
+          "overall_recall": 0.8586572438162544,
+          "overall_fpr": 0.009834140613532952,
+          "young_frauds_missed": 2,
+          "young_legit_flagged": 9
+        }
+      }
+    ],
+    "decision": "Offered as an opt-in policy setting (off by default): it lowers false alarms for customers paying new accounts but can miss more frauds to young accounts. The bank decides."
+  },
+  "rules_young_false_alarm_test": 0.02127659574468085,
+  "rules_young_legit_n": 188
+}

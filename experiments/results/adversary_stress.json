@@ -1,0 +1,247 @@
+{
+  "n_frauds": 283,
+  "policy": "balanced",
+  "baseline": {
+    "recall_stepup_plus": 0.8586572438162544,
+    "recall_high": 0.7314487632508834,
+    "rules_recall": 0.6678445229681979,
+    "by_type": {
+      "app_scam": {
+        "n": 127,
+        "recall_stepup_plus": 0.8110236220472441,
+        "rules_recall": 0.7007874015748031
+      },
+      "ato": {
+        "n": 100,
+        "recall_stepup_plus": 0.91,
+        "rules_recall": 0.77
+      },
+      "mule_layering": {
+        "n": 56,
+        "recall_stepup_plus": 0.875,
+        "rules_recall": 0.4107142857142857
+      }
+    }
+  },
+  "evasions": {
+    "calm_behavior": {
+      "recall_stepup_plus": 0.7420494699646644,
+      "recall_high": 0.6007067137809188,
+      "rules_recall": 0.6678445229681979,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.6535433070866141,
+          "rules_recall": 0.7007874015748031
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.79,
+          "rules_recall": 0.77
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.8571428571428571,
+          "rules_recall": 0.4107142857142857
+        }
+      },
+      "drop_pp": 11.660777385159005
+    },
+    "no_call_no_admission": {
+      "recall_stepup_plus": 0.833922261484099,
+      "recall_high": 0.7031802120141343,
+      "rules_recall": 0.6678445229681979,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.7559055118110236,
+          "rules_recall": 0.7007874015748031
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.91,
+          "rules_recall": 0.77
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.875,
+          "rules_recall": 0.4107142857142857
+        }
+      },
+      "drop_pp": 2.473498233215543
+    },
+    "own_device_and_region": {
+      "recall_stepup_plus": 0.833922261484099,
+      "recall_high": 0.7137809187279152,
+      "rules_recall": 0.6501766784452296,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.8110236220472441,
+          "rules_recall": 0.7007874015748031
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.84,
+          "rules_recall": 0.72
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.875,
+          "rules_recall": 0.4107142857142857
+        }
+      },
+      "drop_pp": 2.473498233215543
+    },
+    "aged_mule_account": {
+      "recall_stepup_plus": 0.7561837455830389,
+      "recall_high": 0.6007067137809188,
+      "rules_recall": 0.6678445229681979,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.7480314960629921,
+          "rules_recall": 0.7007874015748031
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.86,
+          "rules_recall": 0.77
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.5892857142857143,
+          "rules_recall": 0.4107142857142857
+        }
+      },
+      "drop_pp": 10.24734982332155
+    },
+    "unreported_mule": {
+      "recall_stepup_plus": 0.734982332155477,
+      "recall_high": 0.508833922261484,
+      "rules_recall": 0.24381625441696114,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.6141732283464567,
+          "rules_recall": 0.14960629921259844
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.84,
+          "rules_recall": 0.27
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.8214285714285714,
+          "rules_recall": 0.4107142857142857
+        }
+      },
+      "drop_pp": 12.367491166077738
+    },
+    "slow_layering": {
+      "recall_stepup_plus": 0.8056537102473498,
+      "recall_high": 0.6113074204946997,
+      "rules_recall": 0.6678445229681979,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.7795275590551181,
+          "rules_recall": 0.7007874015748031
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.9,
+          "rules_recall": 0.77
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.6964285714285714,
+          "rules_recall": 0.4107142857142857
+        }
+      },
+      "drop_pp": 5.300353356890463
+    },
+    "small_amounts": {
+      "recall_stepup_plus": 0.7879858657243817,
+      "recall_high": 0.6289752650176679,
+      "rules_recall": 0.5371024734982333,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.7795275590551181,
+          "rules_recall": 0.6299212598425197
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.88,
+          "rules_recall": 0.69
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.6428571428571429,
+          "rules_recall": 0.05357142857142857
+        }
+      },
+      "drop_pp": 7.067137809187274
+    },
+    "daytime_only": {
+      "recall_stepup_plus": 0.833922261484099,
+      "recall_high": 0.6643109540636042,
+      "rules_recall": 0.6501766784452296,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.7952755905511811,
+          "rules_recall": 0.6929133858267716
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.89,
+          "rules_recall": 0.76
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.8214285714285714,
+          "rules_recall": 0.35714285714285715
+        }
+      },
+      "drop_pp": 2.473498233215543
+    },
+    "all_combined": {
+      "recall_stepup_plus": 0.01060070671378092,
+      "recall_high": 0.007067137809187279,
+      "rules_recall": 0.01060070671378092,
+      "by_type": {
+        "app_scam": {
+          "n": 127,
+          "recall_stepup_plus": 0.0,
+          "rules_recall": 0.0
+        },
+        "ato": {
+          "n": 100,
+          "recall_stepup_plus": 0.0,
+          "rules_recall": 0.02
+        },
+        "mule_layering": {
+          "n": 56,
+          "recall_stepup_plus": 0.05357142857142857,
+          "rules_recall": 0.017857142857142856
+        }
+      },
+      "drop_pp": 84.80565371024736
+    }
+  },
+  "labels": {
+    "calm_behavior": "\u0421\u043f\u043e\u043a\u043e\u0439\u043d\u043e\u0435 \u043f\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435 (\u043a\u0430\u043a \u043e\u0431\u044b\u0447\u043d\u043e)",
+    "no_call_no_admission": "\u041d\u0435\u0442 \u0437\u0432\u043e\u043d\u043a\u0430 \u0438 \u043f\u0440\u0438\u0437\u043d\u0430\u043d\u0438\u044f",
+    "own_device_and_region": "\u0421\u0432\u043e\u0451 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e \u0438 \u0440\u0435\u0433\u0438\u043e\u043d",
+    "aged_mule_account": "\u0421\u0442\u0430\u0440\u044b\u0439 \u0441\u0447\u0451\u0442 \u043c\u0443\u043b\u0430 (+1 \u0433\u043e\u0434)",
+    "unreported_mule": "\u041c\u0443\u043b \u0431\u0435\u0437 \u0436\u0430\u043b\u043e\u0431",
+    "slow_layering": "\u041c\u0435\u0434\u043b\u0435\u043d\u043d\u0430\u044f \u0441\u0435\u0442\u044c \u043c\u0443\u043b\u043e\u0432",
+    "small_amounts": "\u041e\u0431\u044b\u0447\u043d\u044b\u0435 \u0441\u0443\u043c\u043c\u044b",
+    "daytime_only": "\u0422\u043e\u043b\u044c\u043a\u043e \u0434\u043d\u0451\u043c",
+    "all_combined": "\u0412\u0441\u0451 \u0441\u0440\u0430\u0437\u0443"
+  },
+  "note": "What-if on synthetic test frauds; legitimate traffic unchanged, so FPR is unchanged."
+}
