@@ -1,0 +1,26 @@
+{
+  "policy_version": "policy-2026.10-a",
+  "model_version": "ns-hgb-hybrid-1.0.0+0bcd3f62fb4a",
+  "default_mode": "balanced",
+  "modes": {
+    "balanced": {
+      "medium_threshold": 8.061,
+      "high_threshold": 46.773,
+      "rationale": "medium (step-up) = threshold reaching 95% validation recall, but never flagging more than 4% of validation transactions; high (review / temporary hold recommendation) = lowest score where validation precision >= 90%"
+    },
+    "strict": {
+      "medium_threshold": 2.83,
+      "high_threshold": 20.503,
+      "rationale": "medium (step-up) = threshold reaching 98% validation recall, but never flagging more than 6% of validation transactions; high (review / temporary hold recommendation) = lowest score where validation precision >= 75%"
+    }
+  },
+  "segment_overrides": {
+    "young_recipient": {
+      "max_recipient_age_days": 30,
+      "mode": "balanced",
+      "medium_threshold": 46.726,
+      "enabled_by_default": false,
+      "rationale": "Opt-in: step-up threshold for transfers to accounts younger than 30 days, chosen on validation (lowest false-alarm rate with <= 2 pp loss of young-fraud recall). See experiments/results/fairness_young_recipient.json."
+    }
+  }
+}

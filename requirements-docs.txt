@@ -1,0 +1,4 @@
+# Only for regenerating the economics charts and the PDF report (scripts/economics.py, scripts/make_report_pdf.py)
+-r requirements.txt
+matplotlib==3.11.2
+reportlab==5.0.1

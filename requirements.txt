@@ -1,0 +1,12 @@
+# Versions verified in the build environment (Python 3.13). The saved model.joblib was pickled with
+# scikit-learn 1.9.1 - with a different scikit-learn version, retrain via scripts/bootstrap.sh.
+starlette==1.6.0
+uvicorn==0.53.0
+pydantic==2.13.5
+scikit-learn==1.9.1
+numpy==2.5.3
+pandas==3.0.5
+networkx==3.6.1
+joblib==1.6.0
+# optional: test runner (tests also run with the standard library: python -m unittest)
+# pytest
