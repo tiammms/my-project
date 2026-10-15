@@ -1,4 +1,4 @@
-# NOTE: written but not executed (no CI runner was available while developing). Verifies on every push:
+# Verifies on every push (first green run: 2026-10-15):
 # backend tests, frontend typecheck/build, Docker image build and the end-to-end UI check against the container.
 name: ci
 on: [push, pull_request]

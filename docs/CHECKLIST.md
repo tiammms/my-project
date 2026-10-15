@@ -23,11 +23,11 @@
 | Презентация соответствует реализации | ✅ | Цифры в `build_deck.js` читаются из `experiments/results/*.json` |
 | Экономика с прозрачными допущениями | ✅ | `docs/ECONOMICS.md`: таблица допущений, безубыточность, чувствительность; консервативный сценарий убыточен |
 | Ограничения описаны честно | ✅ | `docs/DECISIONS.md`, слайд 11, раздел 7 PDF, `docs/JURY_QA.md` |
-| Инструкция запуска проверена | ✅ (кроме Docker) | Локальный запуск проверен; **Docker не проверен** — в среде нет Docker daemon |
+| Инструкция запуска проверена | ✅ | Локальный запуск проверен; Docker-образ собирается и проходит UI-проверку в GitHub Actions (job `docker-e2e`) |
 
 ## Что осталось непроверенным
 
-- `docker compose up --build` и CI (`.github/workflows/ci.yml`) — файлы написаны, но не запускались.
+- `docker compose` целиком не запускался (CI проверяет сам образ через `docker build` + `docker run`).
 - Работа на Windows/macOS — проверено только на Linux. Код кроссплатформенный (pathlib, без shell-зависимостей в рантайме); для Windows есть `run_windows.bat` и `python -m scripts.bootstrap`.
 - Модель сохранена в pickle и привязана к scikit-learn 1.9.1. При другой версии выполните `python -m scripts.bootstrap`.
 

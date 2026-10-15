@@ -1,4 +1,4 @@
-# NOTE: written but NOT built/verified in the development sandbox (no Docker daemon there).
+# Built and smoke-tested on every push by GitHub Actions (.github/workflows/ci.yml, job docker-e2e).
 # Stage 1: build the dashboard (frontend/dist is also shipped prebuilt, so this stage is optional).
 FROM node:22-slim AS web
 WORKDIR /web

@@ -14,7 +14,7 @@
 - Тесты: `python -m unittest discover -s backend/tests -t .` — 45 тестов, все проходят.
 - Backend умеет раздавать собранный фронтенд из `frontend/dist` (маршрут `/` и `/assets`).
 
-**Ограничения среды, где делалась часть 1:** нет доступа к PyPI/npm и нет Docker daemon. См. `docs/DECISIONS.md`. Dockerfile и docker-compose написаны, но **не проверены**.
+**Ограничения среды, где делалась часть 1:** нет доступа к PyPI/npm и нет Docker daemon. См. `docs/DECISIONS.md`. Docker с тех пор проверен в GitHub Actions (часть 5).
 
 ## Часть 2 — веб-дашборд: ГОТОВА и соединена с backend
 
@@ -44,7 +44,7 @@
 - Устранена задержка 44 мс в многопроцессном режиме uvicorn (TCP_NODELAY), есть регрессионный тест.
 - Эксперимент «обучение на примерах обхода» (`ml/evaluation/robust_training.py`): не принят по правилу, заданному заранее. Подробности в `docs/DECISIONS.md`.
 - Скрипт проверки на публичном датасете ULB: `python -m ml.evaluation.public_ulb creditcard.csv` (данные нужно скачать самостоятельно с Kaggle).
-- Проект — git-репозиторий; CI на GitHub проверяет тесты, фронтенд, Docker и UI.
+- Проект на GitHub: https://github.com/tiammms/my-project. Первый прогон CI зелёный: тесты, фронтенд, Docker-образ и UI-проверка в контейнере.
 
 ## Как работать дальше (для вас)
 

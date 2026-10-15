@@ -1,4 +1,4 @@
-# NOTE: not verified in the development sandbox (no Docker daemon). One service serves the API and the dashboard.
+# One service serves the API and the dashboard. The image itself is built and tested in CI (job docker-e2e).
 services:
   neuroshield:
     build: .

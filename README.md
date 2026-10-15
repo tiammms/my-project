@@ -1,5 +1,7 @@
 # NeuroShield API
 
+[![ci](https://github.com/tiammms/my-project/actions/workflows/ci.yml/badge.svg)](https://github.com/tiammms/my-project/actions/workflows/ci.yml)
+
 **Explainable AI Platform for Predictive Fraud Detection and Behavioral Risk Analysis**
 *"Detect risk. Understand behavior. Protect every transaction."*
 
@@ -136,4 +138,4 @@ scripts/       bootstrap.py · dev_server.sh · load_test.py · snapshot_scenari
                economics.py · make_report_pdf.py
 ```
 
-Docker: `docker compose up --build` → http://localhost:8000 (multi-stage: сборка дашборда + API в одном контейнере). Файлы написаны, но **не проверены**: в среде разработки нет Docker daemon.
+Docker: `docker compose up --build` → http://localhost:8000 (multi-stage: сборка дашборда + API в одном контейнере). Образ собирается и проверяется в CI при каждом push: контейнер запускается, и сквозная UI-проверка проходит все страницы.
