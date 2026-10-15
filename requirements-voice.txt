@@ -1,0 +1,5 @@
+# Optional: local speech-to-text for the voice check (faster-whisper / CTranslate2) and decoding of
+# MP3/M4A/OGG/WEBM uploads (PyAV, pulled in by faster-whisper). Model weights (~480 MB for "small")
+# download from Hugging Face on first use into ml/biometric_models/whisper/.
+# Without this file installed the voice check still works with WAV + typed/pasted call text.
+faster-whisper>=1.1,<2

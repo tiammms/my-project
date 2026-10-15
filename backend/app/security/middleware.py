@@ -11,9 +11,12 @@ log = logging.getLogger("neuroshield")
 
 
 class SecurityMiddleware:
-    def __init__(self, app, max_body_bytes: int, rate_per_minute: int):
+    def __init__(self, app, max_body_bytes: int, rate_per_minute: int, large_body_prefix: str = "",
+                 large_body_bytes: int = 0):
         self.app = app
         self.max_body = max_body_bytes
+        # media uploads (photos, camera frames, audio) get a larger, separate limit
+        self.large_prefix, self.large_body = large_body_prefix, max(large_body_bytes, max_body_bytes)
         self.rate = rate_per_minute
         self.buckets: dict[str, tuple[float, float]] = {}
         self.lock = threading.Lock()
@@ -46,12 +49,13 @@ class SecurityMiddleware:
         t0 = time.perf_counter()
         if path.startswith("/api/") and not self._allow(client):
             return await self._reject(send, 429, "Rate limit exceeded", rid)
+        limit = self.large_body if self.large_prefix and path.startswith(self.large_prefix) else self.max_body
         headers = dict(scope.get("headers") or [])
         cl = headers.get(b"content-length")
         if cl is not None:
             try:
-                if int(cl) > self.max_body:
-                    return await self._reject(send, 413, f"Request body exceeds {self.max_body} bytes", rid)
+                if int(cl) > limit:
+                    return await self._reject(send, 413, f"Request body exceeds {limit} bytes", rid)
             except ValueError:
                 return await self._reject(send, 400, "Invalid Content-Length", rid)
         received = 0
@@ -62,7 +66,7 @@ class SecurityMiddleware:
             msg = await receive()
             if msg["type"] == "http.request":
                 received += len(msg.get("body", b""))
-                if received > self.max_body:
+                if received > limit:
                     too_big = True
                     raise ValueError("body too large")
             return msg
@@ -74,12 +78,13 @@ class SecurityMiddleware:
                 status_holder["s"] = msg["status"]
                 h = list(msg.get("headers", []))
                 h += [(b"x-request-id", rid.encode()), (b"x-content-type-options", b"nosniff"),
-                      (b"x-frame-options", b"DENY"), (b"referrer-policy", b"no-referrer")]
+                      (b"x-frame-options", b"DENY"), (b"referrer-policy", b"no-referrer"),
+                      (b"permissions-policy", b"camera=(self), microphone=(self), geolocation=()")]
                 if path.startswith("/api/") or path == "/health":
                     h.append((b"cache-control", b"no-store"))
                 if not path.startswith("/docs"):
                     h.append((b"content-security-policy",
-                              b"default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+                              b"default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; "
                               b"font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'"))
                 msg = {**msg, "headers": h}
             await send(msg)
@@ -88,7 +93,7 @@ class SecurityMiddleware:
             await self.app(scope, limited_receive, send_wrapper)
         except ValueError:
             if too_big:
-                return await self._reject(send, 413, f"Request body exceeds {self.max_body} bytes", rid)
+                return await self._reject(send, 413, f"Request body exceeds {limit} bytes", rid)
             raise
         finally:
             # Log metadata only - never request bodies (may contain behavioral context).

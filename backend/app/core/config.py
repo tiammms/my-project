@@ -40,6 +40,7 @@ class Settings:
     cors_origins: tuple = field(default_factory=lambda: tuple(
         o.strip() for o in _env("NS_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()))
     max_body_bytes: int = field(default_factory=lambda: int(_env("NS_MAX_BODY_BYTES", "262144")))
+    bio_max_body_bytes: int = field(default_factory=lambda: int(_env("NS_BIO_MAX_BODY_BYTES", str(24 * 1024 * 1024))))
     batch_limit: int = field(default_factory=lambda: int(_env("NS_BATCH_LIMIT", "100")))
     rate_limit_per_minute: int = field(default_factory=lambda: int(_env("NS_RATE_LIMIT_PER_MINUTE", "600")))
     admin_token: str = field(default_factory=lambda: _env("NS_ADMIN_TOKEN", ""))

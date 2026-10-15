@@ -40,6 +40,8 @@ from starlette.staticfiles import StaticFiles
 
 from .api.framework import SWAGGER_HTML
 from .api.routes import STATE, api, relabel_dataset
+from .api import bio_routes  # noqa: F401  (registers /api/v1/bio/* on the same API)
+from .biometrics.store import BioStore
 from .core.config import Settings, settings as default_settings
 from .database.db import Database, now_iso
 from .security.middleware import SecurityMiddleware
@@ -95,6 +97,8 @@ def create_app(cfg: Settings = default_settings, db_path: str | None = None) -> 
         engine.hold_enabled = saved.get("hold_recommendations_enabled", True)
         engine.young_override_enabled = bool(saved.get("young_recipient_override", engine.young_override_enabled)) and bool(engine.young_override)
     STATE.update({"db": db, "engine": engine, "settings": cfg})
+    key_dir = Path(db_path).parent if db_path else cfg.db_path.parent
+    STATE["bio"] = BioStore(db, key_dir / "biometric.key")
     ev = cfg.results_dir / "evaluation_default.json"
     STATE["evaluation"] = json.loads(ev.read_text()) if ev.exists() else None
     if db.count_transactions() == 0:
@@ -136,9 +140,10 @@ def create_app(cfg: Settings = default_settings, db_path: str | None = None) -> 
         return JSONResponse({"error": "Not found"}, status_code=404)
 
     app = Starlette(routes=routes, exception_handlers={500: server_error, 404: not_found})
-    app.add_middleware(CORSMiddleware, allow_origins=list(cfg.cors_origins), allow_methods=["GET", "POST", "PUT"],
+    app.add_middleware(CORSMiddleware, allow_origins=list(cfg.cors_origins), allow_methods=["GET", "POST", "PUT", "DELETE"],
                        allow_headers=["content-type", "x-admin-token"], max_age=600)
-    app.add_middleware(SecurityMiddleware, max_body_bytes=cfg.max_body_bytes, rate_per_minute=cfg.rate_limit_per_minute)
+    app.add_middleware(SecurityMiddleware, max_body_bytes=cfg.max_body_bytes, rate_per_minute=cfg.rate_limit_per_minute,
+                       large_body_prefix="/api/v1/bio/", large_body_bytes=cfg.bio_max_body_bytes)
     return app
 
 

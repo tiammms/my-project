@@ -10,3 +10,6 @@ networkx==3.6.1
 joblib==1.6.0
 # optional: test runner (tests also run with the standard library: python -m unittest)
 # pytest
+# biometrics (face models run through OpenCV; templates are encrypted with cryptography/Fernet)
+opencv-python-headless>=4.10,<6
+cryptography>=42

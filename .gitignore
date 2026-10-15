@@ -11,3 +11,6 @@ ml/data/generated/
 # local tooling
 *.log
 .venv/
+
+# biometric model weights (downloaded by scripts/download_models.py)
+ml/biometric_models/

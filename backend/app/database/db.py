@@ -81,6 +81,11 @@ class Database:
             self._conn.commit()
             return cur
 
+    def executescript(self, script: str) -> None:
+        with self._lock:
+            self._conn.executescript(script)
+            self._conn.commit()
+
     def query(self, sql: str, params: tuple = ()) -> list[dict]:
         with self._lock:
             return [dict(r) for r in self._conn.execute(sql, params).fetchall()]
