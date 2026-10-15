@@ -162,3 +162,36 @@ svg text { fill: var(--muted); font-size: 11px; font-family: var(--sans); }
 .graph-svg .node { cursor: pointer; }
 .empty { color: var(--muted); padding: 18px 0; text-align: center; font-size: 13px; }
 .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+
+/* ---------- biometrics ---------- */
+.nav-group { font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); padding: 12px 10px 4px; font-weight: 600; }
+.nav-group:first-child { padding-top: 0; }
+.side { overflow-y: auto; }
+.cam { position: relative; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; aspect-ratio: 4 / 3; overflow: hidden; max-width: 100%; }
+.cam video { width: 100%; height: 100%; object-fit: cover; }
+.mirror { transform: scaleX(-1); }
+.cam-off { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+.cam-prompt { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px; background: linear-gradient(transparent, rgba(5, 8, 12, .92) 35%); text-align: center; font-size: 17px; font-weight: 600; }
+.cam-arrow { font-size: 40px; line-height: 1; color: var(--accent-2); }
+.verdict { border-radius: 10px; padding: 14px 16px; border: 1px solid var(--border); background: var(--surface-2); }
+.verdict.LOW { border-color: rgba(12, 163, 12, .5); background: var(--low-bg); }
+.verdict.MEDIUM { border-color: rgba(250, 178, 25, .5); background: var(--medium-bg); }
+.verdict.HIGH { border-color: rgba(224, 82, 82, .55); background: var(--high-bg); }
+.verdict-level { font-size: 11.5px; text-transform: uppercase; letter-spacing: .7px; font-weight: 700; color: var(--text-2); }
+.verdict.LOW .verdict-level { color: #45c845; } .verdict.MEDIUM .verdict-level { color: var(--medium); } .verdict.HIGH .verdict-level { color: #ff7a7a; }
+.verdict-title { font-size: 16px; font-weight: 650; margin-top: 2px; }
+.advice { margin-top: 12px; border-left: 3px solid var(--accent-2); padding: 6px 0 6px 12px; background: rgba(44, 197, 176, .06); border-radius: 0 8px 8px 0; }
+.advice ul { color: var(--text); }
+.models { display: flex; flex-direction: column; gap: 10px; }
+.model-row { display: grid; grid-template-columns: 12px 1fr; gap: 10px; align-items: start; font-size: 13px; }
+.dot { width: 9px; height: 9px; border-radius: 99px; margin-top: 5px; }
+.dot.ok { background: var(--low); } .dot.off { background: transparent; border: 2px solid var(--medium); }
+.consent { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); font-size: 12.5px; }
+.photo-wrap { position: relative; display: inline-block; max-width: 100%; }
+.photo-wrap img { display: block; max-width: 100%; max-height: 420px; border-radius: 8px; }
+.photo-boxes { position: absolute; inset: 0; width: 100%; height: 100%; }
+mark { background: rgba(224, 82, 82, .3); color: inherit; border-radius: 3px; padding: 0 2px; }
+button.chip { cursor: pointer; font: inherit; font-size: 12px; }
+.chip.on { border-color: var(--accent-2); color: var(--text); }
+.pref { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); font-size: 13px; flex-wrap: wrap; }
+.pref:last-child { border-bottom: 0; }

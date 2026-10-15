@@ -71,6 +71,43 @@ export interface GraphAlert {
 export interface Scenario { id: string; title: string; story: string; expected: string }
 export interface ScenarioRun { scenario: string; title: string; story: string; expected: string; input: any; result: RiskResult; disclaimer: string }
 
+// ---- biometrics (/api/v1/bio) ----
+export type BioLevel = Level | null;
+export interface BioModel { key: string; title: string; installed: boolean; verified: boolean; license: string; purpose: string; problem?: string; file?: string }
+export interface BioStatus {
+  model_dir: string; opencv: boolean; models: BioModel[]; audio_decoding: string; privacy: Privacy;
+  consent: { version: string; text: string }; enrolled_subjects: number; history: { total: number; by_kind_level: { kind: string; risk_level: BioLevel; n: number }[] };
+}
+export interface Privacy { store_history: boolean; store_transcripts: boolean; allow_enrollment: boolean; history_retention_days: number; speech_to_text: boolean }
+export interface CheckRow { check_id: string; created_at: string; kind: string; risk_level: BioLevel; risk_score: number | null; summary: string }
+export interface Challenge { challenge_id: string; steps: { pose: string; instruction: string }[]; expires_in_s: number; frames_per_step: number; step_duration_ms: number; note: string }
+export interface Tactic { category: string; title: string; weight: number; advice: string; evidence?: { match: string; context: string }[] }
+
+export const bio = {
+  status: () => call<BioStatus>("/api/v1/bio/status"),
+  summary: () => call<any>("/api/v1/bio/summary"),
+  analyzeFace: (image: string) => call<any>("/api/v1/bio/face/analyze", { method: "POST", json: { image } }),
+  challenge: () => call<Challenge>("/api/v1/bio/face/liveness/challenge", { method: "POST" }),
+  verifyLiveness: (challenge_id: string, frames: { step: number; image: string }[]) =>
+    call<any>("/api/v1/bio/face/liveness/verify", { method: "POST", json: { challenge_id, frames } }),
+  enroll: (body: { subject_ref: string; liveness_token: string; consent: true; consent_version: string }) =>
+    call<any>("/api/v1/bio/face/enroll", { method: "POST", json: body }),
+  verifyFace: (body: { subject_ref: string; liveness_token?: string; image?: string }) =>
+    call<any>("/api/v1/bio/face/verify", { method: "POST", json: body }),
+  subjects: () => call<{ items: { subject_ref: string; created_at: string; consent_version: string; model: string }[] }>("/api/v1/bio/face/subjects"),
+  deleteSubject: (ref: string) => call<any>(`/api/v1/bio/face/subjects/${encodeURIComponent(ref)}`, { method: "DELETE" }),
+  voice: (body: { audio?: string; transcript?: string; transcribe: boolean; language: string }) =>
+    call<any>("/api/v1/bio/voice/analyze", { method: "POST", json: body }),
+  combined: (body: { face_check_id?: string; voice_check_id?: string; transaction_id?: string }) =>
+    call<any>("/api/v1/bio/check/combined", { method: "POST", json: body }),
+  history: (p: Record<string, unknown>) => call<{ items: CheckRow[]; total: number }>("/api/v1/bio/history" + qs(p)),
+  check: (id: string) => call<any>(`/api/v1/bio/history/${encodeURIComponent(id)}`),
+  clearHistory: () => call<any>("/api/v1/bio/history", { method: "DELETE" }),
+  privacy: () => call<Privacy>("/api/v1/bio/privacy"),
+  putPrivacy: (body: Partial<Privacy>) => call<Privacy>("/api/v1/bio/privacy", { method: "PUT", json: body }),
+  eraseAll: () => call<any>("/api/v1/bio/privacy/erase-all", { method: "POST" }),
+};
+
 export const api = {
   health: () => call<{ status: string; model_loaded: boolean; transactions_stored: number }>("/health"),
   modelInfo: () => call<any>("/api/v1/model/info"),

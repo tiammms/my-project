@@ -90,9 +90,12 @@ def analyze(text: str) -> dict:
     t = _norm(text[:MAX_TEXT])
     found = []
     for k, pats in _COMPILED.items():
-        hits = []
+        hits, spans = [], []
         for p in pats:
             for m in p.finditer(t):
+                if any(m.start() < e and m.end() > st for st, e in spans):
+                    continue          # overlapping match of another pattern: same evidence
+                spans.append((m.start(), m.end()))
                 a, b = max(0, m.start() - 40), min(len(t), m.end() + 40)
                 hits.append({"match": m.group(0), "context": ("…" if a else "") + t[a:b] + ("…" if b < len(t) else "")})
                 if len(hits) >= 3:

@@ -11,8 +11,11 @@ try { pw = require("playwright"); } catch { pw = require("/opt/npm-tools/node_mo
 const BASE = process.argv[2] || "http://127.0.0.1:8000";
 const OUT = new URL("../docs/screenshots/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
-const browser = await pw.chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+// fake camera/microphone (test pattern + beep) so the biometric pages can be exercised headless
+const browser = await pw.chromium.launch({ args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+await ctx.grantPermissions(["camera", "microphone"], { origin: BASE });
+const page = await ctx.newPage();
 const problems = [];
 page.on("console", (m) => { if (m.type() === "error") problems.push("console: " + m.text()); });
 page.on("pageerror", (e) => problems.push("pageerror: " + e.message));
@@ -56,6 +59,36 @@ await shot("8-settings", "settings", "text=Model card", async () => {
   await page.click(".seg >> text=Balanced");
   await page.waitForSelector("tr:has-text('balanced') >> text=active");
 });
+// ---- biometrics & call checks ----
+await shot("10-security-center", "security", "text=Модели и их состояние");
+await shot("11-voice-check", "voice", "text=Текст разговора", async () => {
+  await page.click("text=● Записать с микрофона");
+  await page.waitForTimeout(2500);
+  await page.click("text=■ Остановить");
+  await page.waitForSelector("audio");
+  await page.click("button:has-text('Пример')");
+  await page.click("button:has-text('Проверить')");
+  await page.waitForSelector("text=Рекомендации по безопасности", { timeout: 120000 });
+  if (!(await page.locator(".verdict.HIGH").count())) problems.push("voice: scam example not rated HIGH");
+});
+const faceReady = await (await page.request.get(`${BASE}/api/v1/bio/status`)).json()
+  .then((s) => s.models.filter((m) => m.key.startsWith("face_")).every((m) => m.verified));
+await shot("12-face-check", "face", "text=Камера", async () => {
+  await page.click("text=Включить камеру");
+  await page.waitForFunction(() => { const v = document.querySelector("video"); return v && v.videoWidth > 0; });
+  if (faceReady) {   // the fake camera shows a test pattern, not a face: the check must NOT pass
+    await page.click("text=Проверка живости");
+    await page.waitForSelector(".verdict", { timeout: 60000 });
+    if (await page.locator("text=Живой человек подтверждён").count()) problems.push("face: liveness passed without a face");
+  }
+});
+await shot("13-combined-check", "combined", "text=Выполнить общую проверку", async () => {
+  await page.locator(".chip").first().click();
+  await page.click("text=Выполнить общую проверку");
+  await page.waitForSelector("text=Результаты каждой проверки");
+});
+await shot("14-check-history", "history", "tr.click");
+await shot("15-privacy", "privacy", "text=Что хранится и что нет");
 await page.setViewportSize({ width: 390, height: 844 });
 await shot("9-mobile-overview", "overview", "text=Highest-risk transactions");
 await browser.close();

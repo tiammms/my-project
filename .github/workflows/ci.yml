@@ -17,7 +17,14 @@ jobs:
           mkdir -p /tmp/media
           curl -sfL -o /tmp/media/face.jpg https://raw.githubusercontent.com/opencv/opencv/4.x/samples/data/messi5.jpg
           curl -sfL -o /tmp/media/jfk.flac https://raw.githubusercontent.com/SYSTRAN/faster-whisper/master/tests/data/jfk.flac
-      - run: python -m unittest discover -s backend/tests -t . -v 2>&1 | tee test.log; test ${PIPESTATUS[0]} -eq 0
+      - run: |
+          set +e
+          python -m unittest discover -s backend/tests -t . -v > test.log 2>&1
+          code=$?
+          tail -5 test.log
+          # surface failures as an annotation (readable via the API even when raw logs are not)
+          if [ $code -ne 0 ]; then python -c "import sys;t=open('test.log').read();i=t.find('=====');print('::error title=unit tests::'+t[i:][-6000:].replace('%','%25').replace('\r','').replace('\n','%0A'))"; fi
+          exit $code
         env:
           NS_TEST_FACE_IMAGE: /tmp/media/face.jpg
           NS_TEST_SPEECH_FILE: /tmp/media/jfk.flac

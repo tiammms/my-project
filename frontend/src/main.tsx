@@ -10,6 +10,12 @@ import { DemoLab } from "./pages/DemoLab";
 import { Evaluation } from "./pages/Evaluation";
 import { Playground } from "./pages/Playground";
 import { Settings } from "./pages/Settings";
+import { BioHome } from "./pages/BioHome";
+import { FaceCheck } from "./pages/FaceCheck";
+import { VoiceCheck } from "./pages/VoiceCheck";
+import { Combined } from "./pages/Combined";
+import { BioHistory } from "./pages/BioHistory";
+import { PrivacyPage } from "./pages/PrivacyPage";
 
 // ---- hash router: #/page/arg?key=value ----------------------------------------------
 export interface Route { page: string; arg?: string; params: URLSearchParams }
@@ -22,6 +28,14 @@ function parse(): Route {
 export const go = (path: string) => { window.location.hash = path; };
 
 const I = (d: string) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
+const BIO_NAV = [
+  { page: "security", label: "Центр безопасности", icon: I("M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z") },
+  { page: "face", label: "Проверка лица", icon: I("M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0") },
+  { page: "voice", label: "Проверка голоса", icon: I("M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3") },
+  { page: "combined", label: "Общая проверка", icon: I("M9 12l2 2 4-4M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z") },
+  { page: "history", label: "История проверок", icon: I("M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2") },
+  { page: "privacy", label: "Конфиденциальность", icon: I("M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4") },
+];
 const NAV = [
   { page: "overview", label: "Overview", icon: I("M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 9h8V3h-8z") },
   { page: "transactions", label: "Transactions", icon: I("M4 6h16M4 12h16M4 18h10") },
@@ -56,6 +70,12 @@ function App() {
     case "evaluation": page = <Evaluation />; break;
     case "playground": page = <Playground />; break;
     case "settings": page = <Settings />; break;
+    case "security": page = <BioHome />; break;
+    case "face": page = <FaceCheck />; break;
+    case "voice": page = <VoiceCheck />; break;
+    case "combined": page = <Combined />; break;
+    case "history": page = <BioHistory id={route.arg} />; break;
+    case "privacy": page = <PrivacyPage />; break;
     default: page = <Overview />;
   }
   const dot = health === "online" ? "var(--low)" : health === "checking" ? "var(--muted)" : "var(--high)";
@@ -65,8 +85,13 @@ function App() {
         <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z" fill="#2cc5b0" /><path d="M10 16.5l4 4 8-9" stroke="#0b1016" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
         <div><div className="brand-name">NeuroShield</div><div className="brand-sub">Fraud risk intelligence</div></div>
       </div>
-      <nav className="nav">{NAV.map((n) => (
-        <a key={n.page} href={"#/" + n.page} className={active === n.page ? "active" : ""} title={n.label}>{n.icon}<span>{n.label}</span></a>))}
+      <nav className="nav">
+        <div className="nav-group">Клиент: лицо и звонки</div>
+        {BIO_NAV.map((n) => (
+          <a key={n.page} href={"#/" + n.page} className={active === n.page ? "active" : ""} title={n.label}>{n.icon}<span>{n.label}</span></a>))}
+        <div className="nav-group">Переводы</div>
+        {NAV.map((n) => (
+          <a key={n.page} href={"#/" + n.page} className={active === n.page ? "active" : ""} title={n.label}>{n.icon}<span>{n.label}</span></a>))}
       </nav>
       <div className="side-foot">
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span style={{ width: 8, height: 8, borderRadius: 99, background: dot }} />API {health}</div>
