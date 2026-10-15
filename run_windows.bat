@@ -21,9 +21,10 @@ if not defined PY (
   echo ============================================================
   echo  Python 3.11 - 3.13 not found.
   where python >nul 2>nul && python --version
-  echo  Install Python 3.13 64-bit:
+  echo  Easiest: run   py install 3.13   then run this file again.
+  echo  Or install Python 3.13 64-bit manually:
   echo    https://www.python.org/downloads/windows/
-  echo    pick the latest Python 3.13.x, "Windows installer ^(64-bit^)"
+  echo    pick the latest Python 3.13.x, "Windows installer 64-bit"
   echo    and tick "Add python.exe to PATH" in the installer.
   echo  Your newer Python can stay installed - this script will pick 3.13.
   echo  Then run run_windows.bat again.
