@@ -22,6 +22,8 @@ jobs:
           python -m unittest discover -s backend/tests -t . -v > test.log 2>&1
           code=$?
           tail -5 test.log
+          # always report which tests were skipped (real-model tests must NOT be skipped here)
+          python -c "import re;t=open('test.log').read();sk=[l for l in t.splitlines() if ' ... skipped' in l];print('::notice title=test summary::'+(re.findall(r'Ran \d+ tests.*',t) or ['?'])[0]+' | skipped: '+('%0A'.join(sk) or 'none'))"
           # surface failures as an annotation (readable via the API even when raw logs are not)
           if [ $code -ne 0 ]; then python -c "import sys;t=open('test.log').read();i=t.find('=====');print('::error title=unit tests::'+t[i:][-6000:].replace('%','%25').replace('\r','').replace('\n','%0A'))"; fi
           exit $code
@@ -29,7 +31,6 @@ jobs:
           NS_TEST_FACE_IMAGE: /tmp/media/face.jpg
           NS_TEST_SPEECH_FILE: /tmp/media/jfk.flac
           NS_ASR_MODEL: tiny
-      - run: grep -E "skipped|RealFace|real_speech" test.log || true
   frontend:
     runs-on: ubuntu-latest
     steps:
