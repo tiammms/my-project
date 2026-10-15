@@ -153,6 +153,24 @@ if __name__ != "__main__":
     if os.environ.get("NS_NO_AUTOAPP") != "1":
         app = create_app()
 
+def _open_browser_when_ready(url: str = "http://127.0.0.1:8000") -> None:
+    import threading
+    import urllib.request
+    import webbrowser
+
+    def wait():
+        for _ in range(240):
+            try:
+                urllib.request.urlopen(url + "/health", timeout=1)
+                webbrowser.open(url)
+                return
+            except Exception:
+                time.sleep(0.5)
+    threading.Thread(target=wait, daemon=True).start()
+
+
 if __name__ == "__main__":
     import uvicorn
+    if os.environ.get("NS_OPEN_BROWSER") == "1":
+        _open_browser_when_ready()
     uvicorn.run(create_app(), host="127.0.0.1", port=8000, log_level="info")

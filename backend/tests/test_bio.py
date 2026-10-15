@@ -119,7 +119,10 @@ class TestVoiceApi(unittest.TestCase):
     @unittest.skipUnless(SPEECH and registry.has_package("faster_whisper"), "needs faster-whisper + NS_TEST_SPEECH_FILE")
     def test_real_speech_to_text(self):
         raw = Path(SPEECH).read_bytes()
-        d = C.post("/api/v1/bio/voice/analyze", json={"audio": base64.b64encode(raw).decode(), "language": "en"}).json()
+        r = C.post("/api/v1/bio/voice/analyze", json={"audio": base64.b64encode(raw).decode(), "language": "en"})
+        self.assertEqual(r.status_code, 200, r.content[:800])
+        d = r.json()
+        self.assertIsNotNone(d.get("transcript"), d.get("speech_to_text_note"))
         self.assertIn("country", d["transcript"]["text"].lower())   # JFK sample: "...ask not what your country..."
 
 

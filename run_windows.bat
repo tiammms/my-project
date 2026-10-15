@@ -46,6 +46,13 @@ set "VPY=.venv\Scripts\python.exe"
 rem binary packages only: never try to compile from source
 "%VPY%" -m pip install --only-binary=:all: -r requirements.txt || (echo pip install failed - send a screenshot of this window & pause & exit /b 1)
 
-start "" http://127.0.0.1:8000
+rem optional: local speech-to-text (faster-whisper). The app works without it (WAV + typed call text).
+"%VPY%" -m pip install --only-binary=:all: -r requirements-voice.txt || echo WARNING: speech-to-text packages were not installed - voice check will work with typed text only
+
+rem face models (OpenCV YuNet + SFace), SHA-256 verified; skipped if already present
+"%VPY%" -m scripts.download_models || echo WARNING: face models could not be downloaded - check the internet connection and run this file again
+
+rem the browser opens by itself once the server is ready
+set "NS_OPEN_BROWSER=1"
 "%VPY%" -m backend.app.main
 pause

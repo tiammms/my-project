@@ -63,8 +63,8 @@ def decode_audio(data: str) -> tuple[np.ndarray, str]:
         from faster_whisper.audio import decode_audio as fw_decode
         try:
             x, how = fw_decode(io.BytesIO(raw), sampling_rate=SR).astype(np.float32), "pyav"
-        except Exception:
-            raise InputError("аудиофайл не удалось декодировать")
+        except Exception as e:
+            raise InputError(f"аудиофайл не удалось декодировать ({type(e).__name__})")
     else:
         raise InputError("поддерживается только WAV. Для MP3/M4A/OGG/WEBM установите requirements-voice.txt "
                          "или запишите голос прямо на странице")
