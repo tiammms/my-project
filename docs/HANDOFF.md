@@ -46,6 +46,14 @@
 - Скрипт проверки на публичном датасете ULB: `python -m ml.evaluation.public_ulb creditcard.csv` (данные нужно скачать самостоятельно с Kaggle).
 - Проект на GitHub: https://github.com/tiammms/my-project. Первый прогон CI зелёный: тесты, фронтенд, Docker-образ и UI-проверка в контейнере.
 
+## Часть 6 — модуль «Биометрия и звонки»: ГОТОВ
+
+- Backend: `backend/app/biometrics/` (registry, face, liveness, audio, speech, scam_text, fusion, store) и `backend/app/api/bio_routes.py` (`/api/v1/bio/*`).
+- Модели: OpenCV YuNet + SFace скачиваются `python -m scripts.download_models` (SHA-256), распознавание речи — `requirements-voice.txt` (faster-whisper). `run_windows.bat` делает всё сам.
+- Frontend: 6 новых разделов в группе «Клиент: лицо и звонки».
+- Тесты: `backend/tests/test_bio.py`. В CI модели скачиваются и проверяются на реальном фото и речи.
+- Чего нет: детектор синтетического голоса и пассивный anti-spoofing (нет проверенных открытых моделей). Подробности и как подключить — `docs/BIOMETRICS.md`.
+
 ## Как работать дальше (для вас)
 
 - Запуск: `python -m backend.app.main` → http://127.0.0.1:8000 (Windows: `run_windows.bat`).

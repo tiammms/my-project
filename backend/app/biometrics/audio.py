@@ -55,16 +55,40 @@ def _decode_wav(raw: bytes) -> np.ndarray:
     return _resample(x, sr)
 
 
+def _decode_pyav(raw: bytes) -> np.ndarray:
+    """MP3/M4A/OGG/WEBM/FLAC... via PyAV (FFmpeg bindings, installed with faster-whisper)."""
+    import av
+    limit = int((MAX_SECONDS + 1) * SR)
+    chunks, total = [], 0
+    try:
+        with av.open(io.BytesIO(raw), mode="r") as c:
+            if not c.streams.audio:
+                raise InputError("в файле нет звуковой дорожки")
+            rs = av.AudioResampler(format="s16", layout="mono", rate=SR)
+            for frame in c.decode(audio=0):
+                for f in rs.resample(frame):
+                    a = f.to_ndarray().reshape(-1)
+                    chunks.append(a)
+                    total += len(a)
+                if total > limit:
+                    raise InputError(f"запись длиннее {int(MAX_SECONDS)} секунд — обрежьте её")
+            for f in rs.resample(None):
+                chunks.append(f.to_ndarray().reshape(-1))
+    except InputError:
+        raise
+    except Exception as e:
+        raise InputError(f"аудиофайл не удалось декодировать ({type(e).__name__}: {str(e)[:120]})")
+    if not chunks:
+        raise InputError("в файле нет звука")
+    return np.concatenate(chunks).astype(np.float32) / 32768.0
+
+
 def decode_audio(data: str) -> tuple[np.ndarray, str]:
     raw, mime = decode_b64(data, MAX_AUDIO_BYTES)
     if raw[:4] == b"RIFF" and raw[8:12] == b"WAVE":
         x, how = _decode_wav(raw), "wav"
-    elif registry.has_package("av") and registry.has_package("faster_whisper"):
-        from faster_whisper.audio import decode_audio as fw_decode
-        try:
-            x, how = fw_decode(io.BytesIO(raw), sampling_rate=SR).astype(np.float32), "pyav"
-        except Exception as e:
-            raise InputError(f"аудиофайл не удалось декодировать ({type(e).__name__})")
+    elif registry.has_package("av"):
+        x, how = _decode_pyav(raw), "pyav"
     else:
         raise InputError("поддерживается только WAV. Для MP3/M4A/OGG/WEBM установите requirements-voice.txt "
                          "или запишите голос прямо на странице")
