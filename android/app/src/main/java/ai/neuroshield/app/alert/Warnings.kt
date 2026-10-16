@@ -128,7 +128,7 @@ object Warnings {
 
         // header: pulsing icon + label + headline
         val header = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val iconSize = dp(ctx, 52f)
+        val iconSize = dp(ctx, 46f)
         val iconBox = FrameLayout(ctx)
         val ring = View(ctx).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setStroke(dp(ctx, 2f), c) } }
         val disc = TextView(ctx).apply {
@@ -140,10 +140,10 @@ object Warnings {
         iconBox.addView(disc, FrameLayout.LayoutParams(iconSize, iconSize))
         header.addView(iconBox, LinearLayout.LayoutParams(iconSize, iconSize))
         val titles = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 14f), 0, 0, 0) }
-        val label = when (w.level) { RiskLevel.HIGH -> "⚠ ВНИМАНИЕ · ВЫСОКИЙ РИСК"; RiskLevel.MEDIUM -> "ОСТОРОЖНО · СРЕДНИЙ РИСК"; RiskLevel.LOW -> "NEUROSHIELD · ИНФО" }
-        titles.addView(tv(if (w.isTest) "ТЕСТ · $label" else label, 11f, c, bold = true, lines = 1, spacing = 0.08f))
+        val label = when (w.level) { RiskLevel.HIGH -> "⚠ ВНИМАНИЕ"; RiskLevel.MEDIUM -> "ОСТОРОЖНО"; RiskLevel.LOW -> "NEUROSHIELD" }
+        titles.addView(tv(if (w.isTest) "$label · ТЕСТ" else label, 11f, c, bold = true, lines = 1, spacing = 0.1f))
         val headlineText = when (w.level) { RiskLevel.HIGH -> "Возможно, мошенник!"; RiskLevel.MEDIUM -> "Есть признаки обмана"; RiskLevel.LOW -> "Незнакомый номер" }
-        titles.addView(tv(headlineText, 22f, TEXT, bold = true, lines = 1))
+        titles.addView(tv(headlineText, 21f, TEXT, bold = true, lines = 2).apply { setLineSpacing(0f, 0.95f) })
         header.addView(titles, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         card.addView(header)
 
@@ -156,7 +156,8 @@ object Warnings {
             }
         }
         segs.forEachIndexed { i, v -> meter.addView(v, LinearLayout.LayoutParams(0, dp(ctx, 6f), 1f).apply { if (i > 0) marginStart = dp(ctx, 5f) }) }
-        if (w.score > 0) meter.addView(tv("  ${w.score.toInt()}/100", 13f, c, bold = true, lines = 1))
+        val levelName = when (w.level) { RiskLevel.HIGH -> "Высокий"; RiskLevel.MEDIUM -> "Средний"; RiskLevel.LOW -> "Низкий" }
+        meter.addView(tv("  $levelName" + (if (w.score > 0) " · ${w.score.toInt()}" else ""), 12.5f, c, bold = true, lines = 1))
         card.addView(meter)
 
         // why (one line) + what to do (one action)
@@ -187,8 +188,16 @@ object Warnings {
             setPadding(dp(ctx, 6f), 0, dp(ctx, 6f), 0); minWidth = 0; minimumWidth = 0
             setOnClickListener { onClick() }
         }
+        if (w.offerListening) {
+            // full-width AI action above the main row so labels never get cut
+            val listen = button("◉  Слушать звонок через ИИ", false) { dismiss(view); view = null; openListen(ctx) }.apply {
+                setTextColor(CYAN)
+                background = GradientDrawable().apply { cornerRadius = dp(ctx, 14f).toFloat(); setColor(alpha(CYAN, 0.08f)); setStroke(dp(ctx, 1f), alpha(CYAN, 0.5f)) }
+            }
+            card.addView(listen, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 44f)).apply { topMargin = dp(ctx, 14f) })
+            row.setPadding(0, dp(ctx, 10f), 0, 0)
+        }
         val buttons = mutableListOf<Button>()
-        if (w.offerListening) buttons += button("Слушать", false) { dismiss(view); view = null; openListen(ctx) }
         buttons += button("Подробнее", false) { dismiss(view); view = null; openApp(ctx, "history", alertId) }
         buttons += button("Понятно", true) { dismiss(view); view = null }
         buttons.forEachIndexed { i, b -> row.addView(b, LinearLayout.LayoutParams(0, dp(ctx, 46f), 1f).apply { if (i > 0) marginStart = dp(ctx, 10f) }) }

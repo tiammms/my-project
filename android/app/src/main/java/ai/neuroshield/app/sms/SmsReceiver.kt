@@ -33,12 +33,12 @@ class SmsReceiver : BroadcastReceiver() {
             val active = call.active
             Warnings.show(ctx, Warning(
                 level = RiskLevel.HIGH, score = 90.0, source = "sms_code", number = call.number ?: "номер неизвестен",
-                title = "Пришёл код из SMS " + (if (active) "во время" else "сразу после") + " (${call.channel}) с незнакомым номером",
+                title = "Код из SMS " + (if (active) "во время" else "сразу после") + " ${call.channel} с незнакомым номером",
                 reasons = listOf("Код ${code.masked} от «$sender»",
                     "Звонящего нет в ваших контактах",
                     "Так действуют мошенники: просят «продиктовать код для отмены операции»"),
                 advice = listOf("НЕ называйте этот код никому", "Положите трубку и позвоните в банк сами"),
-                offerListening = active && call.channel == "звонок",
+                offerListening = active && call.channel == "звонка",
             ))
             return
         }

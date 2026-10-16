@@ -239,11 +239,11 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
         // hero
         GlassCard(accent = accent, padding = 20.dp) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StatusOrb(accent, 112.dp, if (full) Icons.Filled.Shield else Icons.Filled.GppMaybe)
+                StatusOrb(accent, 96.dp, if (full) Icons.Filled.Shield else Icons.Filled.GppMaybe)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("СТАТУС ЗАЩИТЫ", style = MaterialTheme.typography.labelSmall, color = NS.muted)
-                    Text(if (full) "Под защитой" else "Частичная защита", style = MaterialTheme.typography.headlineSmall, color = NS.text)
+                    Text(if (full) "Под защитой" else "Частично", style = MaterialTheme.typography.headlineSmall, color = NS.text, maxLines = 1)
                     Text("$on из ${items.size} модулей активны", style = MaterialTheme.typography.bodySmall, color = NS.text2)
                 }
             }
@@ -258,12 +258,12 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
 
         SectionTitle("Быстрые проверки")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile(Modifier.weight(1f), Icons.Filled.TextSnippet, "Проверить текст", "SMS или слова звонящего", NS.cyan) { go("text") }
-            ActionTile(Modifier.weight(1f), Icons.Filled.Videocam, "Видеозвонок", "Фото вместо человека?", NS.violet) { go("video") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.TextSnippet, "Текст", "SMS и слова звонящего", NS.cyan) { go("text") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.Videocam, "Видео", "Живой ли собеседник", NS.violet) { go("video") }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile(Modifier.weight(1f), Icons.Filled.Face, "Проверка лица", "Живой ли человек", NS.safe) { go("face") }
-            ActionTile(Modifier.weight(1f), Icons.Filled.Warning, "Тест тревоги", "Пример окна угрозы", NS.threat) {
+            ActionTile(Modifier.weight(1f), Icons.Filled.Face, "Лицо", "Проверка живости", NS.safe) { go("face") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.Warning, "Тест", "Пример окна угрозы", NS.threat) {
                 Warnings.show(ctx, Warning(RiskLevel.HIGH, "Просят продиктовать код из SMS",
                     listOf("Звонящий представился службой безопасности банка", "Просит назвать код из SMS"),
                     listOf("Положите трубку и позвоните в банк сами"), source = "test", number = "+7 700 000 00 00", score = 92.0, isTest = true))

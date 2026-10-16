@@ -60,9 +60,9 @@ object CallTracker {
         val now = System.currentTimeMillis()
         val cellActive = p.callState == "OFFHOOK" || p.callState == "RINGING"
         if ((cellActive || now - p.callEndedAt < withinMs) && !p.callIsContact)
-            return RiskyCall(p.callNumber, p.callState == "OFFHOOK", "звонок")
+            return RiskyCall(p.callNumber, p.callState == "OFFHOOK", "звонка")
         if ((p.voipActive || now - p.voipEndedAt < withinMs) && !p.voipIsContact)
-            return RiskyCall(p.voipNumber, p.voipActive, "звонок в ${p.voipApp ?: "мессенджере"}")
+            return RiskyCall(p.voipNumber, p.voipActive, "звонка в ${p.voipApp ?: "мессенджере"}")
         return null
     }
 
