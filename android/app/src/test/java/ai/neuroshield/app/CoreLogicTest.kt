@@ -212,3 +212,28 @@ class VideoCallCheckTest {
         assertEquals(RiskLevel.LOW, v.level)
     }
 }
+
+class LinkCheckTest {
+    @Test fun lookalikeBrandIsFlagged() {
+        val f = LinkCheck.check("https://kaspi-verify.top/login")
+        assertTrue(f.score >= 70); assertTrue(f.reasons.any { "Kaspi" in it })
+    }
+    @Test fun officialDomainsAreClean() {
+        for (u in listOf("https://kaspi.kz/shop", "https://www.halykbank.kz", "https://egov.kz/cms/ru", "https://t.me/neuroshield"))
+            assertEquals(u, 0, LinkCheck.check(u).score)
+    }
+    @Test fun shortenerIpAndPunycode() {
+        assertTrue(LinkCheck.check("https://bit.ly/3xYz").score >= 35)
+        assertTrue(LinkCheck.check("http://185.22.11.4/pay").score >= 50)
+        assertTrue(LinkCheck.check("https://xn--80ak6aa92e.com").score >= 45)
+    }
+    @Test fun phishingSmsIsHigh() {
+        val r = ScamAnalyzer.analyze("Ваша карта заблокирована. Срочно подтвердите данные: https://kaspi-verify.top/login")
+        assertEquals(RiskLevel.HIGH, r.level)
+        assertTrue(r.tactics.any { it.id == "phishing_link" })
+    }
+    @Test fun normalLinkIsNotATactic() {
+        val r = ScamAnalyzer.analyze("Смотри фото с дня рождения https://photos.google.com/share/abc")
+        assertEquals(RiskLevel.LOW, r.level)
+    }
+}

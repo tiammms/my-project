@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
@@ -173,6 +174,31 @@ object Warnings {
             box.addView(tv("→", 16f, CYAN, bold = true, lines = 1).apply { setPadding(0, 0, dp(ctx, 10f), 0) })
             box.addView(tv(action, 14f, TEXT2, lines = 3), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             card.addView(box, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 12f) })
+        }
+
+        // one-tap help for HIGH threats: call a trusted person or the bank (opens the dialer, never calls by itself)
+        val pr = ctx.app.prefs
+        if (w.level == RiskLevel.HIGH && !w.isTest || w.isTest) {
+            val help = mutableListOf<Pair<String, String>>()
+            if (pr.trustedNumber.isNotBlank()) help += ("Позвонить: " + pr.trustedName.ifBlank { "близкому" }) to pr.trustedNumber
+            if (pr.bankNumber.isNotBlank()) help += "Позвонить в банк" to pr.bankNumber
+            if (help.isNotEmpty()) {
+                val hr = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(ctx, 12f), 0, 0) }
+                help.forEachIndexed { i, (label, num) ->
+                    val b = Button(ctx).apply {
+                        text = label; isAllCaps = false; textSize = 13f; maxLines = 1; stateListAnimator = null; setTextColor(TEXT)
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                        background = GradientDrawable().apply { cornerRadius = dp(ctx, 14f).toFloat(); setColor(SURFACE) }
+                        setPadding(dp(ctx, 8f), 0, dp(ctx, 8f), 0); minWidth = 0; minimumWidth = 0
+                        setOnClickListener {
+                            dismiss(view); view = null
+                            try { ctx.startActivity(Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:" + Uri.encode(num))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
+                        }
+                    }
+                    hr.addView(b, LinearLayout.LayoutParams(0, dp(ctx, 42f), 1f).apply { if (i > 0) marginStart = dp(ctx, 10f) })
+                }
+                card.addView(hr)
+            }
         }
 
         // actions

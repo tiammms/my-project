@@ -22,9 +22,19 @@ import ai.neuroshield.app.listen.ListenService
  */
 class ScreeningService : CallScreeningService() {
     override fun onScreenCall(details: Call.Details) {
-        respondToCall(details, CallResponse.Builder().build())   // allow the call, always
-        if (details.callDirection != Call.Details.DIRECTION_INCOMING) return
         val number = details.handle?.schemeSpecificPart
+        val n = CallRisk.normalizeNumber(number)
+        val p = app.prefs
+        // the only case a call is ever rejected: the user marked this number as a scammer AND turned blocking on
+        if (details.callDirection == Call.Details.DIRECTION_INCOMING && p.blockMarked && n != null && n in p.scamNumbers()) {
+            respondToCall(details, CallResponse.Builder().setDisallowCall(true).setRejectCall(true)
+                .setSkipCallLog(false).setSkipNotification(false).build())
+            app.alerts.add("blocked_call", n, RiskLevel.HIGH, 100.0, "Звонок от отмеченного мошенника заблокирован",
+                listOf("Вы отметили этот номер как мошеннический", "Включена блокировка отмеченных номеров"), null)
+            return
+        }
+        respondToCall(details, CallResponse.Builder().build())   // otherwise: always allow
+        if (details.callDirection != Call.Details.DIRECTION_INCOMING) return
         CallTracker.onIncoming(this, number, screened = true)
     }
 }
@@ -74,6 +84,7 @@ object CallTracker {
         // the screening service and the phone-state broadcast both report the same call: handle it once
         if (n == lastWarnedNumber && now - lastWarnedAt < 30_000) { p.callState = "RINGING"; return }
         lastWarnedNumber = n; lastWarnedAt = now
+        if (p.blockMarked && n != null && n in p.scamNumbers()) { p.callState = "RINGING"; return }   // already rejected
         val contact = Contacts.contains(ctx, n)
         p.callState = "RINGING"; p.callNumber = n; p.callIsContact = contact
         if (contact) return

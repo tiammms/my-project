@@ -78,10 +78,6 @@ object ScamAnalyzer {
                 """подозрительн\w+\s+(операци|перевод)""", """уголовн|\bарест|соучастни""", """мошенники\s+пытаются""",
                 """your\s+account\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised)|arrest|loan\s+in\s+your\s+name""",
             )),
-        Category("suspicious_link", "Ссылка с просьбой срочно что-то сделать",
-            "Не открывайте ссылки из неожиданных сообщений. Зайдите в приложение банка сами.", 25, listOf(
-                """(https?://|www\.)\S+""", """bit\.ly|clck\.ru|tinyurl|t\.me/""",
-            )),
     )
 
     // Java regex \w and \b are ASCII-only on the JVM; make them Unicode-aware the same way on JVM and Android.
@@ -117,11 +113,20 @@ object ScamAnalyzer {
             }
             if (hits.isNotEmpty()) found += Tactic(c.id, c.title, c.advice, c.weight, hits)
         }
+        // links: checked by LinkCheck (look-alike brands, shorteners, IP hosts, punycode, throw-away domains)
+        val links = LinkCheck.scan(text.take(MAX_TEXT)).filter { it.score >= 30 }
+        if (links.isNotEmpty()) {
+            val worst = links.maxBy { it.score }
+            found += Tactic("phishing_link", "Подозрительная ссылка: ${worst.host}",
+                "Не открывайте ссылку и не вводите на ней данные. Зайдите в приложение банка или на сайт сами.",
+                worst.score.coerceIn(30, 60), links.take(3).map { Evidence(it.host, it.reasons.joinToString("; ")) })
+        }
         val ids = found.map { it.id }.toSet()
         var score = if (found.isEmpty()) 0.0 else 100 * (1 - found.fold(1.0) { acc, f -> acc * (1 - f.weight / 100.0) })
         // A single tactic alone never yields HIGH (same safeguard as the NeuroShield risk engine).
         if (ids.size <= 1) score = min(score, 45.0)
-        val critical = "credentials_request" in ids || "safe_account_transfer" in ids || "remote_access" in ids
+        val critical = "credentials_request" in ids || "safe_account_transfer" in ids || "remote_access" in ids ||
+            (links.any { it.score >= 50 })
         if (critical && ids.size >= 2) score = max(score, 75.0)
         val words = if (t.isBlank()) 0 else t.split(" ").size
         return TextRisk(Math.round(score * 10) / 10.0, levelOf(score), found, words)

@@ -66,6 +66,7 @@ import ai.neuroshield.app.ui.TextCheckScreen
 class MainActivity : ComponentActivity() {
     private val route = mutableStateOf("home")
     private val openAlert = mutableStateOf<Long?>(null)
+    private val onboarded by lazy { mutableStateOf(app.prefs.onboarded) }
     private val capture = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
         val data = r.data
         if (r.resultCode == RESULT_OK && data != null) {
@@ -122,6 +123,10 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun Root() {
+        if (!onboarded.value) {
+            ai.neuroshield.app.ui.OnboardingScreen(onDone = { app.prefs.onboarded = true; onboarded.value = true; route.value = "protection" })
+            return
+        }
         val r by route
         val tabs = listOf(
             Triple("home", "Обзор", Icons.Outlined.GridView), Triple("protection", "Защита", Icons.Outlined.Shield),
@@ -135,7 +140,7 @@ class MainActivity : ComponentActivity() {
                     when (screen) {
                         "protection" -> ProtectionScreen(onListen = { startListening() }, onVideo = { startVideoCheck() })
                         "history" -> HistoryScreen(openId = openAlert.value, onOpened = { openAlert.value = null })
-                        "settings" -> SettingsScreen()
+                        "settings" -> SettingsScreen(onReplayOnboarding = { app.prefs.onboarded = false; onboarded.value = false })
                         "text" -> TextCheckScreen(onBack = { route.value = "home" })
                         "face" -> FaceScreen(onBack = { route.value = "home" })
                         else -> HomeScreen(

@@ -7,6 +7,22 @@ P=ai.neuroshield.app
 APK=$(ls app-apk/*universal*.apk | head -1)
 mkdir -p shots
 shot() { sleep "${2:-3}"; adb exec-out screencap -p > "shots/$1.png"; }
+# tap the on-screen element whose text (or content description) is exactly $1
+tap_text() {
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1
+  xy=$(python3 - "$1" <<'PY'
+import re,sys
+t=open('/tmp/ui.xml',encoding='utf-8').read(); want=sys.argv[1]
+for m in re.finditer(r'<node [^>]*>', t):
+    n=m.group(0)
+    if f'text="{want}"' in n or f'content-desc="{want}"' in n:
+        b=re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', n)
+        if b:
+            x1,y1,x2,y2=map(int,b.groups()); print((x1+x2)//2,(y1+y2)//2); break
+PY
+)
+  if [ -n "$xy" ]; then adb shell input tap $xy; echo "tapped $1 at $xy"; else echo "not found: $1"; fi
+}
 adb install -r -g "$APK" || exit 1
 for perm in READ_PHONE_STATE READ_CALL_LOG READ_CONTACTS RECEIVE_SMS RECORD_AUDIO CAMERA POST_NOTIFICATIONS; do
   adb shell pm grant $P android.permission.$perm || true
@@ -14,7 +30,10 @@ done
 adb shell appops set $P SYSTEM_ALERT_WINDOW allow
 adb shell cmd role add-role-holder android.app.role.CALL_SCREENING $P || true
 adb logcat -c
-adb shell am start -n $P/.MainActivity; shot 01-home 8
+adb shell am start -n $P/.MainActivity; shot 00-onboarding 8
+tap_text "Далее"; shot 00-onboarding-2 2
+tap_text "Пропустить"; sleep 2
+adb shell am start -n $P/.MainActivity --es route home; shot 01-home 4
 for r in protection history settings text face; do adb shell am start -n $P/.MainActivity --es route $r; shot "02-$r" 4; done
 adb shell am start -n $P/.MainActivity --es route home; sleep 2
 adb shell input keyevent KEYCODE_HOME; sleep 2
@@ -48,6 +67,14 @@ fi
 adb shell am start -n $P/.MainActivity --es route home; shot 15-home-with-threats 4
 adb shell am start -n $P/.MainActivity --el alert_id 2; shot 16-threat-detail 4
 adb shell am start -n $P/.MainActivity --es route history; shot 17-threats 3
+# phishing link in a messenger message
+adb shell cmd notification post -S bigtext -t "+447700900123" ns_phish "'Your Kaspi account is blocked. Verify now: https://kaspi-verify.top/login'"; shot 18-phishing-link 6
+# block a number the user marked as a scammer
+adb shell am start -n $P/.MainActivity --el alert_id 1; sleep 4; tap_text "Это мошенник"; sleep 1
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3; tap_text "Блокировать отмеченных мошенников"; shot 19-settings-blocking 2
+adb shell input keyevent KEYCODE_HOME; sleep 1
+adb emu gsm call 87015550123; sleep 6; adb emu gsm cancel 87015550123; sleep 2
+adb shell am start -n $P/.MainActivity --es route history; shot 20-history-blocked-call 4
 adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true

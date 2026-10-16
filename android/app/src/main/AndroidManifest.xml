@@ -89,6 +89,18 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
+        <!-- Quick Settings tile: one tap during a call starts the speech analysis -->
+        <service
+            android:name=".tile.ShieldTile"
+            android:exported="true"
+            android:icon="@drawable/ic_shield"
+            android:label="NeuroShield"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- Video-call check: looks at the screen (user confirms screen capture each time) -->
         <service
             android:name=".video.VideoCheckService"

@@ -57,6 +57,11 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.filled.Videocam
@@ -256,6 +261,8 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
             StatTile(Modifier.weight(1f), "${alerts.size}", "всего", NS.text2) { go("history") }
         }
 
+        if (alerts.isNotEmpty()) WeekChart(alerts)
+
         SectionTitle("Быстрые проверки")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ActionTile(Modifier.weight(1f), Icons.Filled.TextSnippet, "Текст", "SMS и слова звонящего", NS.cyan) { go("text") }
@@ -273,6 +280,40 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
         SectionTitle("Последние угрозы", if (alerts.isNotEmpty()) "Все" else null) { go("history") }
         if (alerts.isEmpty()) EmptyState("Угроз не обнаружено", "NeuroShield предупредит, если звонок или сообщение покажутся подозрительными")
         else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { alerts.take(3).forEach { a -> ThreatRow(a) { openAlert(a.id) } } }
+    }
+}
+
+/** Threats of the last 7 days, stacked by level. */
+@Composable
+fun WeekChart(alerts: List<Alert>) {
+    val days = (6 downTo 0).map { back ->
+        val c = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -back); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
+        val start = c.timeInMillis; val end = start + 86_400_000
+        val inDay = alerts.filter { it.ts in start until end }
+        Triple(SimpleDateFormat("EE", Locale("ru")).format(Date(start)).take(2), inDay, back == 0)
+    }
+    val max = (days.maxOf { it.second.size }).coerceAtLeast(1)
+    val anim by androidx.compose.animation.core.animateFloatAsState(1f, androidx.compose.animation.core.tween(700), label = "bars")
+    GlassCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Угрозы за 7 дней", style = MaterialTheme.typography.titleMedium, color = NS.text, modifier = Modifier.weight(1f))
+            Text("${days.sumOf { it.second.size }}", style = MaterialTheme.typography.titleMedium, color = NS.cyan)
+        }
+        Row(Modifier.fillMaxWidth().height(96.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            days.forEach { (label, list, today) ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                    val h = 70f * list.size / max * anim
+                    Column(Modifier.width(16.dp).height((h.coerceAtLeast(3f)).dp).clip(RoundedCornerShape(6.dp)).background(NS.surface3)) {
+                        listOf(RiskLevel.HIGH, RiskLevel.MEDIUM, RiskLevel.LOW).forEach { lv ->
+                            val n = list.count { it.level == lv }
+                            if (n > 0) Box(Modifier.fillMaxWidth().weight(n.toFloat()).background(levelColor(lv)))
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(label, fontSize = 11.sp, color = if (today) NS.cyan else NS.muted)
+                }
+            }
+        }
     }
 }
 
@@ -542,8 +583,14 @@ fun HistoryScreen(openId: Long? = null, onOpened: () -> Unit = {}) {
     val shown = list.filter { filter == null || it.level == filter }
 
     Page("Угрозы", "История хранится только на телефоне", actions = {
-        if (list.isNotEmpty()) IconButton(onClick = { confirm = true }, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
-            Icon(Icons.Filled.DeleteOutline, "Очистить", tint = NS.text2)
+        if (list.isNotEmpty()) {
+            IconButton(onClick = { shareReport(ctx, shown) }, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
+                Icon(Icons.Filled.Share, "Поделиться отчётом", tint = NS.text2)
+            }
+            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = { confirm = true }, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
+                Icon(Icons.Filled.DeleteOutline, "Очистить", tint = NS.text2)
+            }
         }
     }) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -569,6 +616,31 @@ fun HistoryScreen(openId: Long? = null, onOpened: () -> Unit = {}) {
         confirmButton = { TextButton(onClick = { ctx.app.alerts.clear(); confirm = false }) { Text("Удалить всё", color = NS.threat) } },
         dismissButton = { TextButton(onClick = { confirm = false }) { Text("Отмена", color = NS.text2) } },
         title = { Text("Очистить историю?", color = NS.text) }, text = { Text("Все записи об угрозах будут удалены с телефона.", color = NS.text2) })
+}
+
+/** Share a plain-text report (e.g. to a relative or the bank's fraud department). No transcripts, no SMS bodies. */
+fun shareReport(ctx: Context, items: List<Alert>) {
+    val f = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru"))
+    val body = buildString {
+        appendLine("NeuroShield AI — отчёт об угрозах (${items.size})")
+        appendLine()
+        items.take(100).forEach { a ->
+            appendLine("${f.format(Date(a.ts))} · ${levelShort(a.level)} · ${a.sourceRu}")
+            appendLine("  ${a.title}" + (a.number?.let { " · $it" } ?: ""))
+            a.reasons.take(3).forEach { appendLine("  – $it") }
+        }
+    }
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Отчёт NeuroShield AI").putExtra(Intent.EXTRA_TEXT, body)
+    ctx.startActivity(Intent.createChooser(send, "Поделиться отчётом").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
+@Composable
+private fun NeoField(value: String, label: String, type: KeyboardType, icon: ImageVector, onChange: (String) -> Unit) {
+    OutlinedTextField(value = value, onValueChange = onChange, singleLine = true, modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) }, leadingIcon = { Icon(icon, null, tint = NS.muted) }, shape = RoundedCornerShape(14.dp),
+        keyboardOptions = KeyboardOptions(keyboardType = type),
+        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NS.cyan, unfocusedBorderColor = NS.border, focusedLabelColor = NS.cyan,
+            unfocusedLabelColor = NS.muted, focusedContainerColor = NS.surface, unfocusedContainerColor = NS.surface))
 }
 
 @Composable
@@ -620,7 +692,7 @@ fun ThreatDetail(a: Alert, onClose: () -> Unit) {
 
 // =========================================================================== SETTINGS
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     val ctx = LocalContext.current
     val p = ctx.app.prefs
     var code by remember { mutableStateOf(p.homeCallingCode) }
@@ -631,6 +703,10 @@ fun SettingsScreen() {
     var marks by remember { mutableIntStateOf(0) }
     var about by remember { mutableStateOf(false) }
     var cleared by remember { mutableStateOf(false) }
+    var trustedName by remember { mutableStateOf(p.trustedName) }
+    var trustedNumber by remember { mutableStateOf(p.trustedNumber) }
+    var bankNumber by remember { mutableStateOf(p.bankNumber) }
+    var block by remember { mutableStateOf(p.blockMarked) }
     Page("Настройки") {
         SectionTitle("Звонки")
         GlassCard(padding = 10.dp) {
@@ -640,14 +716,29 @@ fun SettingsScreen() {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NS.cyan, unfocusedBorderColor = NS.border))
             }
-            ListRow(Icons.Filled.Call, "Любой незнакомый номер", "Короткий совет при каждом таком звонке") { NeoSwitch(warnUnknown) { warnUnknown = it; p.warnUnknownCallers = it } }
-            ListRow(Icons.Filled.Mic, "Кнопка анализа речи", "Во время звонка с незнакомцем") { NeoSwitch(offer) { offer = it; p.offerListening = it } }
-            ListRow(Icons.Filled.GraphicEq, "Автоанализ речи", "Начинать слушать сразу после ответа") { NeoSwitch(auto) { auto = it; p.autoListen = it } }
+            ListRow(Icons.Filled.Call, "Любой незнакомый номер", "Короткий совет при каждом таком звонке",
+                onClick = { warnUnknown = !warnUnknown; p.warnUnknownCallers = warnUnknown }) { NeoSwitch(warnUnknown) { warnUnknown = it; p.warnUnknownCallers = it } }
+            ListRow(Icons.Filled.Mic, "Кнопка анализа речи", "Во время звонка с незнакомцем",
+                onClick = { offer = !offer; p.offerListening = offer }) { NeoSwitch(offer) { offer = it; p.offerListening = it } }
+            ListRow(Icons.Filled.GraphicEq, "Автоанализ речи", "Начинать слушать сразу после ответа",
+                onClick = { auto = !auto; p.autoListen = auto }) { NeoSwitch(auto) { auto = it; p.autoListen = it } }
+            ListRow(Icons.Filled.Block, "Блокировать отмеченных мошенников", if (Perms.screeningRole(ctx)) "Звонки с отмеченных номеров сбрасываются" else "Нужен модуль «Определитель номера»",
+                tint = NS.threat, onClick = { block = !block; p.blockMarked = block }) { NeoSwitch(block) { block = it; p.blockMarked = it } }
+        }
+
+        SectionTitle("Экстренная помощь")
+        GlassCard(padding = 14.dp) {
+            Text("При высоком риске в окне угрозы появятся кнопки «Позвонить близкому» и «Позвонить в банк». Открывается набор номера — звонок не начинается сам.",
+                color = NS.muted, style = MaterialTheme.typography.bodySmall)
+            NeoField(trustedName, "Имя близкого (например, «Сын»)", KeyboardType.Text, Icons.Filled.FavoriteBorder) { trustedName = it.take(30); p.trustedName = trustedName }
+            NeoField(trustedNumber, "Телефон близкого", KeyboardType.Phone, Icons.Filled.Call) { trustedNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.trustedNumber = trustedNumber }
+            NeoField(bankNumber, "Номер вашего банка (с карты)", KeyboardType.Phone, Icons.Filled.AccountBalance) { bankNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.bankNumber = bankNumber }
         }
 
         SectionTitle("Конфиденциальность")
         GlassCard(padding = 10.dp) {
-            ListRow(Icons.Filled.Lock, "Хранить фрагменты разговоров", "По умолчанию — только причины угрозы") { NeoSwitch(excerpts) { excerpts = it; p.storeExcerpts = it } }
+            ListRow(Icons.Filled.Lock, "Хранить фрагменты разговоров", "По умолчанию — только причины угрозы",
+                onClick = { excerpts = !excerpts; p.storeExcerpts = excerpts }) { NeoSwitch(excerpts) { excerpts = it; p.storeExcerpts = it } }
             ListRow(Icons.Filled.DeleteOutline, "Очистить историю угроз", if (cleared) "История удалена" else "Удалить все записи с телефона", tint = NS.threat,
                 onClick = { ctx.app.alerts.clear(); cleared = true })
         }
@@ -688,6 +779,9 @@ fun SettingsScreen() {
                     Text("Исследовательский прототип · не заменяет банк", color = NS.muted, style = MaterialTheme.typography.bodySmall)
                 }
             }
+        }
+        GlassCard(padding = 10.dp) {
+            ListRow(Icons.Filled.Replay, "Показать знакомство снова", "Короткий рассказ о возможностях", onClick = onReplayOnboarding)
         }
     }
 }

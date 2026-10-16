@@ -34,6 +34,18 @@ class Prefs(ctx: Context) {
     var speechLang: String
         get() = p.getString("speech_lang", "ru") ?: "ru"
         set(v) = p.edit().putString("speech_lang", v).apply()
+    var trustedName: String
+        get() = p.getString("trusted_name", "") ?: ""
+        set(v) = p.edit().putString("trusted_name", v).apply()
+    var trustedNumber: String
+        get() = p.getString("trusted_number", "") ?: ""
+        set(v) = p.edit().putString("trusted_number", v).apply()
+    var bankNumber: String
+        get() = p.getString("bank_number", "") ?: ""
+        set(v) = p.edit().putString("bank_number", v).apply()
+    var blockMarked: Boolean
+        get() = p.getBoolean("block_marked", false)
+        set(v) = p.edit().putBoolean("block_marked", v).apply()
     var onboarded: Boolean
         get() = p.getBoolean("onboarded", false)
         set(v) = p.edit().putBoolean("onboarded", v).apply()
@@ -129,7 +141,7 @@ data class Alert(
     val sourceRu: String get() = when (source) {
         "incoming_call" -> "Входящий звонок"; "sms_code" -> "SMS с кодом во время звонка"; "sms_text" -> "Подозрительное SMS"
         "live_speech" -> "Речь во время звонка"; "manual_text" -> "Проверка текста"; "face" -> "Проверка лица"
-        "messenger_call" -> "Звонок в мессенджере"; "video_call" -> "Проверка видеозвонка"; "messenger_text" -> "Сообщение в мессенджере"; else -> source
+        "blocked_call" -> "Заблокированный звонок"; "messenger_call" -> "Звонок в мессенджере"; "video_call" -> "Проверка видеозвонка"; "messenger_text" -> "Сообщение в мессенджере"; else -> source
     }
 }
 
