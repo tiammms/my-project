@@ -71,7 +71,10 @@ class MainActivity : ComponentActivity() {
             startListening()
             if (i.getBooleanExtra(EXTRA_AUTO, false) && ListenState.ui.value.message?.startsWith("Скачайте") != true) moveTaskToBack(true)
         }
-        if (i.getBooleanExtra(EXTRA_START_VIDEO, false)) { route.value = "protection"; startVideoCheck() }
+        if (i.getBooleanExtra(EXTRA_START_VIDEO, false)) {
+            ai.neuroshield.app.alert.Warnings.hide()       // our own warning must not cover the caller's face
+            route.value = "protection"; startVideoCheck()
+        }
         i.removeExtra(EXTRA_START_LISTEN); i.removeExtra(EXTRA_ROUTE); i.removeExtra(EXTRA_START_VIDEO); i.removeExtra(EXTRA_AUTO)
     }
 

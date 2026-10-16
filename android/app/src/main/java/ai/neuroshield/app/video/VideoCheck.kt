@@ -94,31 +94,41 @@ class VideoCheckService : Service() {
         display = p.createVirtualDisplay("neuroshield-video-check", w, hgt, dm.densityDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, r.surface, null, h)
         started = System.currentTimeMillis()
         VideoState.ui.value = VideoUi(running = true, message = "Смотрю на лицо собеседника…")
-        var last = 0L
-        r.setOnImageAvailableListener({ rd ->
-            val img = rd.acquireLatestImage() ?: return@setOnImageAvailableListener
-            val now = System.currentTimeMillis()
-            if (busy || now - last < 300 || done) { img.close(); return@setOnImageAvailableListener }
-            last = now; busy = true
-            val plane = img.planes[0]
-            val rowPx = plane.rowStride / plane.pixelStride
-            val full = Bitmap.createBitmap(rowPx, img.height, Bitmap.Config.ARGB_8888)
-            full.copyPixelsFromBuffer(plane.buffer)
-            img.close()
-            val bmp = if (rowPx != w) Bitmap.createBitmap(full, 0, 0, w, hgt) else full
-            detector.process(InputImage.fromBitmap(bmp, 0))
-                .addOnSuccessListener { list ->
-                    val big = list.maxByOrNull { it.boundingBox.width() * it.boundingBox.height() }
-                    val area = big?.let { it.boundingBox.width().toFloat() * it.boundingBox.height() / (w * hgt) } ?: 0f
-                    frames += ScreenFace(now - started, list.size, area,
-                        (big?.boundingBox?.exactCenterX() ?: 0f) / w, (big?.boundingBox?.exactCenterY() ?: 0f) / hgt,
-                        big?.headEulerAngleY ?: 0f, big?.leftEyeOpenProbability, big?.rightEyeOpenProbability)
-                    VideoState.ui.value = VideoState.ui.value.copy(seconds = ((now - started) / 1000).toInt(), frames = frames.size,
-                        faceFrames = frames.count { it.faces > 0 && it.areaFraction >= 0.02f })
-                    if (now - started >= DURATION_MS) conclude()
+        // A virtual display only produces a new image when the screen changes. Sample on a fixed clock instead and
+        // re-use the last picture when nothing changed: an unchanged screen IS a frozen picture.
+        var lastBmp: Bitmap? = null
+        val tick = object : Runnable {
+            override fun run() {
+                if (done) return
+                val now = System.currentTimeMillis()
+                r.acquireLatestImage()?.let { img ->
+                    try {
+                        val plane = img.planes[0]
+                        val rowPx = plane.rowStride / plane.pixelStride
+                        val full = Bitmap.createBitmap(rowPx, img.height, Bitmap.Config.ARGB_8888)
+                        full.copyPixelsFromBuffer(plane.buffer)
+                        lastBmp = if (rowPx != w) Bitmap.createBitmap(full, 0, 0, w, hgt) else full
+                    } finally { img.close() }
                 }
-                .addOnCompleteListener { busy = false }
-        }, h)
+                val bmp = lastBmp
+                if (bmp != null && !busy) {
+                    busy = true
+                    detector.process(InputImage.fromBitmap(bmp, 0))
+                        .addOnSuccessListener { list ->
+                            val big = list.maxByOrNull { it.boundingBox.width() * it.boundingBox.height() }
+                            val area = big?.let { it.boundingBox.width().toFloat() * it.boundingBox.height() / (w * hgt) } ?: 0f
+                            frames += ScreenFace(now - started, list.size, area,
+                                (big?.boundingBox?.exactCenterX() ?: 0f) / w, (big?.boundingBox?.exactCenterY() ?: 0f) / hgt,
+                                big?.headEulerAngleY ?: 0f, big?.leftEyeOpenProbability, big?.rightEyeOpenProbability)
+                            VideoState.ui.value = VideoState.ui.value.copy(seconds = ((now - started) / 1000).toInt(), frames = frames.size,
+                                faceFrames = frames.count { it.faces > 0 && it.areaFraction >= 0.02f })
+                        }
+                        .addOnCompleteListener { busy = false }
+                }
+                if (now - started >= DURATION_MS) conclude() else h.postDelayed(this, 333)
+            }
+        }
+        h.postDelayed(tick, 500)
         // even if the screen does not change (no new frames), finish on time
         h.postDelayed({ conclude() }, DURATION_MS + 3000)
     }
