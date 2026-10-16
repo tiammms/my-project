@@ -20,6 +20,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import ai.neuroshield.app.MainActivity
@@ -62,20 +63,27 @@ object Warnings {
 
     fun show(ctx: Context, w: Warning) {
         val app = ctx.app
-        if (!w.isTest) app.alerts.add(w.source, w.number, w.level, w.score, w.title, w.reasons,
-            if (app.prefs.storeExcerpts) w.excerpt?.take(600) else null)
+        val id = if (!w.isTest) app.alerts.add(w.source, w.number, w.level, w.score, w.title, w.reasons,
+            if (app.prefs.storeExcerpts) w.excerpt?.take(600) else null) else -1L
         if (w.level != RiskLevel.LOW) vibrate(ctx, w.level)
         main.post {
-            if (Perms.overlay(ctx)) showOverlay(ctx.applicationContext, w) else notify(ctx, w)
-            if (w.level == RiskLevel.HIGH && Perms.overlay(ctx)) notify(ctx, w)   // also stays in the shade
+            if (Perms.overlay(ctx)) showOverlay(ctx.applicationContext, w, id) else notify(ctx, w, id)
+            if (w.level == RiskLevel.HIGH && Perms.overlay(ctx)) notify(ctx, w, id)   // also stays in the shade
         }
     }
 
-    fun hide() = main.post { removeView(view); view = null }
+    fun hide() = main.post { dismiss(view); view = null }
 
     private fun removeView(v: View?) {
         if (v == null) return
         try { (v.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).removeView(v) } catch (_: Exception) {}
+    }
+
+    /** Slide up + fade out, then remove. */
+    private fun dismiss(v: View?) {
+        if (v == null) return
+        v.animate().alpha(0f).translationY(-dp(v.context, 24f).toFloat()).scaleX(0.97f).scaleY(0.97f).setDuration(170)
+            .withEndAction { removeView(v) }.start()
     }
 
     private fun dp(ctx: Context, v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, ctx.resources.displayMetrics).toInt()
@@ -88,49 +96,124 @@ object Warnings {
         PixelFormat.TRANSLUCENT,
     ).apply { gravity = Gravity.CENTER }   // centre: the system's incoming-call / SMS banners sit at the top
 
+    private const val BG = 0xF20F1115.toInt()
+    private const val SURFACE = 0xFF1D2129.toInt()
+    private const val TEXT = 0xFFF2F4F7.toInt()
+    private const val TEXT2 = 0xFFB4BCC8.toInt()
+    private const val MUTED = 0xFF7A8494.toInt()
+    private const val CYAN = 0xFF22D3EE.toInt()
+
+    fun levelColor(l: RiskLevel) = when (l) { RiskLevel.HIGH -> 0xFFFF3B5C.toInt(); RiskLevel.MEDIUM -> 0xFFFFB020.toInt(); RiskLevel.LOW -> CYAN }
+    private fun alpha(c: Int, a: Float) = (c and 0x00FFFFFF) or ((a * 255).toInt() shl 24)
+
+    /**
+     * Compact threat card, readable in 1-2 seconds: what (level + headline), why (one reason), what to do (one action).
+     * Full analysis opens in the app («Подробнее»).
+     */
     @SuppressLint("SetTextI18n")
-    private fun showOverlay(ctx: Context, w: Warning) {
+    private fun showOverlay(ctx: Context, w: Warning, alertId: Long) {
         removeView(view)
-        val bg = when (w.level) { RiskLevel.HIGH -> 0xFFB3261E.toInt(); RiskLevel.MEDIUM -> 0xFFB86E00.toInt(); RiskLevel.LOW -> 0xFF1F2935.toInt() }
-        val box = LinearLayout(ctx).apply {
+        val c = levelColor(w.level)
+        val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(ctx, 18f), dp(ctx, 16f), dp(ctx, 18f), dp(ctx, 12f))
-            background = GradientDrawable().apply { setColor(bg); cornerRadius = dp(ctx, 18f).toFloat() }
-            elevation = dp(ctx, 12f).toFloat()
+            setPadding(dp(ctx, 18f), dp(ctx, 18f), dp(ctx, 18f), dp(ctx, 16f))
+            background = GradientDrawable().apply { setColor(BG); cornerRadius = dp(ctx, 26f).toFloat(); setStroke(dp(ctx, 1.5f), alpha(c, 0.85f)) }
+            elevation = dp(ctx, 18f).toFloat()
         }
-        fun text(s: String, size: Float, bold: Boolean = false, alpha: Float = 1f) = TextView(ctx).apply {
-            text = s; setTextColor(Color.WHITE); textSize = size; this.alpha = alpha
-            if (bold) setTypeface(typeface, Typeface.BOLD)
-            setPadding(0, dp(ctx, 2f), 0, dp(ctx, 2f))
+        fun tv(s: String, size: Float, color: Int, bold: Boolean = false, lines: Int = 2, spacing: Float = 0f) = TextView(ctx).apply {
+            text = s; setTextColor(color); textSize = size; maxLines = lines; ellipsize = android.text.TextUtils.TruncateAt.END
+            letterSpacing = spacing
+            typeface = Typeface.create("sans-serif" + if (bold) "-medium" else "", if (bold) Typeface.BOLD else Typeface.NORMAL)
         }
-        if (w.isTest) box.addView(text("ПРИМЕР ПРЕДУПРЕЖДЕНИЯ (тест, не настоящий звонок)", 12f, true, 0.85f))
-        box.addView(text(headline(w.level), if (w.level == RiskLevel.HIGH) 22f else 19f, true))
-        box.addView(text("${w.level.ru} · ${w.title}", 15f, true, 0.95f))
-        w.number?.let { box.addView(text("Номер: $it", 13f, alpha = 0.85f)) }
-        w.reasons.take(4).forEach { box.addView(text("• $it", 14f)) }
-        w.advice.take(2).forEach { box.addView(text("→ $it", 14f, bold = true)) }
-        // Buttons share the width equally so that "Понятно" is always visible, even on narrow screens
-        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(ctx, 10f), 0, 0) }
-        fun button(label: String, strong: Boolean = false, onClick: () -> Unit) = Button(ctx).apply {
-            text = label; setTextColor(if (strong) bg else Color.WHITE); isAllCaps = false; textSize = 13f; maxLines = 2
-            background = GradientDrawable().apply { setColor(if (strong) Color.WHITE else 0x33FFFFFF); cornerRadius = dp(ctx, 12f).toFloat() }
-            setPadding(dp(ctx, 4f), 0, dp(ctx, 4f), 0); minWidth = 0; minimumWidth = 0
+
+        // header: pulsing icon + label + headline
+        val header = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val iconSize = dp(ctx, 52f)
+        val iconBox = FrameLayout(ctx)
+        val ring = View(ctx).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setStroke(dp(ctx, 2f), c) } }
+        val disc = TextView(ctx).apply {
+            text = if (w.level == RiskLevel.LOW) "i" else "!"; gravity = Gravity.CENTER; setTextColor(c); textSize = 24f
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(alpha(c, 0.16f)); setStroke(dp(ctx, 1f), alpha(c, 0.5f)) }
+        }
+        iconBox.addView(ring, FrameLayout.LayoutParams(iconSize, iconSize))
+        iconBox.addView(disc, FrameLayout.LayoutParams(iconSize, iconSize))
+        header.addView(iconBox, LinearLayout.LayoutParams(iconSize, iconSize))
+        val titles = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 14f), 0, 0, 0) }
+        val label = when (w.level) { RiskLevel.HIGH -> "⚠ ВНИМАНИЕ · ВЫСОКИЙ РИСК"; RiskLevel.MEDIUM -> "ОСТОРОЖНО · СРЕДНИЙ РИСК"; RiskLevel.LOW -> "NEUROSHIELD · ИНФО" }
+        titles.addView(tv(if (w.isTest) "ТЕСТ · $label" else label, 11f, c, bold = true, lines = 1, spacing = 0.08f))
+        val headlineText = when (w.level) { RiskLevel.HIGH -> "Возможно, мошенник!"; RiskLevel.MEDIUM -> "Есть признаки обмана"; RiskLevel.LOW -> "Незнакомый номер" }
+        titles.addView(tv(headlineText, 22f, TEXT, bold = true, lines = 1))
+        header.addView(titles, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        card.addView(header)
+
+        // danger meter: 3 neon segments + score
+        val meter = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(ctx, 14f), 0, dp(ctx, 12f)) }
+        val segs = (0 until 3).map { i ->
+            View(ctx).apply {
+                background = GradientDrawable().apply { setColor(if (i <= w.level.ordinal) c else alpha(c, 0.16f)); cornerRadius = dp(ctx, 3f).toFloat() }
+                scaleX = 0f; pivotX = 0f
+            }
+        }
+        segs.forEachIndexed { i, v -> meter.addView(v, LinearLayout.LayoutParams(0, dp(ctx, 6f), 1f).apply { if (i > 0) marginStart = dp(ctx, 5f) }) }
+        if (w.score > 0) meter.addView(tv("  ${w.score.toInt()}/100", 13f, c, bold = true, lines = 1))
+        card.addView(meter)
+
+        // why (one line) + what to do (one action)
+        card.addView(tv(w.title, 15.5f, TEXT, bold = true, lines = 2))
+        w.number?.takeIf { it.any(Char::isDigit) }?.let { card.addView(tv(it, 13f, MUTED, lines = 1).apply { setPadding(0, dp(ctx, 2f), 0, 0) }) }
+        val action = w.advice.firstOrNull() ?: w.reasons.firstOrNull()
+        if (action != null) {
+            val box = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(ctx, 12f), dp(ctx, 10f), dp(ctx, 12f), dp(ctx, 10f))
+                background = GradientDrawable().apply { setColor(SURFACE); cornerRadius = dp(ctx, 14f).toFloat() }
+            }
+            box.addView(tv("→", 16f, CYAN, bold = true, lines = 1).apply { setPadding(0, 0, dp(ctx, 10f), 0) })
+            box.addView(tv(action, 14f, TEXT2, lines = 3), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            card.addView(box, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 12f) })
+        }
+
+        // actions
+        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(ctx, 14f), 0, 0) }
+        fun button(text: String, primary: Boolean, onClick: () -> Unit) = Button(ctx).apply {
+            this.text = text; isAllCaps = false; textSize = 14f; maxLines = 1; stateListAnimator = null
+            setTextColor(if (primary) 0xFF07080A.toInt() else TEXT)
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+            background = GradientDrawable().apply {
+                cornerRadius = dp(ctx, 14f).toFloat()
+                if (primary) setColor(c) else { setColor(0x00000000); setStroke(dp(ctx, 1f), 0xFF2F3644.toInt()) }
+            }
+            setPadding(dp(ctx, 6f), 0, dp(ctx, 6f), 0); minWidth = 0; minimumWidth = 0
             setOnClickListener { onClick() }
         }
-        val actions = mutableListOf<Button>()
-        if (w.offerListening) actions += button("Слушать звонок") { removeView(view); view = null; openListen(ctx) }
-        actions += button("Подробнее") { removeView(view); view = null; openApp(ctx, "history") }
-        actions += button("Понятно", strong = true) { removeView(view); view = null }
-        actions.forEachIndexed { i, b ->
-            row.addView(b, LinearLayout.LayoutParams(0, dp(ctx, 46f), 1f).apply { if (i > 0) marginStart = dp(ctx, 8f) })
-        }
-        box.addView(row)
-        val wrap = LinearLayout(ctx).apply { setPadding(dp(ctx, 10f), 0, dp(ctx, 10f), 0); addView(box) }
+        val buttons = mutableListOf<Button>()
+        if (w.offerListening) buttons += button("Слушать", false) { dismiss(view); view = null; openListen(ctx) }
+        buttons += button("Подробнее", false) { dismiss(view); view = null; openApp(ctx, "history", alertId) }
+        buttons += button("Понятно", true) { dismiss(view); view = null }
+        buttons.forEachIndexed { i, b -> row.addView(b, LinearLayout.LayoutParams(0, dp(ctx, 46f), 1f).apply { if (i > 0) marginStart = dp(ctx, 10f) }) }
+        card.addView(row)
+
+        val wrap = FrameLayout(ctx).apply { setPadding(dp(ctx, 14f), 0, dp(ctx, 14f), 0); addView(card) }
         try {
             (ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager).addView(wrap, params(ctx, false))
             view = wrap
-        } catch (e: Exception) { notify(ctx, w) }
-        if (w.level == RiskLevel.LOW && !w.isTest) main.postDelayed({ if (view === wrap) { removeView(wrap); view = null } }, 12_000)
+        } catch (e: Exception) { notify(ctx, w, alertId); return }
+
+        // entrance: drop in with a soft overshoot, segments fill one by one, the icon ring keeps pulsing
+        card.alpha = 0f; card.translationY = -dp(ctx, 36f).toFloat(); card.scaleX = 0.94f; card.scaleY = 0.94f
+        card.animate().alpha(1f).translationY(0f).scaleX(1f).scaleY(1f).setDuration(420)
+            .setInterpolator(android.view.animation.OvershootInterpolator(1.1f)).start()
+        segs.forEachIndexed { i, v -> v.animate().scaleX(1f).setStartDelay(250L + i * 110L).setDuration(260).start() }
+        if (w.level != RiskLevel.LOW) {
+            android.animation.ObjectAnimator.ofPropertyValuesHolder(ring,
+                android.animation.PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.45f),
+                android.animation.PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.45f),
+                android.animation.PropertyValuesHolder.ofFloat(View.ALPHA, 0.9f, 0f)).apply {
+                duration = 1300; repeatCount = android.animation.ValueAnimator.INFINITE; start()
+            }
+        } else ring.alpha = 0f
+        if (w.level == RiskLevel.LOW && !w.isTest) main.postDelayed({ if (view === wrap) { dismiss(wrap); view = null } }, 12_000)
     }
 
     /** Small chip during a call with an unknown number: one tap opens the app and starts speech analysis. */
@@ -138,8 +221,8 @@ object Warnings {
         if (!Perms.overlay(ctx) || offerView != null) return@post
         val c = ctx.applicationContext
         val b = Button(c).apply {
-            text = "🛡 NeuroShield: проверить звонок (громкая связь)"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
-            background = GradientDrawable().apply { setColor(0xEE0B1016.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 2f), 0xFF2CC5B0.toInt()) }
+            text = "◉  Проверить звонок · NeuroShield"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
+            background = GradientDrawable().apply { setColor(0xF20F1115.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 1.5f), 0xFF22D3EE.toInt()) }
             setPadding(dp(c, 16f), 0, dp(c, 16f), 0)
             setOnClickListener { hideListenOffer(); openListen(c) }
         }
@@ -159,8 +242,8 @@ object Warnings {
         if (!Perms.overlay(ctx) || videoOfferView != null) return@post
         val c = ctx.applicationContext
         val b = Button(c).apply {
-            text = "🛡 NeuroShield: проверить видео (30 с)"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
-            background = GradientDrawable().apply { setColor(0xEE0B1016.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 2f), 0xFF2CC5B0.toInt()) }
+            text = "◉  Проверить видео · 30 с"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
+            background = GradientDrawable().apply { setColor(0xF20F1115.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 1.5f), 0xFF22D3EE.toInt()) }
             setPadding(dp(c, 16f), 0, dp(c, 16f), 0)
             setOnClickListener { hideVideoOffer(); openVideoCheck(c) }
         }
@@ -188,10 +271,11 @@ object Warnings {
         })
     }
 
-    fun openApp(ctx: Context, route: String) {
+    fun openApp(ctx: Context, route: String, alertId: Long = -1L) {
         ctx.startActivity(Intent(ctx, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_ROUTE, route)
+            if (alertId > 0) putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         })
     }
 
@@ -200,10 +284,11 @@ object Warnings {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_START_LISTEN, true)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
-    private fun notify(ctx: Context, w: Warning) {
+    private fun notify(ctx: Context, w: Warning, alertId: Long = -1L) {
         if (!Perms.notifications(ctx)) return
         val open = PendingIntent.getActivity(ctx, 3, Intent(ctx, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_ROUTE, "history")
+            if (alertId > 0) putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val body = (listOf("${w.level.ru} · ${w.title}") + w.reasons.take(4).map { "• $it" } + w.advice.take(2).map { "→ $it" }).joinToString("\n")
         val n = NotificationCompat.Builder(ctx, NeuroShieldApp.CH_ALERTS)

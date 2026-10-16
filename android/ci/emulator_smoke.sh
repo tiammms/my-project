@@ -44,6 +44,10 @@ if [ -f face.jpg ]; then
   sleep 34; shot 13-video-check-result 4
   adb shell am start -n $P/.MainActivity --es route protection; shot 14-video-check-in-app 4
 fi
+# redesigned screens with real data in them
+adb shell am start -n $P/.MainActivity --es route home; shot 15-home-with-threats 4
+adb shell am start -n $P/.MainActivity --el alert_id 2; shot 16-threat-detail 4
+adb shell am start -n $P/.MainActivity --es route history; shot 17-threats 3
 adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true
