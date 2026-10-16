@@ -99,7 +99,10 @@ object CallTracker {
             p.callNumber = n; p.callIsContact = Contacts.contains(ctx, n)
         }
         Warnings.hide()
-        if (!p.callIsContact && p.offerListening) {
+        if (!p.callIsContact && p.autoListen && ai.neuroshield.app.Perms.overlay(ctx)) {
+            // automatic mode: open the app for a moment (allowed with the overlay permission), start listening, go back to the call
+            Warnings.openListen(ctx, auto = true)
+        } else if (!p.callIsContact && p.offerListening) {
             Warnings.showListenOffer(ctx)
             Warnings.notifyListenOffer(ctx, p.callNumber)
         }

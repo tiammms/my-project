@@ -185,3 +185,30 @@ class MessengerTest {
         assertEquals(RiskLevel.LOW, CallRisk.assess(CallFacts("+77011234567", false, "+7", 1, false, false, messenger = "WhatsApp")).level)
     }
 }
+
+class VideoCallCheckTest {
+    private fun frames(seconds: Int, f: (Int) -> ScreenFace) = (0 until seconds * 3).map { f(it) }
+    private fun face(i: Int, yaw: Float = 0f, eyes: Float? = 0.9f, cx: Float = 0.5f, faces: Int = 1, area: Float = 0.15f) =
+        ScreenFace(i * 333L, faces, area, cx, 0.4f, yaw, eyes, eyes)
+
+    @Test fun photoInsteadOfPersonIsHigh() {
+        val v = VideoCallCheck.evaluate(frames(25) { face(it) })
+        assertEquals(RiskLevel.HIGH, v.level); assertEquals(0, v.blinks)
+    }
+    @Test fun livePersonIsLow() {
+        val v = VideoCallCheck.evaluate(frames(25) { i ->
+            face(i, yaw = (8 * kotlin.math.sin(i / 4.0)).toFloat(), eyes = if (i % 12 == 6) 0.1f else 0.9f, cx = 0.5f + 0.02f * kotlin.math.sin(i / 7.0).toFloat())
+        })
+        assertEquals(RiskLevel.LOW, v.level); assertTrue(v.blinks >= 5); assertTrue(v.conclusive)
+    }
+    @Test fun noFaceShownIsMedium() {
+        assertEquals(RiskLevel.MEDIUM, VideoCallCheck.evaluate(frames(20) { face(it, faces = 0) }).level)
+        // only the small self-view thumbnail visible
+        assertEquals(RiskLevel.MEDIUM, VideoCallCheck.evaluate(frames(20) { face(it, area = 0.01f) }).level)
+    }
+    @Test fun tooShortIsInconclusive() = assertFalse(VideoCallCheck.evaluate(frames(5) { face(it) }).conclusive)
+    @Test fun eyesNotMeasurableIsNotAccusing() {
+        val v = VideoCallCheck.evaluate(frames(25) { face(it, yaw = (6 * kotlin.math.sin(it / 3.0)).toFloat(), eyes = null) })
+        assertEquals(RiskLevel.LOW, v.level)
+    }
+}

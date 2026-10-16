@@ -152,10 +152,39 @@ object Warnings {
 
     fun hideListenOffer() = main.post { removeView(offerView); offerView = null }
 
-    fun openListen(ctx: Context) {
+    private var videoOfferView: View? = null
+
+    /** Chip during a messenger video call: one tap starts the 30-second check of the caller's face on screen. */
+    fun showVideoOffer(ctx: Context) = main.post {
+        if (!Perms.overlay(ctx) || videoOfferView != null) return@post
+        val c = ctx.applicationContext
+        val b = Button(c).apply {
+            text = "🛡 NeuroShield: проверить видео (30 с)"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
+            background = GradientDrawable().apply { setColor(0xEE0B1016.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 2f), 0xFF2CC5B0.toInt()) }
+            setPadding(dp(c, 16f), 0, dp(c, 16f), 0)
+            setOnClickListener { hideVideoOffer(); openVideoCheck(c) }
+        }
+        val p = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, dp(c, 48f),
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT).apply { gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL; y = dp(c, 210f) }
+        try { (c.getSystemService(Context.WINDOW_SERVICE) as WindowManager).addView(b, p); videoOfferView = b } catch (_: Exception) {}
+    }
+
+    fun hideVideoOffer() = main.post { removeView(videoOfferView); videoOfferView = null }
+
+    fun openVideoCheck(ctx: Context) {
+        ctx.startActivity(Intent(ctx, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(MainActivity.EXTRA_START_VIDEO, true)
+        })
+    }
+
+    fun openListen(ctx: Context, auto: Boolean = false) {
         ctx.startActivity(Intent(ctx, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_START_LISTEN, true)
+            putExtra(MainActivity.EXTRA_AUTO, auto)
         })
     }
 

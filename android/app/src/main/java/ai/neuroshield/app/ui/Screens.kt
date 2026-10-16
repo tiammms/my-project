@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -75,6 +76,7 @@ import ai.neuroshield.app.data.Alert
 import ai.neuroshield.app.listen.ListenService
 import ai.neuroshield.app.listen.ListenState
 import ai.neuroshield.app.listen.SpeechModels
+import ai.neuroshield.app.video.VideoState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -157,6 +159,8 @@ fun HomeScreen(go: (String) -> Unit) {
             HorizontalDivider(color = NS.border)
             ActionRow(Icons.Filled.Face, "Проверка лица (живой человек)", "Повороты головы и моргание, модель ML Kit на телефоне") { go("face") }
             HorizontalDivider(color = NS.border)
+            ActionRow(Icons.Filled.Videocam, "Проверить видеозвонок", "Во время видеозвонка: не фото ли вместо живого человека") { go("video") }
+            HorizontalDivider(color = NS.border)
             ActionRow(Icons.Filled.Warning, "Показать пример предупреждения", "Тест окна поверх других приложений. В историю не попадает") {
                 Warnings.show(ctx, Warning(RiskLevel.HIGH, "Пример: просят продиктовать код из SMS",
                     listOf("Звонящий представился службой безопасности банка", "Просит назвать код из SMS"),
@@ -170,7 +174,8 @@ fun HomeScreen(go: (String) -> Unit) {
         SectionCard("Как работает защита", "Честно о возможностях Android") {
             Bullet("До ответа: оценивает номер (нет в контактах, скрытый, международный, звонит много раз, вы отмечали его).")
             Bullet("Во время звонка: если пришёл код из SMS, а вы говорите с незнакомым номером, сразу показывает большое предупреждение.")
-            Bullet("WhatsApp, Telegram, Viber: по уведомлению видит звонок с незнакомого номера и оценивает его (иностранный номер, частые звонки, этот номер раньше писал подозрительное). Подозрительные сообщения тоже проверяются.")
+            Bullet("Видеозвонок: по кнопке 30 секунд смотрит на лицо собеседника на экране — замечает фото или запись вместо человека и звонки, где лицо не показывают.")
+            Bullet("WhatsApp, Telegram, Viber и другие мессенджеры: по уведомлению видит звонок с незнакомого номера и оценивает его (иностранный номер, частые звонки, этот номер раньше писал подозрительное). Подозрительные сообщения тоже проверяются.")
             Bullet("Речь собеседника: Android запрещает приложениям записывать звук звонка. Работает только через громкую связь и микрофон, и не на всех телефонах — приложение сообщит, если звука нет.")
             Bullet("Распознавание речи и анализ работают на телефоне, без интернета. По звучанию голоса никого мошенником не называем — оцениваются слова.")
         }
@@ -210,7 +215,7 @@ fun AlertRow(a: Alert, onClick: () -> Unit) {
 
 // =========================================================================== PROTECTION
 @Composable
-fun ProtectionScreen(onListen: () -> Unit) {
+fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
     val ctx = LocalContext.current
     val tick = rememberResumeTick()
     var refresh by remember { mutableIntStateOf(0) }
@@ -220,6 +225,7 @@ fun ProtectionScreen(onListen: () -> Unit) {
     val scope = rememberCoroutineScope()
     val models by SpeechModels.status.collectAsState()
     val ui by ListenState.ui.collectAsState()
+    val vui by VideoState.ui.collectAsState()
     var lang by remember { mutableStateOf(ctx.app.prefs.speechLang) }
 
     fun request(vararg p: String) = perms.launch(p.toList().toTypedArray())
@@ -278,6 +284,21 @@ fun ProtectionScreen(onListen: () -> Unit) {
                 }
                 SpeechModels.Status.Missing -> Button(onClick = { SpeechModels.download(ctx, scope, lang) }) { Text("Скачать модель (${m.sizeMb} МБ)") }
             }
+        }
+
+        SectionCard("Проверка видеозвонка", "Во время видеозвонка: 30 секунд смотрит на лицо собеседника на экране") {
+            if (vui.running) {
+                Text("Идёт проверка: ${vui.seconds} из 30 с · кадров с лицом ${vui.faceFrames} из ${vui.frames}", color = NS.text2)
+                LinearProgressIndicator(progress = { vui.seconds / 30f }, modifier = Modifier.fillMaxWidth(), color = NS.teal, trackColor = NS.surface2)
+            } else Button(onClick = onVideo, modifier = Modifier.fillMaxWidth()) { Text("Проверить видео на экране (30 с)") }
+            vui.message?.let { Text(it, color = NS.text2, fontSize = 13.sp) }
+            vui.result?.let { v ->
+                Verdict(v.level, v.title, "Морганий: ${v.blinks} · лицо видно ${(v.facePresentRatio * 100).toInt()}% времени · ${v.seconds.toInt()} с")
+                v.reasons.forEach { Bullet(it) }
+                v.advice.forEach { Text("→ $it", color = NS.teal, fontSize = 13.sp) }
+            }
+            Text("Android попросит разрешение на запись экрана — это нужно, чтобы видеть картинку звонка. Кадры анализируются на телефоне " +
+                "и не сохраняются. Звук звонка так получить нельзя. Дипфейки и личность человека проверка не определяет.", color = NS.muted, fontSize = 12.sp)
         }
 
         SectionCard("Анализ речи во время звонка", "Включите громкую связь — микрофон должен слышать собеседника") {
@@ -382,6 +403,7 @@ fun SettingsScreen() {
     var code by remember { mutableStateOf(p.homeCallingCode) }
     var warnUnknown by remember { mutableStateOf(p.warnUnknownCallers) }
     var offer by remember { mutableStateOf(p.offerListening) }
+    var auto by remember { mutableStateOf(p.autoListen) }
     var excerpts by remember { mutableStateOf(p.storeExcerpts) }
     var marks by remember { mutableIntStateOf(0) }
     Page("Настройки") {
@@ -390,6 +412,7 @@ fun SettingsScreen() {
                 label = { Text("Код вашей страны") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
             Toggle("Предупреждать о любом незнакомом номере", "Небольшое окно с советом при каждом звонке не из контактов", warnUnknown) { warnUnknown = it; p.warnUnknownCallers = it }
             Toggle("Предлагать анализ речи во время звонка", "Кнопка «Проверить звонок» при разговоре с незнакомым номером", offer) { offer = it; p.offerListening = it }
+            Toggle("Автоматически включать анализ речи", "При ответе на незнакомый номер приложение само начнёт слушать (нужна громкая связь)", auto) { auto = it; p.autoListen = it }
         }
         SectionCard("Конфиденциальность") {
             Toggle("Сохранять фрагменты разговоров в истории", "По умолчанию выключено: хранятся только причины предупреждения", excerpts) { excerpts = it; p.storeExcerpts = it }

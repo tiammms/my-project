@@ -4,7 +4,7 @@ package ai.neuroshield.app.core
 sealed interface MessengerEvent {
     val app: String
     data class IncomingCall(override val app: String, val caller: String, val number: String?, val video: Boolean) : MessengerEvent
-    data class OngoingCall(override val app: String, val caller: String, val number: String?) : MessengerEvent
+    data class OngoingCall(override val app: String, val caller: String, val number: String?, val video: Boolean = false) : MessengerEvent
     data class Message(override val app: String, val sender: String, val number: String?, val text: String) : MessengerEvent
 }
 
@@ -13,6 +13,9 @@ object Messenger {
         "com.whatsapp" to "WhatsApp", "com.whatsapp.w4b" to "WhatsApp Business",
         "org.telegram.messenger" to "Telegram", "org.telegram.messenger.web" to "Telegram",
         "com.viber.voip" to "Viber", "com.imo.android.imoim" to "imo",
+        "org.thoughtcrime.securesms" to "Signal", "com.instagram.android" to "Instagram", "com.facebook.orca" to "Messenger",
+        "com.skype.raider" to "Skype", "com.discord" to "Discord", "jp.naver.line.android" to "LINE",
+        "com.google.android.apps.tachyon" to "Google Meet", "com.microsoft.teams" to "Teams", "kik.android" to "Kik",
         "com.android.shell" to "WhatsApp (тест через ADB)",
     )
 
@@ -35,7 +38,7 @@ object Messenger {
         if (tt.isEmpty() && body.isEmpty()) return null
         val number = phoneFromTitle(tt)
         return when {
-            ongoingCall.containsMatchIn(body) -> MessengerEvent.OngoingCall(app, tt, number)
+            ongoingCall.containsMatchIn(body) -> MessengerEvent.OngoingCall(app, tt, number, videoRx.containsMatchIn(body))
             incomingCall.containsMatchIn(body) || (isCallCategory && !ongoingCall.containsMatchIn(body)) ->
                 MessengerEvent.IncomingCall(app, tt, number, videoRx.containsMatchIn(body))
             body.isNotEmpty() -> MessengerEvent.Message(app, tt, number, body)

@@ -38,7 +38,9 @@ class MessengerListener : NotificationListenerService() {
                 val wasActive = p.voipActive && activeKey == sbn.key
                 p.voipActive = true; p.voipApp = event.app; p.voipNumber = event.number ?: event.caller; p.voipIsContact = contact
                 activeKey = sbn.key
-                if (!contact && !wasActive && p.offerListening) Warnings.showListenOffer(this)
+                if (!contact && !wasActive) {
+                    if (event.video) Warnings.showVideoOffer(this) else if (p.offerListening) Warnings.showListenOffer(this)
+                }
             }
             is MessengerEvent.Message -> onMessage(event)
         }
@@ -49,7 +51,7 @@ class MessengerListener : NotificationListenerService() {
             val p = app.prefs
             if (sbn.key == activeKey) {
                 p.voipActive = false; p.voipEndedAt = System.currentTimeMillis(); activeKey = null
-                Warnings.hideListenOffer()
+                Warnings.hideListenOffer(); Warnings.hideVideoOffer()
             }
             if (sbn.key == ringingKey) ringingKey = null
         }

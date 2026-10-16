@@ -31,6 +31,19 @@ adb shell cmd notification post -S bigtext -t "+447911123456" ns_msg "'This is t
 adb shell cmd notification post -t "+447911123456" ns_call "'Incoming voice call'"; shot 09-messenger-call-after-message 6
 adb shell cmd notification cancel ns_call || true
 adb shell cmd notification post -t "+15551230000" ns_video "'Incoming video call'"; shot 10-messenger-video-call 6
+# video-call check: a still photo on screen must be flagged as "photo instead of a live person"
+if [ -f face.jpg ]; then
+  adb push face.jpg /sdcard/Pictures/face.jpg
+  adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/face.jpg; sleep 4
+  id=$(adb shell content query --uri content://media/external/images/media --projection _id | grep -o '_id=[0-9]*' | tail -1 | cut -d= -f2)
+  if [ -n "$id" ]; then adb shell am start -a android.intent.action.VIEW -d content://media/external/images/media/$id -t image/jpeg
+  else adb shell am start -a android.intent.action.VIEW -d file:///sdcard/Pictures/face.jpg -t image/jpeg; fi
+  shot 11-photo-on-screen 5
+  adb shell appops set $P PROJECT_MEDIA allow
+  adb shell am start -n $P/.MainActivity --ez start_video true; shot 12-video-check-running 6
+  sleep 34; shot 13-video-check-result 4
+  adb shell am start -n $P/.MainActivity --es route protection; shot 14-video-check-in-app 4
+fi
 adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true

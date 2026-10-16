@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import ai.neuroshield.app.listen.ListenService
 import ai.neuroshield.app.listen.ListenState
 import ai.neuroshield.app.listen.SpeechModels
+import ai.neuroshield.app.video.VideoCheckService
+import ai.neuroshield.app.video.VideoState
 import ai.neuroshield.app.ui.FaceScreen
 import ai.neuroshield.app.ui.HistoryScreen
 import ai.neuroshield.app.ui.HomeScreen
@@ -36,6 +38,18 @@ import ai.neuroshield.app.ui.TextCheckScreen
 
 class MainActivity : ComponentActivity() {
     private val route = mutableStateOf("home")
+    private val capture = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
+        val data = r.data
+        if (r.resultCode == RESULT_OK && data != null) {
+            VideoCheckService.start(this, r.resultCode, data)
+            moveTaskToBack(true)       // back to the video call; the result pops up on top of it
+        } else VideoState.ui.value = VideoState.ui.value.copy(running = false, message = "Запись экрана не разрешена — проверка видео отменена")
+    }
+
+    fun startVideoCheck() {
+        val mpm = getSystemService(android.media.projection.MediaProjectionManager::class.java)
+        capture.launch(mpm.createScreenCaptureIntent())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,8 +69,10 @@ class MainActivity : ComponentActivity() {
         if (i.getBooleanExtra(EXTRA_START_LISTEN, false)) {
             route.value = "protection"
             startListening()
+            if (i.getBooleanExtra(EXTRA_AUTO, false) && ListenState.ui.value.message?.startsWith("Скачайте") != true) moveTaskToBack(true)
         }
-        i.removeExtra(EXTRA_START_LISTEN); i.removeExtra(EXTRA_ROUTE)
+        if (i.getBooleanExtra(EXTRA_START_VIDEO, false)) { route.value = "protection"; startVideoCheck() }
+        i.removeExtra(EXTRA_START_LISTEN); i.removeExtra(EXTRA_ROUTE); i.removeExtra(EXTRA_START_VIDEO); i.removeExtra(EXTRA_AUTO)
     }
 
     /** Started from the activity (app in the foreground), as Android requires for a microphone service. */
@@ -89,12 +105,12 @@ class MainActivity : ComponentActivity() {
         ) { pad ->
             Box(Modifier.padding(pad)) {
                 when (r) {
-                    "protection" -> ProtectionScreen(onListen = { startListening() })
+                    "protection" -> ProtectionScreen(onListen = { startListening() }, onVideo = { startVideoCheck() })
                     "history" -> HistoryScreen()
                     "settings" -> SettingsScreen()
                     "text" -> TextCheckScreen(onBack = { route.value = "home" })
                     "face" -> FaceScreen(onBack = { route.value = "home" })
-                    else -> HomeScreen(go = { route.value = it })
+                    else -> HomeScreen(go = { if (it == "video") { route.value = "protection"; startVideoCheck() } else route.value = it })
                 }
             }
         }
@@ -103,5 +119,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_ROUTE = "route"
         const val EXTRA_START_LISTEN = "start_listen"
+        const val EXTRA_START_VIDEO = "start_video"
+        const val EXTRA_AUTO = "auto"
     }
 }

@@ -25,6 +25,9 @@ class Prefs(ctx: Context) {
     var offerListening: Boolean
         get() = p.getBoolean("offer_listen", true)
         set(v) = p.edit().putBoolean("offer_listen", v).apply()
+    var autoListen: Boolean
+        get() = p.getBoolean("auto_listen", false)
+        set(v) = p.edit().putBoolean("auto_listen", v).apply()
     var storeExcerpts: Boolean
         get() = p.getBoolean("store_excerpts", false)
         set(v) = p.edit().putBoolean("store_excerpts", v).apply()
@@ -126,7 +129,7 @@ data class Alert(
     val sourceRu: String get() = when (source) {
         "incoming_call" -> "Входящий звонок"; "sms_code" -> "SMS с кодом во время звонка"; "sms_text" -> "Подозрительное SMS"
         "live_speech" -> "Речь во время звонка"; "manual_text" -> "Проверка текста"; "face" -> "Проверка лица"
-        "messenger_call" -> "Звонок в мессенджере"; "messenger_text" -> "Сообщение в мессенджере"; else -> source
+        "messenger_call" -> "Звонок в мессенджере"; "video_call" -> "Проверка видеозвонка"; "messenger_text" -> "Сообщение в мессенджере"; else -> source
     }
 }
 

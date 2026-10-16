@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <!-- Only for the one-time download of the offline speech model -->
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -87,5 +88,11 @@
             android:name=".listen.ListenService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+
+        <!-- Video-call check: looks at the screen (user confirms screen capture each time) -->
+        <service
+            android:name=".video.VideoCheckService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
     </application>
 </manifest>
