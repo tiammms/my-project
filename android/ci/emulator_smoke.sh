@@ -24,6 +24,11 @@ adb emu sms send 1414 "Kod podtverzhdeniya 482913. Nikomu ne soobshchayte"; shot
 adb emu gsm cancel 87015550123; sleep 3
 adb shell am start -n $P/.MainActivity --es route history; shot 06-history-after-call 5
 adb shell am start -n $P/.MainActivity --ez start_listen true; shot 07-listen-without-model 5
+# messenger protection: notifications posted from the shell stand in for WhatsApp (the app labels them as an ADB test)
+adb shell cmd notification allow_listener $P/$P.notify.MessengerListener
+adb shell input keyevent KEYCODE_HOME; sleep 3
+adb shell cmd notification post -S bigtext -t "+447911123456" ns_msg "'This is the bank security team, read me the verification code right now'"; shot 08-messenger-scam-message 6
+adb shell cmd notification post -t "+447911123456" ns_call "'Incoming voice call'"; shot 09-messenger-call-after-message 6
 adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true

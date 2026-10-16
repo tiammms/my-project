@@ -119,6 +119,7 @@ fun protectionItems(ctx: Context): List<ProtectionItem> {
         ProtectionItem("Окно поверх экрана звонка", "Показать «⚠️ ВНИМАНИЕ!» прямо во время звонка", Perms.overlay(ctx)),
         ProtectionItem("Уведомления", "Предупреждения и кнопка «Слушать звонок»", Perms.notifications(ctx)),
         ProtectionItem("Анализ речи", "Микрофон + офлайн-модель распознавания", Perms.mic(ctx) && model),
+        ProtectionItem("WhatsApp, Telegram, Viber", "Доступ к уведомлениям: видеть звонки и сообщения в мессенджерах", Perms.notificationAccess(ctx)),
     )
 }
 
@@ -169,6 +170,7 @@ fun HomeScreen(go: (String) -> Unit) {
         SectionCard("Как работает защита", "Честно о возможностях Android") {
             Bullet("До ответа: оценивает номер (нет в контактах, скрытый, международный, звонит много раз, вы отмечали его).")
             Bullet("Во время звонка: если пришёл код из SMS, а вы говорите с незнакомым номером, сразу показывает большое предупреждение.")
+            Bullet("WhatsApp, Telegram, Viber: по уведомлению видит звонок с незнакомого номера и оценивает его (иностранный номер, частые звонки, этот номер раньше писал подозрительное). Подозрительные сообщения тоже проверяются.")
             Bullet("Речь собеседника: Android запрещает приложениям записывать звук звонка. Работает только через громкую связь и микрофон, и не на всех телефонах — приложение сообщит, если звука нет.")
             Bullet("Распознавание речи и анализ работают на телефоне, без интернета. По звучанию голоса никого мошенником не называем — оцениваются слова.")
         }
@@ -232,6 +234,7 @@ fun ProtectionScreen(onListen: () -> Unit) {
             4 -> ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${ctx.packageName}")))
             5 -> if (android.os.Build.VERSION.SDK_INT >= 33) request(Manifest.permission.POST_NOTIFICATIONS)
             6 -> request(Manifest.permission.RECORD_AUDIO)
+            7 -> ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
     }
 

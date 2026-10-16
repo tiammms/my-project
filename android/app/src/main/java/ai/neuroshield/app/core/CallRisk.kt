@@ -10,6 +10,9 @@ data class CallFacts(
     val callsFromNumberLastHour: Int,
     val userMarkedScam: Boolean,
     val userMarkedSafe: Boolean,
+    val messenger: String? = null,              // "WhatsApp", "Telegram"... for internet calls; null = cellular call
+    val priorMessageLevel: RiskLevel? = null,   // the same number recently sent a message rated MEDIUM/HIGH
+    val priorTactics: List<String> = emptyList(),
 )
 
 data class Reason(val text: String, val points: Int)
@@ -39,7 +42,16 @@ object CallRisk {
             else if (n.startsWith("00")) reasons += Reason("Международный номер ($n)", 25)
             if (f.callsFromNumberLastHour >= 3) reasons += Reason("Звонит уже ${f.callsFromNumberLastHour}-й раз за час", 20)
             val local = n.removePrefix(f.homeCallingCode).removePrefix("+")
-            if (!f.inContacts && local.length in 3..6) reasons += Reason("Короткий номер: мошенники подделывают номера банков", 10)
+            if (!f.inContacts && local.length in 3..6 && f.messenger == null) reasons += Reason("Короткий номер: мошенники подделывают номера банков", 10)
+        }
+        if (f.messenger != null && !f.inContacts)
+            reasons += Reason("Звонок через ${f.messenger} с незнакомого номера: так обходят антиспам оператора", 15)
+        when (f.priorMessageLevel) {
+            RiskLevel.HIGH -> reasons += Reason("Этот номер недавно писал вам сообщение с признаками мошенничества" +
+                (if (f.priorTactics.isNotEmpty()) ": " + f.priorTactics.take(2).joinToString("; ").lowercase() else ""), 65)
+            RiskLevel.MEDIUM -> reasons += Reason("Этот номер недавно писал подозрительное сообщение" +
+                (if (f.priorTactics.isNotEmpty()) ": " + f.priorTactics.first().lowercase() else ""), 35)
+            else -> {}
         }
         val score = if (reasons.isEmpty()) 0.0 else 100 * (1 - reasons.fold(1.0) { a, r -> a * (1 - r.points / 100.0) })
         val s = if (f.userMarkedScam) max(score, 80.0) else score
@@ -47,6 +59,7 @@ object CallRisk {
         if (!f.inContacts) {
             advice += "Если звонящий представится банком или полицией — положите трубку и перезвоните сами по официальному номеру."
             advice += "Никому не называйте коды из SMS."
+            if (f.messenger != null) advice += "Банки и госорганы не звонят через ${f.messenger}."
         }
         return CallRiskResult(Math.round(s * 10) / 10.0, levelOf(s), reasons, advice)
     }

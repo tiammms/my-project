@@ -72,6 +72,17 @@
             </intent-filter>
         </receiver>
 
+        <!-- WhatsApp / Telegram / Viber calls and messages are only visible through their notifications -->
+        <service
+            android:name=".notify.MessengerListener"
+            android:exported="true"
+            android:label="NeuroShield: защита в мессенджерах"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".listen.ListenService"
             android:exported="false"

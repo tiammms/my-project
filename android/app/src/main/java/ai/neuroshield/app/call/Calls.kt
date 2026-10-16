@@ -52,6 +52,20 @@ object CallTracker {
         return p.callState == "OFFHOOK" || p.callState == "RINGING" || System.currentTimeMillis() - p.callEndedAt < withinMs
     }
 
+    data class RiskyCall(val number: String?, val active: Boolean, val channel: String)
+
+    /** A cellular or messenger call with someone not in contacts that is going on now or ended < 10 min ago. */
+    fun riskyCall(ctx: Context, withinMs: Long = 10 * 60_000): RiskyCall? {
+        val p = ctx.app.prefs
+        val now = System.currentTimeMillis()
+        val cellActive = p.callState == "OFFHOOK" || p.callState == "RINGING"
+        if ((cellActive || now - p.callEndedAt < withinMs) && !p.callIsContact)
+            return RiskyCall(p.callNumber, p.callState == "OFFHOOK", "звонок")
+        if ((p.voipActive || now - p.voipEndedAt < withinMs) && !p.voipIsContact)
+            return RiskyCall(p.voipNumber, p.voipActive, "звонок в ${p.voipApp ?: "мессенджере"}")
+        return null
+    }
+
     fun onIncoming(ctx: Context, number: String?, screened: Boolean) {
         val app = ctx.app
         val p = app.prefs

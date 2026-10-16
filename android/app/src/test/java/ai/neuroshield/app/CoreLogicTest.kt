@@ -151,3 +151,37 @@ class LiveMonitorTest {
         assertFalse(f2)
     }
 }
+
+class MessengerTest {
+    @Test fun whatsappIncomingCallFromUnknownNumber() {
+        val e = Messenger.parse("com.whatsapp", "+44 7911 123456", "Входящий голосовой звонок", true) as MessengerEvent.IncomingCall
+        assertEquals("+447911123456", e.number); assertFalse(e.video)
+        val v = Messenger.parse("com.whatsapp", "‪+1 (415) 555-0100‬", "Incoming video call", false) as MessengerEvent.IncomingCall
+        assertEquals("+14155550100", v.number); assertTrue(v.video)
+    }
+    @Test fun russianTextWithoutCallCategory() {
+        assertTrue(Messenger.parse("com.whatsapp", "+447911123456", "Входящий видеозвонок", false) is MessengerEvent.IncomingCall)
+        assertTrue(Messenger.parse("com.whatsapp", "+447911123456", "Текущий видеозвонок", false) is MessengerEvent.OngoingCall)
+    }
+    @Test fun contactNameHasNoNumber() {
+        val e = Messenger.parse("com.whatsapp", "Мама", "Входящий голосовой звонок", true) as MessengerEvent.IncomingCall
+        assertNull(e.number)
+    }
+    @Test fun ongoingCallAndMessages() {
+        assertTrue(Messenger.parse("com.whatsapp", "+447911123456", "Текущий голосовой звонок", true) is MessengerEvent.OngoingCall)
+        val m = Messenger.parse("org.telegram.messenger", "+77011234567", "Срочно продиктуйте код из смс", false) as MessengerEvent.Message
+        assertEquals("Telegram", m.app)
+    }
+    @Test fun otherAppsIgnored() = assertNull(Messenger.parse("com.example.game", "+447911123456", "Incoming call", true))
+
+    @Test fun messengerCallRisk() {
+        val base = CallFacts("+447911123456", false, "+7", 1, false, false, messenger = "WhatsApp")
+        assertEquals(RiskLevel.MEDIUM, CallRisk.assess(base).level)                               // foreign + via WhatsApp
+        val afterScamMessage = base.copy(priorMessageLevel = RiskLevel.HIGH, priorTactics = listOf("Просят код, пароль или данные карты"))
+        val r = CallRisk.assess(afterScamMessage)
+        assertEquals(RiskLevel.HIGH, r.level)
+        assertTrue(r.reasons.any { "писал" in it.text })
+        assertTrue(r.advice.any { "WhatsApp" in it })
+        assertEquals(RiskLevel.LOW, CallRisk.assess(CallFacts("+77011234567", false, "+7", 1, false, false, messenger = "WhatsApp")).level)
+    }
+}

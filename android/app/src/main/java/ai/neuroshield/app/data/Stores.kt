@@ -65,6 +65,41 @@ class Prefs(ctx: Context) {
         get() = p.getLong("call_started", 0L)
         set(v) = p.edit().putLong("call_started", v).apply()
 
+    // ---- internet call in a messenger (seen through its notification) ----
+    var voipActive: Boolean
+        get() = p.getBoolean("voip_active", false)
+        set(v) = p.edit().putBoolean("voip_active", v).apply()
+    var voipNumber: String?
+        get() = p.getString("voip_number", null)
+        set(v) = p.edit().putString("voip_number", v).apply()
+    var voipApp: String?
+        get() = p.getString("voip_app", null)
+        set(v) = p.edit().putString("voip_app", v).apply()
+    var voipIsContact: Boolean
+        get() = p.getBoolean("voip_contact", false)
+        set(v) = p.edit().putBoolean("voip_contact", v).apply()
+    var voipEndedAt: Long
+        get() = p.getLong("voip_ended", 0L)
+        set(v) = p.edit().putLong("voip_ended", v).apply()
+
+    /** Remember (24 h) that a number sent a suspicious message, so that a later call from it is rated higher. */
+    fun rememberSenderRisk(number: String, level: RiskLevel, tactics: List<String>, now: Long = System.currentTimeMillis()) {
+        val o = JSONObject(p.getString("sender_risk", "{}") ?: "{}")
+        val prev = o.optJSONObject(number)
+        if (prev != null && RiskLevel.valueOf(prev.getString("level")).ordinal > level.ordinal && now - prev.getLong("ts") < 86_400_000) return
+        o.put(number, JSONObject().put("level", level.name).put("ts", now).put("tactics", JSONArray(tactics)))
+        o.keys().asSequence().toList().filter { now - o.getJSONObject(it).getLong("ts") > 86_400_000 }.forEach { o.remove(it) }
+        p.edit().putString("sender_risk", o.toString()).apply()
+    }
+
+    fun senderRisk(number: String?, now: Long = System.currentTimeMillis()): Pair<RiskLevel, List<String>>? {
+        val n = CallRisk.normalizeNumber(number) ?: return null
+        val e = JSONObject(p.getString("sender_risk", "{}") ?: "{}").optJSONObject(n) ?: return null
+        if (now - e.getLong("ts") > 86_400_000) return null
+        val arr = e.getJSONArray("tactics")
+        return RiskLevel.valueOf(e.getString("level")) to (0 until arr.length()).map { arr.getString(it) }
+    }
+
     /** Registers a call from [number] and returns how many calls came from it within the last hour. */
     fun countRecentCall(number: String?, now: Long = System.currentTimeMillis()): Int {
         val n = CallRisk.normalizeNumber(number) ?: return 1
@@ -90,7 +125,8 @@ data class Alert(
 ) {
     val sourceRu: String get() = when (source) {
         "incoming_call" -> "Входящий звонок"; "sms_code" -> "SMS с кодом во время звонка"; "sms_text" -> "Подозрительное SMS"
-        "live_speech" -> "Речь во время звонка"; "manual_text" -> "Проверка текста"; "face" -> "Проверка лица"; else -> source
+        "live_speech" -> "Речь во время звонка"; "manual_text" -> "Проверка текста"; "face" -> "Проверка лица"
+        "messenger_call" -> "Звонок в мессенджере"; "messenger_text" -> "Сообщение в мессенджере"; else -> source
     }
 }
 

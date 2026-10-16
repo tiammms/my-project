@@ -9,6 +9,7 @@ import ai.neuroshield.app.alert.Warning
 import ai.neuroshield.app.alert.Warnings
 import ai.neuroshield.app.app
 import ai.neuroshield.app.call.CallTracker
+import ai.neuroshield.app.core.CallRisk
 import ai.neuroshield.app.core.RiskLevel
 import ai.neuroshield.app.core.ScamAnalyzer
 import ai.neuroshield.app.core.SmsCode
@@ -27,23 +28,24 @@ class SmsReceiver : BroadcastReceiver() {
         val body = msgs.joinToString("") { it.displayMessageBody ?: "" }
         val p = ctx.app.prefs
         val code = SmsCode.find(body)
-        val inRiskyCall = CallTracker.isCallActiveOrRecent(ctx) && !p.callIsContact
-        if (code != null && inRiskyCall) {
-            val active = p.callState == "OFFHOOK"
+        val call = CallTracker.riskyCall(ctx)
+        if (code != null && call != null) {
+            val active = call.active
             Warnings.show(ctx, Warning(
-                level = RiskLevel.HIGH, score = 90.0, source = "sms_code", number = p.callNumber ?: "номер неизвестен",
-                title = "Пришёл код из SMS " + (if (active) "во время разговора" else "сразу после разговора") + " с незнакомым номером",
+                level = RiskLevel.HIGH, score = 90.0, source = "sms_code", number = call.number ?: "номер неизвестен",
+                title = "Пришёл код из SMS " + (if (active) "во время" else "сразу после") + " (${call.channel}) с незнакомым номером",
                 reasons = listOf("Код ${code.masked} от «$sender»",
                     "Звонящего нет в ваших контактах",
                     "Так действуют мошенники: просят «продиктовать код для отмены операции»"),
                 advice = listOf("НЕ называйте этот код никому", "Положите трубку и позвоните в банк сами"),
-                offerListening = active,
+                offerListening = active && call.channel == "звонок",
             ))
             return
         }
         if (Contacts.contains(ctx, sender)) return
         val r = ScamAnalyzer.analyze(body)
         if (r.level != RiskLevel.LOW) {
+            CallRisk.normalizeNumber(sender)?.let { p.rememberSenderRisk(it, r.level, r.tactics.map { t -> t.title }) }
             Warnings.show(ctx, Warning(
                 level = r.level, score = r.score, source = "sms_text", number = sender,
                 title = "Подозрительное SMS от «$sender»",

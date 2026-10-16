@@ -57,6 +57,8 @@ object Perms {
     fun notifications(ctx: Context) =
         android.os.Build.VERSION.SDK_INT < 33 || granted(ctx, Manifest.permission.POST_NOTIFICATIONS)
     fun overlay(ctx: Context) = Settings.canDrawOverlays(ctx)
+    fun notificationAccess(ctx: Context) =
+        androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(ctx).contains(ctx.packageName)
     fun screeningRole(ctx: Context): Boolean {
         val rm = ctx.getSystemService(RoleManager::class.java) ?: return false
         return rm.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
