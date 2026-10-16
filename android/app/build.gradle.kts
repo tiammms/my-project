@@ -42,7 +42,10 @@ android {
             signingConfig = signingConfigs.getByName("demo")
         }
         release {
-            isMinifyEnabled = false
+            // R8 removes unused code (e.g. thousands of unused icons): the APK gets several times smaller
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("demo")
         }
     }
