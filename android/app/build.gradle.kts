@@ -14,7 +14,16 @@ android {
         targetSdk = 35
         versionCode = (System.getenv("NS_VERSION_CODE") ?: "1").toInt()
         versionName = "1.0." + (System.getenv("NS_VERSION_CODE") ?: "0")
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+    }
+
+    // One small APK per processor type (most phones: arm64-v8a) plus a universal APK that runs everywhere.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
+        }
     }
 
     signingConfigs {

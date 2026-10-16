@@ -79,13 +79,49 @@ jobs:
       - name: test summary
         if: always()
         run: python3 -c "import glob,re;x=''.join(open(f).read() for f in glob.glob('app/build/test-results/**/*.xml',recursive=True));print('::notice title=android tests::tests=%d failures=%d'%(sum(map(int,re.findall(r'tests=\"(\d+)\"',x))),sum(map(int,re.findall(r'failures=\"(\d+)\"',x)))))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: android/app/build/outputs/apk/release/*.apk
       - name: publish APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK=NeuroShieldAI-1.0.${{ github.run_number }}.apk
-          cp app/build/outputs/apk/release/app-release.apk "$APK"
+          V=1.0.${{ github.run_number }}
+          D=app/build/outputs/apk/release
+          cp $D/app-arm64-v8a-release.apk NeuroShieldAI-$V-arm64.apk
+          cp $D/app-universal-release.apk NeuroShieldAI-$V-universal.apk
+          cp $D/app-armeabi-v7a-release.apk NeuroShieldAI-$V-armeabi-v7a.apk
           gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create android-latest "$APK" --title "NeuroShield AI для Android (сборка ${{ github.run_number }})" \
-            --notes "Установочный файл Android-приложения. Собран автоматически из коммита ${{ github.sha }}. Установка: скачайте APK на телефон и откройте его (разрешите установку из этого источника)." --latest
+          gh release create android-latest NeuroShieldAI-$V-*.apk --title "NeuroShield AI для Android (сборка ${{ github.run_number }})" \
+            --notes "Установочные файлы Android-приложения, собраны автоматически из коммита ${{ github.sha }}. Для большинства телефонов: файл -arm64.apk. Если не устанавливается — -universal.apk (подходит всем, но больше). Старые телефоны (32-бит): -armeabi-v7a.apk. Установка: скачайте APK на телефон, откройте и разрешите установку из этого источника." --latest
+  android-emulator:
+    runs-on: ubuntu-latest
+    needs: [android]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: apk, path: android/app-apk }
+      - name: enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          working-directory: android
+          script: ./ci/emulator_smoke.sh
+      - name: report
+        if: always()
+        working-directory: android
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -c "t=open('shots/crash.txt').read() if __import__('os').path.exists('shots/crash.txt') else 'no crash.txt';print('::notice title=emulator::'+t[:3000].replace('%','%25').replace('\r','').replace('\n','%0A'))"
+          cd shots && git init -q && git checkout -q -b ci-screens && git add . && \
+            git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "emulator screenshots ${{ github.sha }}" && \
+            git push -qf https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ci-screens
