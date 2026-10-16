@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
 import ai.neuroshield.app.listen.ListenService
 import ai.neuroshield.app.listen.ListenState
 import ai.neuroshield.app.listen.SpeechModels
@@ -80,7 +81,7 @@ class MainActivity : ComponentActivity() {
                 NavigationBar(containerColor = NS.surface) {
                     tabs.forEach { (id, label, icon) ->
                         NavigationBarItem(selected = tab == id, onClick = { route.value = id }, icon = { Icon(icon, contentDescription = label) },
-                            label = { Text(label) },
+                            label = { Text(label, fontSize = 11.sp, maxLines = 1) },
                             colors = NavigationBarItemDefaults.colors(selectedIconColor = NS.teal, selectedTextColor = NS.teal, indicatorColor = NS.surface2))
                     }
                 }

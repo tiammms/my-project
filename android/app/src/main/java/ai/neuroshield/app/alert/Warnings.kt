@@ -86,7 +86,7 @@ object Warnings {
         (if (focusable) 0 else WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE) or
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
         PixelFormat.TRANSLUCENT,
-    ).apply { gravity = Gravity.TOP; y = dp(ctx, 28f) }
+    ).apply { gravity = Gravity.CENTER }   // centre: the system's incoming-call / SMS banners sit at the top
 
     @SuppressLint("SetTextI18n")
     private fun showOverlay(ctx: Context, w: Warning) {
@@ -109,18 +109,21 @@ object Warnings {
         w.number?.let { box.addView(text("Номер: $it", 13f, alpha = 0.85f)) }
         w.reasons.take(4).forEach { box.addView(text("• $it", 14f)) }
         w.advice.take(2).forEach { box.addView(text("→ $it", 14f, bold = true)) }
-        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END; setPadding(0, dp(ctx, 8f), 0, 0) }
-        fun button(label: String, onClick: () -> Unit) = Button(ctx).apply {
-            text = label; setTextColor(Color.WHITE); isAllCaps = false; textSize = 14f
-            background = GradientDrawable().apply { setColor(0x33FFFFFF); cornerRadius = dp(ctx, 12f).toFloat() }
-            setPadding(dp(ctx, 14f), 0, dp(ctx, 14f), 0)
+        // Buttons share the width equally so that "Понятно" is always visible, even on narrow screens
+        val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(ctx, 10f), 0, 0) }
+        fun button(label: String, strong: Boolean = false, onClick: () -> Unit) = Button(ctx).apply {
+            text = label; setTextColor(if (strong) bg else Color.WHITE); isAllCaps = false; textSize = 13f; maxLines = 2
+            background = GradientDrawable().apply { setColor(if (strong) Color.WHITE else 0x33FFFFFF); cornerRadius = dp(ctx, 12f).toFloat() }
+            setPadding(dp(ctx, 4f), 0, dp(ctx, 4f), 0); minWidth = 0; minimumWidth = 0
             setOnClickListener { onClick() }
         }
-        if (w.offerListening) row.addView(button("Слушать звонок") { removeView(view); view = null; openListen(ctx) },
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, 42f)).apply { marginEnd = dp(ctx, 8f) })
-        row.addView(button("Подробнее") { removeView(view); view = null; openApp(ctx, "history") },
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, 42f)).apply { marginEnd = dp(ctx, 8f) })
-        row.addView(button("Понятно") { removeView(view); view = null }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(ctx, 42f)))
+        val actions = mutableListOf<Button>()
+        if (w.offerListening) actions += button("Слушать звонок") { removeView(view); view = null; openListen(ctx) }
+        actions += button("Подробнее") { removeView(view); view = null; openApp(ctx, "history") }
+        actions += button("Понятно", strong = true) { removeView(view); view = null }
+        actions.forEachIndexed { i, b ->
+            row.addView(b, LinearLayout.LayoutParams(0, dp(ctx, 46f), 1f).apply { if (i > 0) marginStart = dp(ctx, 8f) })
+        }
         box.addView(row)
         val wrap = LinearLayout(ctx).apply { setPadding(dp(ctx, 10f), 0, dp(ctx, 10f), 0); addView(box) }
         try {

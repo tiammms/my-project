@@ -65,15 +65,19 @@ fun FaceScreen(onBack: () -> Unit) {
     var tick by remember { mutableIntStateOf(0) }
     var yaw by remember { mutableStateOf(0f) }
     var faces by remember { mutableIntStateOf(0) }
+    var camError by remember { mutableStateOf<String?>(
+        if (!ctx.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_FRONT)) "На этом устройстве нет фронтальной камеры" else null) }
 
     Page("Проверка лица", "Подтверждение, что перед телефоном живой человек", onBack) {
         SectionCard(sub = "Когда пригодится: перед важным действием в приложении, если кто-то просит «подтвердить личность» по телефону — " +
             "проверку проходите только сами, в своём приложении. Фото, видео и кадры не сохраняются.") {}
-        if (!camOk) {
+        if (camError != null) {
+            Verdict(RiskLevel.MEDIUM, "Камера недоступна", camError)
+        } else if (!camOk) {
             Button(onClick = { ask.launch(Manifest.permission.CAMERA) }) { Text("Разрешить камеру") }
         } else {
             Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(16.dp)).background(Color.Black)) {
-                CameraWithFaces(onFrame = { f ->
+                CameraWithFaces(onError = { camError = it }, onFrame = { f ->
                     yaw = f.yawDeg; faces = f.faces
                     val s = session
                     if (s != null && s.state == LivenessState.RUNNING) { s.onFrame(f, System.currentTimeMillis()); tick++ }
@@ -116,7 +120,7 @@ fun FaceScreen(onBack: () -> Unit) {
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
-private fun CameraWithFaces(onFrame: (FaceFrame) -> Unit) {
+private fun CameraWithFaces(onError: (String) -> Unit, onFrame: (FaceFrame) -> Unit) {
     val ctx = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val executor = remember { Executors.newSingleThreadExecutor() }
@@ -134,7 +138,9 @@ private fun CameraWithFaces(onFrame: (FaceFrame) -> Unit) {
         val view = PreviewView(c).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
         val providerFuture = ProcessCameraProvider.getInstance(c)
         providerFuture.addListener({
-            val provider = providerFuture.get()
+            val provider = try { providerFuture.get() } catch (e: Exception) {
+                onError("Камера не запустилась: ${e.cause?.message ?: e.message}"); return@addListener
+            }
             val preview = Preview.Builder().build().also { it.setSurfaceProvider(view.surfaceProvider) }
             val analysis = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
             analysis.setAnalyzer(executor) { proxy ->
@@ -155,7 +161,7 @@ private fun CameraWithFaces(onFrame: (FaceFrame) -> Unit) {
             try {
                 provider.unbindAll()
                 provider.bindToLifecycle(owner, CameraSelector.DEFAULT_FRONT_CAMERA, preview, analysis)
-            } catch (_: Exception) {}
+            } catch (e: Exception) { onError("Камера не запустилась: ${e.message}") }
         }, main)
         view
     })
