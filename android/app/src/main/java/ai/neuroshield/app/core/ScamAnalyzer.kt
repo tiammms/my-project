@@ -76,7 +76,7 @@ object ScamAnalyzer {
             "Не принимайте решения в панике. Проверьте информацию сами в приложении банка.", 15, listOf(
                 """(ваш\w*\s+)?(сч[её]т|карт\w+)\s+(заблокир|будет\s+заблокир)""", """(оформ|взял|взят)\w*\s+кредит\s+на\s+(ваше|вас)""",
                 """подозрительн\w+\s+(операци|перевод)""", """уголовн|\bарест|соучастни""", """мошенники\s+пытаются""",
-                """your\s+account\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised)|arrest|loan\s+in\s+your\s+name""",
+                """your\s+(\w+\s+)?(account|card)\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised|suspended)|arrest|loan\s+in\s+your\s+name""",
             )),
     )
 
@@ -124,7 +124,10 @@ object ScamAnalyzer {
         val ids = found.map { it.id }.toSet()
         var score = if (found.isEmpty()) 0.0 else 100 * (1 - found.fold(1.0) { acc, f -> acc * (1 - f.weight / 100.0) })
         // A single tactic alone never yields HIGH (same safeguard as the NeuroShield risk engine).
-        if (ids.size <= 1) score = min(score, 45.0)
+        // A fake bank/government site is strong evidence on its own (brand in the address but not the official domain + risky signs).
+        val forgedSite = links.any { it.score >= 70 }
+        if (ids.size <= 1 && !forgedSite) score = min(score, 45.0)
+        if (forgedSite) score = max(score, 75.0)
         val critical = "credentials_request" in ids || "safe_account_transfer" in ids || "remote_access" in ids ||
             (links.any { it.score >= 50 })
         if (critical && ids.size >= 2) score = max(score, 75.0)

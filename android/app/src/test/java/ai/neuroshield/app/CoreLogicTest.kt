@@ -232,6 +232,11 @@ class LinkCheckTest {
         assertEquals(RiskLevel.HIGH, r.level)
         assertTrue(r.tactics.any { it.id == "phishing_link" })
     }
+    @Test fun forgedBankSiteAloneIsHigh() {
+        assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Kaspi: https://kaspi-bonus.top/login").level)
+        assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Your Kaspi account is blocked. Verify now: https://kaspi-verify.top/login").level)
+        assertNotEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Скидки тут https://bit.ly/abc").level)   // a short link alone is not a verdict
+    }
     @Test fun normalLinkIsNotATactic() {
         val r = ScamAnalyzer.analyze("Смотри фото с дня рождения https://photos.google.com/share/abc")
         assertEquals(RiskLevel.LOW, r.level)
