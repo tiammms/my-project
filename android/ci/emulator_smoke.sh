@@ -29,6 +29,8 @@ adb shell cmd notification allow_listener $P/$P.notify.MessengerListener
 adb shell input keyevent KEYCODE_HOME; sleep 3
 adb shell cmd notification post -S bigtext -t "+447911123456" ns_msg "'This is the bank security team, read me the verification code right now'"; shot 08-messenger-scam-message 6
 adb shell cmd notification post -t "+447911123456" ns_call "'Incoming voice call'"; shot 09-messenger-call-after-message 6
+adb shell cmd notification cancel ns_call || true
+adb shell cmd notification post -t "+15551230000" ns_video "'Incoming video call'"; shot 10-messenger-video-call 6
 adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true
