@@ -121,7 +121,8 @@ def create_app(cfg: Settings = default_settings, db_path: str | None = None) -> 
     dist = cfg.frontend_dist
     if (dist / "index.html").exists():
         async def spa(request: Request):
-            return FileResponse(dist / "index.html")
+            # always revalidate the page, so a new build is picked up without a hard refresh
+            return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
         if (dist / "assets").exists():
             routes.append(Mount("/assets", StaticFiles(directory=dist / "assets")))
         routes.append(Route("/", spa))
