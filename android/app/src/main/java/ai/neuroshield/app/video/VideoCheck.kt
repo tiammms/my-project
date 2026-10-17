@@ -67,7 +67,7 @@ class VideoCheckService : Service() {
         val open = PendingIntent.getActivity(this, 21, Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_ROUTE, "protection"),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN).setSmallIcon(R.drawable.ic_shield)
-            .setContentTitle("NeuroShield проверяет видеозвонок").setContentText("Анализ лица на экране, ~30 секунд. Кадры не сохраняются")
+            .setContentTitle("Saqtan проверяет видеозвонок").setContentText("Анализ лица на экране, ~30 секунд. Кадры не сохраняются")
             .setOngoing(true).setContentIntent(open).build()
         try {
             ServiceCompat.startForeground(this, NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)

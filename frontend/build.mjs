@@ -15,7 +15,7 @@ const icon = "data:image/svg+xml," + encodeURIComponent(
 // asset URLs carry a content hash so browsers never keep an old app.js / app.css after an update
 const page = (v) => writeFileSync("dist/index.html", `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NeuroShield</title><link rel="icon" href="${icon}"><link rel="stylesheet" href="/assets/app.css${v}">
+<title>Saqtan</title><link rel="icon" href="${icon}"><link rel="stylesheet" href="/assets/app.css${v}">
 </head><body><div id="root"></div><script src="/assets/app.js${v}"></script></body></html>
 `);
 page("");

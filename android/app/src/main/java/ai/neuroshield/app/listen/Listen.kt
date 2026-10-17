@@ -174,7 +174,7 @@ class ListenService : Service() {
         val stop = PendingIntent.getService(this, 12, Intent(this, ListenService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         return NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN)
-            .setSmallIcon(R.drawable.ic_shield).setContentTitle("NeuroShield слушает звонок").setContentText(text)
+            .setSmallIcon(R.drawable.ic_shield).setContentTitle("Saqtan слушает звонок").setContentText(text)
             .setOngoing(true).setContentIntent(open).addAction(0, "Остановить", stop).build()
     }
 

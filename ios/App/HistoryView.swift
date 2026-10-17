@@ -82,7 +82,7 @@ struct ThreatDetail: View {
                         if scam { GhostButton(title: "Снять отметку") { model.mark(n, scam: false) } }
                         else { PrimaryButton(title: "Это мошенник", color: NS.threat) { model.mark(n, scam: true) } }
                     }
-                    Text("Отмеченные номера iPhone подпишет при звонке, а при включённой блокировке — сбросит (нужно включить NeuroShield в Настройки → Телефон → Блокировка и идентификация вызовов).")
+                    Text("Отмеченные номера iPhone подпишет при звонке, а при включённой блокировке — сбросит (нужно включить Saqtan в Настройки → Телефон → Блокировка и идентификация вызовов).")
                         .font(.system(size: 12)).foregroundStyle(NS.muted)
                 }
                 HStack(spacing: 10) {
@@ -98,7 +98,7 @@ struct ThreatDetail: View {
     }
 
     private var report: String {
-        "NeuroShield: \(a.level.ru)\n\(a.title)\n\(a.sourceRu)\(a.number.map { ", " + $0 } ?? "")\n" +
+        "Saqtan: \(a.level.ru)\n\(a.title)\n\(a.sourceRu)\(a.number.map { ", " + $0 } ?? "")\n" +
         a.reasons.map { "• " + $0 }.joined(separator: "\n") +
         "\n\nОценка показывает признаки обмана, а не называет человека мошенником."
     }

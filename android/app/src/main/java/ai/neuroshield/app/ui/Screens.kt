@@ -235,8 +235,8 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-            Text("NeuroShield", style = MaterialTheme.typography.titleLarge, color = NS.text)
-            Text(" AI", style = MaterialTheme.typography.titleLarge, color = NS.cyan)
+            Text("Saq", style = MaterialTheme.typography.titleLarge, color = NS.text)
+            Text("tan", style = MaterialTheme.typography.titleLarge, color = NS.cyan)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { go("settings") }, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
                 Icon(Icons.Filled.Settings, "Настройки", tint = NS.text2)
@@ -293,7 +293,7 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
         }
 
         SectionTitle("Последние угрозы", if (alerts.isNotEmpty()) "Все" else null) { go("history") }
-        if (alerts.isEmpty()) EmptyState("Угроз не обнаружено", "NeuroShield предупредит, если звонок или сообщение покажутся подозрительными")
+        if (alerts.isEmpty()) EmptyState("Угроз не обнаружено", "Saqtan предупредит, если звонок или сообщение покажутся подозрительными")
         else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { alerts.take(3).forEach { a -> ThreatRow(a) { openAlert(a.id) } } }
     }
 }
@@ -637,7 +637,7 @@ fun HistoryScreen(openId: Long? = null, onOpened: () -> Unit = {}) {
 fun shareReport(ctx: Context, items: List<Alert>) {
     val f = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru"))
     val body = buildString {
-        appendLine("NeuroShield AI — отчёт об угрозах (${items.size})")
+        appendLine("Saqtan — отчёт об угрозах (${items.size})")
         appendLine()
         items.take(100).forEach { a ->
             appendLine("${f.format(Date(a.ts))} · ${levelShort(a.level)} · ${a.sourceRu}")
@@ -645,7 +645,7 @@ fun shareReport(ctx: Context, items: List<Alert>) {
             a.reasons.take(3).forEach { appendLine("  – $it") }
         }
     }
-    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Отчёт NeuroShield AI").putExtra(Intent.EXTRA_TEXT, body)
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Отчёт Saqtan").putExtra(Intent.EXTRA_TEXT, body)
     ctx.startActivity(Intent.createChooser(send, "Поделиться отчётом").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
@@ -778,7 +778,7 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                 IconBadge(Icons.Filled.Info, NS.cyan, 38.dp)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Как работает NeuroShield", color = NS.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text("Как работает Saqtan", color = NS.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Text("Возможности и честные ограничения", color = NS.muted, style = MaterialTheme.typography.bodySmall)
                 }
                 Icon(if (about) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, tint = NS.muted)

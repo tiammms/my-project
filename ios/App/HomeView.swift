@@ -10,8 +10,8 @@ struct HomeView: View {
         let modulesOn = (model.callDirectoryEnabled == true ? 1 : 0) + (model.notificationsAllowed ? 1 : 0)
         Group {
             HStack {
-                Text("NeuroShield").font(.system(size: 26, weight: .bold)).foregroundColor(NS.text)
-                    + Text(" AI").font(.system(size: 26, weight: .bold)).foregroundColor(NS.cyan)
+                Text("Saq").font(.system(size: 26, weight: .bold)).foregroundColor(NS.text)
+                    + Text("tan").font(.system(size: 26, weight: .bold)).foregroundColor(NS.cyan)
                 Spacer()
                 Button { model.tab = "settings" } label: { Image(systemName: "gearshape").foregroundStyle(NS.text2) }
             }.padding(.top, 8)
@@ -64,7 +64,7 @@ struct HomeView: View {
             if alerts.isEmpty {
                 GlassCard {
                     Text("Угроз не обнаружено").font(.headline).foregroundStyle(NS.text)
-                    Text("NeuroShield предупредит, если сообщение или ссылка покажутся подозрительными").font(.subheadline).foregroundStyle(NS.text2)
+                    Text("Saqtan предупредит, если сообщение или ссылка покажутся подозрительными").font(.subheadline).foregroundStyle(NS.text2)
                 }
             } else {
                 ForEach(alerts.prefix(3)) { a in

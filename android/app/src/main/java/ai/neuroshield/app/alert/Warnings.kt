@@ -258,7 +258,7 @@ object Warnings {
         if (!Perms.overlay(ctx) || offerView != null) return@post
         val c = ctx.applicationContext
         val b = Button(c).apply {
-            text = "◉  Проверить звонок · NeuroShield"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
+            text = "◉  Проверить звонок · Saqtan"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
             background = GradientDrawable().apply { setColor(0xF20F1115.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 1.5f), 0xFF22D3EE.toInt()) }
             setPadding(dp(c, 16f), 0, dp(c, 16f), 0)
             setOnClickListener { hideListenOffer(); openListen(c) }

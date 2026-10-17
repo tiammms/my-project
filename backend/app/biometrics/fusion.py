@@ -61,7 +61,7 @@ def combine(face: dict | None, voice: dict | None, tx: dict | None) -> dict:
 
     if tx:
         s = float(tx["risk_score"])
-        comps.append({"component": "transaction", "title": "Перевод (модель NeuroShield)", "risk_score": s,
+        comps.append({"component": "transaction", "title": "Перевод (модель Saqtan)", "risk_score": s,
                       "risk_level": tx["risk_level"], "source_check": tx["transaction_id"],
                       "details": f"{tx['risk_level']} · действие {tx['recommended_action']}"})
         for f in tx.get("top_risk_factors", [])[:3]:

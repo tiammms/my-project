@@ -90,11 +90,11 @@ jobs:
         run: |
           V=1.0.${{ github.run_number }}
           D=app/build/outputs/apk/release
-          cp $D/app-arm64-v8a-release.apk NeuroShieldAI-$V-arm64.apk
-          cp $D/app-universal-release.apk NeuroShieldAI-$V-universal.apk
-          cp $D/app-armeabi-v7a-release.apk NeuroShieldAI-$V-armeabi-v7a.apk
+          cp $D/app-arm64-v8a-release.apk Saqtan-$V-arm64.apk
+          cp $D/app-universal-release.apk Saqtan-$V-universal.apk
+          cp $D/app-armeabi-v7a-release.apk Saqtan-$V-armeabi-v7a.apk
           gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create android-latest NeuroShieldAI-$V-*.apk --title "NeuroShield AI для Android (сборка ${{ github.run_number }})" \
+          gh release create android-latest Saqtan-$V-*.apk --title "Saqtan для Android (сборка ${{ github.run_number }})" \
             --notes "Установочные файлы Android-приложения, собраны автоматически из коммита ${{ github.sha }}. Для большинства телефонов: файл -arm64.apk. Если не устанавливается — -universal.apk (подходит всем, но больше). Старые телефоны (32-бит): -armeabi-v7a.apk. Установка: скачайте APK на телефон, откройте и разрешите установку из этого источника." --latest
   android-emulator:
     runs-on: ubuntu-latest

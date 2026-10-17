@@ -130,7 +130,7 @@ export function Showcase() {
       <div className="sc-phone" aria-label="Экран телефона (демо)">
         <div className="sc-notch" />
         <div className="sc-screen">
-          {active === 0 && <div className="sc-idle"><div className="sc-shield">✓</div><div>NeuroShield AI</div><div className="small muted">Нажмите «Запустить сценарий»</div></div>}
+          {active === 0 && <div className="sc-idle"><div className="sc-shield">✓</div><div>Saqtan</div><div className="small muted">Нажмите «Запустить сценарий»</div></div>}
           {active >= 1 && active <= 3 && <div className="sc-call">
             <div className="small muted">{active === 1 ? "Входящий вызов" : "Идёт разговор"}</div>
             <div className="sc-num">{script?.number.replace(/^\+44(\d{4})(\d{6})$/, "+44 $1 $2")}</div>

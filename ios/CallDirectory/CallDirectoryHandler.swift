@@ -12,7 +12,7 @@ final class CallDirectoryHandler: CXCallDirectoryProvider {
             for n in numbers { context.addBlockingEntry(withNextSequentialPhoneNumber: n) }
         }
         for n in numbers {
-            context.addIdentificationEntry(withNextSequentialPhoneNumber: n, label: "NeuroShield: отмечен вами как мошенник")
+            context.addIdentificationEntry(withNextSequentialPhoneNumber: n, label: "Saqtan: отмечен вами как мошенник")
         }
         context.completeRequest()
     }

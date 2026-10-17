@@ -40,7 +40,7 @@ private data class Slide(val icon: ImageVector, val color: Color, val title: Str
 
 private val SLIDES = listOf(
     Slide(Icons.Filled.Shield, NS.cyan, "Защита от телефонных мошенников",
-        "NeuroShield оценивает каждый звонок с незнакомого номера и предупреждает прямо поверх экрана звонка."),
+        "Saqtan оценивает каждый звонок с незнакомого номера и предупреждает прямо поверх экрана звонка."),
     Slide(Icons.Filled.GraphicEq, NS.threat, "Код из SMS во время звонка — тревога",
         "Самый частый обман: «продиктуйте код». Если код пришёл, пока вы говорите с незнакомцем, вы сразу увидите предупреждение."),
     Slide(Icons.Filled.Forum, NS.violet, "Мессенджеры, ссылки и видео",
@@ -57,8 +57,8 @@ fun OnboardingScreen(onDone: () -> Unit) {
     val last = pager.currentPage == SLIDES.lastIndex
     Column(Modifier.fillMaxSize().background(NS.bg).padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("NeuroShield", style = MaterialTheme.typography.titleLarge, color = NS.text)
-            Text(" AI", style = MaterialTheme.typography.titleLarge, color = NS.cyan)
+            Text("Saq", style = MaterialTheme.typography.titleLarge, color = NS.text)
+            Text("tan", style = MaterialTheme.typography.titleLarge, color = NS.cyan)
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDone) { Text("Пропустить", color = NS.muted) }
         }

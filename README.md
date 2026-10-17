@@ -1,4 +1,4 @@
-# NeuroShield API
+# Saqtan — защита от телефонных мошенников (рабочее название проекта: NeuroShield)
 
 [![ci](https://github.com/tiammms/my-project/actions/workflows/ci.yml/badge.svg)](https://github.com/tiammms/my-project/actions/workflows/ci.yml)
 

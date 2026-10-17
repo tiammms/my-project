@@ -25,7 +25,7 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: NeuroShield
+        CFBundleDisplayName: Saqtan
         CFBundleDevelopmentRegion: ru
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
@@ -44,7 +44,7 @@ targets:
     info:
       path: MessageFilter/Info.plist
       properties:
-        CFBundleDisplayName: NeuroShield
+        CFBundleDisplayName: Saqtan
         NSExtension:
           NSExtensionPointIdentifier: com.apple.identitylookup.message-filter
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).MessageFilterExtension
@@ -60,7 +60,7 @@ targets:
     info:
       path: CallDirectory/Info.plist
       properties:
-        CFBundleDisplayName: NeuroShield
+        CFBundleDisplayName: Saqtan
         NSExtension:
           NSExtensionPointIdentifier: com.apple.callkit.call-directory
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).CallDirectoryHandler

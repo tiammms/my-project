@@ -22,10 +22,10 @@ struct ProtectionView: View {
             module("text.magnifyingglass", "Проверка текста и ссылок", "Всегда работает, без интернета", ok: true, how: nil)
             module("message.badge.filled.fill", "Фильтр SMS от незнакомцев",
                    "Сообщения с высоким риском уходят в «Нежелательные»", ok: nil,
-                   how: "Настройки → Приложения → Сообщения → Неизвестные и спам → NeuroShield")
+                   how: "Настройки → Приложения → Сообщения → Неизвестные и спам → Saqtan")
             module("phone.badge.checkmark", "Метки и блокировка номеров",
                    "Номера, отмеченные вами как мошеннические", ok: model.callDirectoryEnabled,
-                   how: "Настройки → Приложения → Телефон → Блокировка и идентификация вызовов → NeuroShield")
+                   how: "Настройки → Приложения → Телефон → Блокировка и идентификация вызовов → Saqtan")
             module("bell.badge.fill", "Уведомления", "Предупреждения на экране блокировки", ok: model.notificationsAllowed,
                    how: model.notificationsAllowed ? nil : "Нажмите «Открыть Настройки» и разрешите уведомления")
             PrimaryButton(title: "Открыть Настройки iPhone") {

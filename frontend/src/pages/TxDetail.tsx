@@ -50,7 +50,7 @@ function Deviations({ b, amountSigma }: { b: Behavioral; amountSigma: number | n
 export function TxDetail({ id }: { id: string }) {
   const s = useAsync(() => Promise.all([api.transaction(id), api.explanation(id)]), [id]);
   return <>
-    <PageHead title={`Transaction ${id}`} desc="Risk profile, explanation and analyst report. Recommendations are simulated — NeuroShield never blocks payments."
+    <PageHead title={`Transaction ${id}`} desc="Risk profile, explanation and analyst report. Recommendations are simulated — Saqtan never blocks payments."
       right={<a className="btn" href="#/transactions">← Back to explorer</a>} />
     <Async s={s}>{([tx, ex]) => {
       const r = tx.result, c = ex.components, b = c.behavioral;

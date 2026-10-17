@@ -28,7 +28,7 @@ export function Combined() {
   };
 
   return <>
-    <PageHead title="Общая проверка на мошенничество" desc="Объединяет результат проверки лица, проверки звонка и оценку перевода моделью NeuroShield в одно решение с причинами и рекомендациями." />
+    <PageHead title="Общая проверка на мошенничество" desc="Объединяет результат проверки лица, проверки звонка и оценку перевода моделью Saqtan в одно решение с причинами и рекомендациями." />
     <div className="grid g3">
       <Card title="Лицо" sub="Проверка живости или сравнение лица">
         <select id="face-check" className="input" style={{ width: "100%" }} value={face} onChange={(e: any) => setFace(e.target.value)}>

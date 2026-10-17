@@ -67,7 +67,7 @@ struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("NeuroShield").font(.title2.bold()).foregroundColor(NS.text) + Text(" AI").font(.title2.bold()).foregroundColor(NS.cyan)
+                Text("Saq").font(.title2.bold()).foregroundColor(NS.text) + Text("tan").font(.title2.bold()).foregroundColor(NS.cyan)
                 Spacer()
                 Button("Пропустить", action: onDone).foregroundStyle(NS.muted)
             }.padding(.horizontal, 24).padding(.top, 12)

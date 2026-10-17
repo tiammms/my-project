@@ -191,7 +191,7 @@ struct FaceCheckView: View {
         switch cam.phase {
         case .idle: return "Нужно будет посмотреть в камеру и повернуть голову в одну сторону, затем в другую. Фото или экран так не смогут."
         case .noCamera: return "На этом устройстве нет фронтальной камеры (например, в симуляторе)."
-        case .denied: return "Разрешите доступ к камере для NeuroShield в Настройках iPhone."
+        case .denied: return "Разрешите доступ к камере для Saqtan в Настройках iPhone."
         case .center, .firstTurn, .secondTurn: return "Держите лицо в овале. Угол поворота: \(Int(cam.yaw * 180 / .pi))°"
         case .passed: return "Голова повернулась в обе стороны — это не фото и не неподвижный экран."
         case .failed(let why): return why

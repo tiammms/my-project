@@ -10,7 +10,7 @@ const SYS = [
   { id: "hgb_txn", label: "Gradient boosting (txn)", color: SERIES_COLORS[2] },
   { id: "lr_hybrid", label: "Logistic reg. (hybrid)", color: SERIES_COLORS[4] },
   { id: "rf_hybrid", label: "Random forest (hybrid)", color: SERIES_COLORS[5] },
-  { id: "hgb_hybrid", label: "NeuroShield: gradient boosting (hybrid)", color: SERIES_COLORS[0] },
+  { id: "hgb_hybrid", label: "Saqtan: gradient boosting (hybrid)", color: SERIES_COLORS[0] },
 ];
 
 function Confusion({ c, title }: { c: any; title: string }) {
@@ -51,8 +51,8 @@ export function Evaluation() {
       const lat = ev.latency, api_l = ev.api_latency;
       return <div className="grid">
         <div className="grid g4">
-          <Stat label="ROC-AUC · NeuroShield" tag={<Syn />} value={fmt.n(hy.test.roc_auc)} note={`target 0.94 · rules ${fmt.n(ev.systems.rules.test.roc_auc)}`} />
-          <Stat label="PR-AUC · NeuroShield" tag={<Syn />} value={fmt.n(hy.test.pr_auc)} note={`rules ${fmt.n(ev.systems.rules.test.pr_auc)} · txn-only GBM ${fmt.n(ev.systems.hgb_txn?.test.pr_auc)}`} />
+          <Stat label="ROC-AUC · Saqtan" tag={<Syn />} value={fmt.n(hy.test.roc_auc)} note={`target 0.94 · rules ${fmt.n(ev.systems.rules.test.roc_auc)}`} />
+          <Stat label="PR-AUC · Saqtan" tag={<Syn />} value={fmt.n(hy.test.pr_auc)} note={`rules ${fmt.n(ev.systems.rules.test.pr_auc)} · txn-only GBM ${fmt.n(ev.systems.hgb_txn?.test.pr_auc)}`} />
           <Stat label="Relative FPR reduction vs rules" tag={<Syn />} value={cmp.relative_fpr_reduction_pct == null ? "—" : `${cmp.relative_fpr_reduction_pct.toFixed(1)}%`}
             note={`same recall ${fmt.pct(cmp.baseline_recall)}: FPR ${fmt.pct(cmp.baseline_fpr, 2)} → ${fmt.pct(cmp.model_fpr, 2)} (target 35%)`} />
           <Stat label="Latency p95" value={fmt.ms(lat.featurize_plus_model.p95_ms)}

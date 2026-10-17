@@ -128,7 +128,7 @@ def create_app(cfg: Settings = default_settings, db_path: str | None = None) -> 
         routes.append(Route("/", spa))
     else:
         async def root(request: Request):
-            return JSONResponse({"name": "NeuroShield API", "docs": "/docs", "openapi": "/openapi.json",
+            return JSONResponse({"name": "Saqtan API", "docs": "/docs", "openapi": "/openapi.json",
                                  "note": "Frontend not built (see README)."})
         routes.append(Route("/", root))
 

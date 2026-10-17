@@ -56,7 +56,7 @@ struct SettingsView: View {
             SectionTitle(text: "О приложении")
             GlassCard {
                 Button { withAnimation { about.toggle() } } label: {
-                    HStack { Text("NeuroShield AI для iPhone").foregroundStyle(NS.text); Spacer()
+                    HStack { Text("Saqtan для iPhone").foregroundStyle(NS.text); Spacer()
                         Image(systemName: about ? "chevron.up" : "chevron.down").foregroundStyle(NS.muted) }
                 }.buttonStyle(.plain)
                 if about {

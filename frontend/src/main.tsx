@@ -86,7 +86,7 @@ function App() {
     <aside className="side">
       <div className="brand">
         <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.4 12 15 6.9-1.6 12-7.5 12-15V7z" fill="#2cc5b0" /><path d="M10 16.5l4 4 8-9" stroke="#0b1016" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        <div><div className="brand-name">NeuroShield</div><div className="brand-sub">Fraud risk intelligence</div></div>
+        <div><div className="brand-name">Saq<span style={{ color: "var(--accent-2)" }}>tan</span></div><div className="brand-sub">Защита от мошенников</div></div>
       </div>
       <nav className="nav">
         <div className="nav-group">Клиент: лицо и звонки</div>
