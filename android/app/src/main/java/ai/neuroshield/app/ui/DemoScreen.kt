@@ -82,7 +82,8 @@ fun DemoScreen(onBack: () -> Unit, openHistory: () -> Unit) {
     val version by app.alerts.version.collectAsState()
     val demoCount = remember(version) { app.alerts.countSource("demo") }
     val overlay = Perms.overlay(ctx)
-    DisposableEffect(Unit) { onDispose { job?.cancel() } }
+    // entering the demo clears a warning left on screen from earlier, so it cannot cover the presentation
+    DisposableEffect(Unit) { Warnings.hide(); onDispose { job?.cancel() } }
 
     fun put(step: Int, r: StepResult) { results.value = results.value + (step to r) }
 
