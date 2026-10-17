@@ -146,6 +146,7 @@ fun DemoScreen(onBack: () -> Unit, openHistory: () -> Unit) {
         job?.cancel()
         val token = ++runId
         running = true
+        Warnings.hide()          // a warning left on screen from earlier must not cover the demo
         job = scope.launch { try { block() } finally { if (runId == token) running = false } }
     }
 

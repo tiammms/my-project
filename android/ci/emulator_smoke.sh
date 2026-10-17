@@ -76,6 +76,7 @@ adb shell input keyevent KEYCODE_HOME; sleep 1
 adb emu gsm call 87015550123; sleep 6; adb emu gsm cancel 87015550123; sleep 2
 adb shell am start -n $P/.MainActivity --es route history; shot 20-history-blocked-call 4
 # demo scenario for presentations (scripted input, real analysis)
+tap_text "Понятно"; sleep 1     # close the phishing warning left from the previous scenario
 adb shell am start -n $P/.MainActivity --es route demo; shot 21-demo 4
 tap_text "▶  Запустить весь сценарий"; shot 22-demo-call 3
 tap_text "Понятно"; shot 23-demo-speech 12
