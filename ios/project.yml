@@ -1,0 +1,80 @@
+# XcodeGen spec: `brew install xcodegen && cd ios && xcodegen` creates NeuroShield.xcodeproj
+name: NeuroShield
+options:
+  bundleIdPrefix: ai.neuroshield
+  deploymentTarget: { iOS: "16.0" }
+  developmentLanguage: ru
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""            # set your Apple team ID to install on an iPhone
+    CODE_SIGN_STYLE: Automatic
+targets:
+  NeuroShield:
+    type: application
+    platform: iOS
+    sources: [App, Core]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.neuroshield.app
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_ENTITLEMENTS: App/NeuroShield.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: NeuroShield
+        CFBundleDevelopmentRegion: ru
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: "Камера нужна для проверки живости: повернуть голову в одну и другую сторону. Кадры не сохраняются."
+    dependencies:
+      - target: MessageFilter
+      - target: CallDirectory
+  MessageFilter:
+    type: app-extension
+    platform: iOS
+    sources: [MessageFilter, Core/ScamAnalyzer.swift, Core/LinkCheck.swift]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.neuroshield.app.MessageFilter
+    info:
+      path: MessageFilter/Info.plist
+      properties:
+        CFBundleDisplayName: NeuroShield
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.identitylookup.message-filter
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).MessageFilterExtension
+          NSExtensionAttributes: {}
+  CallDirectory:
+    type: app-extension
+    platform: iOS
+    sources: [CallDirectory, Core]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.neuroshield.app.CallDirectory
+        CODE_SIGN_ENTITLEMENTS: CallDirectory/CallDirectory.entitlements
+    info:
+      path: CallDirectory/Info.plist
+      properties:
+        CFBundleDisplayName: NeuroShield
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.callkit.call-directory
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).CallDirectoryHandler
+  CoreTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests, Core]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.neuroshield.app.CoreTests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  NeuroShield:
+    build:
+      targets: { NeuroShield: all }
+    test:
+      targets: [CoreTests]

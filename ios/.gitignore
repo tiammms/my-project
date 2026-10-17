@@ -1,0 +1,7 @@
+NeuroShield.xcodeproj/
+build/
+shots/
+*.log
+App/Info.plist
+MessageFilter/Info.plist
+CallDirectory/Info.plist
