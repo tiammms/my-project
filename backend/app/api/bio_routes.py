@@ -9,7 +9,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..biometrics import audio, face as F, fusion, liveness, registry, scam_text, speech
+from ..biometrics import audio, call_risk, demo_scenario, face as F, fusion, liveness, registry, scam_text, speech
 from ..biometrics.store import CONSENT_TEXT, CONSENT_VERSION
 from .framework import HTTPError
 from .routes import STATE, api
@@ -106,6 +106,20 @@ class VoiceIn(BaseModel):
 class TextIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str = Field(..., min_length=1, max_length=scam_text.MAX_TEXT)
+
+
+class DemoCallIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    number: Optional[str] = Field(None, max_length=20, pattern=r"^[0-9+ ()\-]*$")
+    home_code: str = Field("+7", pattern=r"^\+[0-9]{1,3}$")
+    in_contacts: bool = False
+    calls_last_hour: int = Field(1, ge=0, le=100)
+
+
+class DemoSmsIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(..., min_length=1, max_length=1000)
+    during_call_with_unknown: bool = True
 
 
 class CombinedIn(BaseModel):
@@ -303,6 +317,36 @@ def voice_analyze(body: VoiceIn):
            body=TextIn)
 def call_text(body: TextIn):
     return voice_analyze(VoiceIn(transcript=body.text, transcribe=False))
+
+
+# ---------------------------------------------------------------- demo (presentation mode, nothing is stored)
+@api.route("/api/v1/bio/demo/scenario", summary="Scripted presentation scenario (made-up input)", tags=TAG)
+def demo_script():
+    return demo_scenario.script()
+
+
+@api.route("/api/v1/bio/demo/call", "POST", summary="Risk of an incoming call from the number alone (not stored)", tags=TAG,
+           body=DemoCallIn)
+def demo_call(body: DemoCallIn):
+    return {**call_risk.assess(body.number, body.in_contacts, body.home_code, body.calls_last_hour), "stored": False}
+
+
+@api.route("/api/v1/bio/demo/text", "POST", summary="Scam-tactic analysis of a text without saving it", tags=TAG, body=TextIn)
+def demo_text(body: TextIn):
+    return {**scam_text.analyze(body.text), "stored": False}
+
+
+@api.route("/api/v1/bio/demo/sms", "POST", summary="One-time code in an SMS during a call (code is never returned)", tags=TAG,
+           body=DemoSmsIn)
+def demo_sms(body: DemoSmsIn):
+    code = call_risk.find_code(body.text)
+    if code and body.during_call_with_unknown:
+        return {"risk_level": "HIGH", "risk_score": 95.0, "code_masked": code["masked"], "stored": False,
+                "reasons": [f"Код {code['masked']} пришёл во время звонка с незнакомого номера", "Звонящий может попросить продиктовать код"],
+                "advice": ["Никому не называйте этот код. Банк его никогда не спрашивает."]}
+    return {"risk_level": "LOW" if not code else "MEDIUM", "risk_score": 0.0 if not code else 30.0, "stored": False,
+            "code_masked": code["masked"] if code else None,
+            "reasons": ["Кода в сообщении нет"] if not code else ["Код пришёл вне звонка — просто никому его не сообщайте"], "advice": []}
 
 
 # ---------------------------------------------------------------- combined

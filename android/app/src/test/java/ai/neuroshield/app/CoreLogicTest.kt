@@ -242,3 +242,28 @@ class LinkCheckTest {
         assertEquals(RiskLevel.LOW, r.level)
     }
 }
+
+/** The demo scenario uses made-up input but real analyzers: these tests pin what the presentation will show. */
+class DemoScenarioTest {
+    @Test fun unknownInternationalCallIsMedium() {
+        val r = CallRisk.assess(DemoScenario.callFacts("+7"))
+        assertEquals(RiskLevel.MEDIUM, r.level)
+    }
+    @Test fun riskGrowsDuringTheCallAndEndsHigh() {
+        val first = ScamAnalyzer.analyze(DemoScenario.callerText(1))
+        val all = ScamAnalyzer.analyze(DemoScenario.callerText(DemoScenario.CALL.size))
+        assertNotEquals(RiskLevel.HIGH, first.level)
+        assertEquals(RiskLevel.HIGH, all.level)
+        assertTrue(all.tactics.any { it.id == "credentials_request" })
+        assertTrue(all.tactics.any { it.id == "safe_account_transfer" })
+    }
+    @Test fun smsCodeAndPhishingAreCaught() {
+        assertEquals("4821", SmsCode.find(DemoScenario.SMS)?.code)
+        val p = ScamAnalyzer.analyze(DemoScenario.PHISHING)
+        assertEquals(RiskLevel.HIGH, p.level)
+        assertTrue(p.tactics.any { it.id == "phishing_link" })
+    }
+    @Test fun normalMessageIsLow() {
+        assertEquals(RiskLevel.LOW, ScamAnalyzer.analyze(DemoScenario.NORMAL).level)
+    }
+}

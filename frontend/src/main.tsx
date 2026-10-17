@@ -16,6 +16,7 @@ import { VoiceCheck } from "./pages/VoiceCheck";
 import { Combined } from "./pages/Combined";
 import { BioHistory } from "./pages/BioHistory";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import { Showcase } from "./pages/Showcase";
 
 // ---- hash router: #/page/arg?key=value ----------------------------------------------
 export interface Route { page: string; arg?: string; params: URLSearchParams }
@@ -29,6 +30,7 @@ export const go = (path: string) => { window.location.hash = path; };
 
 const I = (d: string) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 const BIO_NAV = [
+  { page: "show", label: "Демо-показ", icon: I("M8 5v14l11-7z") },
   { page: "security", label: "Центр безопасности", icon: I("M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z") },
   { page: "face", label: "Проверка лица", icon: I("M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0") },
   { page: "voice", label: "Проверка голоса", icon: I("M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3") },
@@ -76,6 +78,7 @@ function App() {
     case "combined": page = <Combined />; break;
     case "history": page = <BioHistory id={route.arg} />; break;
     case "privacy": page = <PrivacyPage />; break;
+    case "show": page = <Showcase />; break;
     default: page = <Overview />;
   }
   const dot = health === "online" ? "var(--low)" : health === "checking" ? "var(--muted)" : "var(--high)";

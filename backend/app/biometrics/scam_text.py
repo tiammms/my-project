@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import re
 
+from . import link_check
+
 CATEGORIES: dict[str, dict] = {
     "credentials_request": {
         "title": "Просят код, пароль или данные карты",
@@ -74,7 +76,7 @@ CATEGORIES: dict[str, dict] = {
         "weight": 15,
         "patterns": [
             r"(ваш\w*\s+)?(сч[её]т|карт\w+)\s+(заблокир|будет\s+заблокир)", r"(оформ|взял|взят)\w*\s+кредит\s+на\s+(ваше|вас)", r"подозрительн\w+\s+(операци|перевод)",
-            r"уголовн|\bарест|соучастни", r"мошенники\s+пытаются", r"your\s+account\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised)|arrest|loan\s+in\s+your\s+name",
+            r"уголовн|\bарест|соучастни", r"мошенники\s+пытаются", r"your\s+(\w+\s+)?(account|card)\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised|suspended)|arrest|loan\s+in\s+your\s+name",
         ]},
 }
 
@@ -105,12 +107,25 @@ def analyze(text: str) -> dict:
         if hits:
             c = CATEGORIES[k]
             found.append({"category": k, "title": c["title"], "weight": c["weight"], "advice": c["advice"], "evidence": hits})
+    # links: look-alike brands, shorteners, IP hosts, punycode, throw-away domains (same rules as the Android app)
+    links = [f for f in link_check.scan(text[:MAX_TEXT]) if f["score"] >= 30]
+    if links:
+        worst = max(links, key=lambda f: f["score"])
+        found.append({"category": "phishing_link", "title": f"Подозрительная ссылка: {worst['host']}",
+                      "weight": max(30, min(60, worst["score"])),
+                      "advice": "Не открывайте ссылку и не вводите на ней данные. Зайдите в приложение банка или на сайт сами.",
+                      "evidence": [{"match": f["host"], "context": "; ".join(f["reasons"])} for f in links[:3]]})
     cats = {f["category"] for f in found}
     score = 100 * (1 - __import__("math").prod(1 - f["weight"] / 100 for f in found)) if found else 0.0
-    # A single tactic alone never yields HIGH (same safeguard as the transaction engine).
-    if len(cats) <= 1:
+    # A single tactic alone never yields HIGH (same safeguard as the transaction engine) —
+    # except a forged bank/government site (brand in the address but not the official domain + risky signs).
+    forged_site = any(f["score"] >= 70 for f in links)
+    if len(cats) <= 1 and not forged_site:
         score = min(score, 45.0)
-    critical = "credentials_request" in cats or "safe_account_transfer" in cats or "remote_access" in cats
+    if forged_site:
+        score = max(score, 75.0)
+    critical = ("credentials_request" in cats or "safe_account_transfer" in cats or "remote_access" in cats
+                or any(f["score"] >= 50 for f in links))
     if critical and len(cats) >= 2:
         score = max(score, 75.0)
     level = "HIGH" if score >= 70 else "MEDIUM" if score >= 30 else "LOW"
@@ -119,6 +134,6 @@ def analyze(text: str) -> dict:
             "words_analyzed": words,
             "summary": ("Признаков мошеннического сценария не найдено." if not found else
                         f"Найдено тактик социальной инженерии: {len(cats)}."),
-            "method": "Правила (словари фраз на русском, казахском, английском) — прозрачно, не обученная модель",
+            "method": "Правила (словари фраз на русском, казахском, английском) и проверка ссылок — прозрачно, не обученная модель",
             "disclaimer": "Оценивается содержание разговора, а не личность собеседника. Голос или манера речи не делают человека мошенником.",
             "short_text_note": "Текст очень короткий — оценка ненадёжна." if words < 8 else None}

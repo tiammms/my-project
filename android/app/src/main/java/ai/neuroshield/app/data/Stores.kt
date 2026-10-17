@@ -141,7 +141,8 @@ data class Alert(
     val sourceRu: String get() = when (source) {
         "incoming_call" -> "Входящий звонок"; "sms_code" -> "SMS с кодом во время звонка"; "sms_text" -> "Подозрительное SMS"
         "live_speech" -> "Речь во время звонка"; "manual_text" -> "Проверка текста"; "face" -> "Проверка лица"
-        "blocked_call" -> "Заблокированный звонок"; "messenger_call" -> "Звонок в мессенджере"; "video_call" -> "Проверка видеозвонка"; "messenger_text" -> "Сообщение в мессенджере"; else -> source
+        "blocked_call" -> "Заблокированный звонок"; "messenger_call" -> "Звонок в мессенджере"; "video_call" -> "Проверка видеозвонка"; "messenger_text" -> "Сообщение в мессенджере"
+        "demo" -> "Демо-сценарий (учебные данные)"; else -> source
     }
 }
 
@@ -183,4 +184,6 @@ class AlertStore(ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 1) {
 
     fun delete(id: Long) { writableDatabase.delete("alerts", "id = ?", arrayOf(id.toString())); _version.value++ }
     fun clear() { writableDatabase.delete("alerts", null, null); _version.value++ }
+    fun deleteSource(source: String): Int { val n = writableDatabase.delete("alerts", "source = ?", arrayOf(source)); _version.value++; return n }
+    fun countSource(source: String): Int = readableDatabase.rawQuery("SELECT COUNT(*) FROM alerts WHERE source = ?", arrayOf(source)).use { c -> if (c.moveToFirst()) c.getInt(0) else 0 }
 }

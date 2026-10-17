@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
         val tabs = listOf(
             Triple("home", "Обзор", Icons.Outlined.GridView), Triple("protection", "Защита", Icons.Outlined.Shield),
             Triple("history", "Угрозы", Icons.Outlined.Radar), Triple("settings", "Настройки", Icons.Outlined.Tune))
-        val tab = when (r) { "text", "face" -> "home"; else -> r }
+        val tab = when (r) { "text", "face", "demo" -> "home"; else -> r }
         Scaffold(containerColor = NS.bg, bottomBar = { BottomBar(tabs, tab) { route.value = it } }) { pad ->
             Box(Modifier.fillMaxSize().padding(pad).background(Brush.verticalGradient(listOf(Color(0xFF0B0E13), NS.bg)))) {
                 AnimatedContent(targetState = r, label = "screens", transitionSpec = {
@@ -143,6 +143,8 @@ class MainActivity : ComponentActivity() {
                         "settings" -> SettingsScreen(onReplayOnboarding = { app.prefs.onboarded = false; onboarded.value = false })
                         "text" -> TextCheckScreen(onBack = { route.value = "home" })
                         "face" -> FaceScreen(onBack = { route.value = "home" })
+                        "demo" -> ai.neuroshield.app.ui.DemoScreen(onBack = { route.value = "home" },
+                            openHistory = { route.value = "history" })
                         else -> HomeScreen(
                             go = { if (it == "video") { route.value = "protection"; startVideoCheck() } else route.value = it },
                             openAlert = { id -> openAlert.value = id; route.value = "history" })

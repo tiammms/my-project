@@ -352,3 +352,45 @@ class TestRealFaceModels(unittest.TestCase):
         r = C.post("/api/v1/bio/face/liveness/verify", json={"challenge_id": ch["challenge_id"], "frames": frames}).json()
         self.assertNotEqual(r["verdict"], "passed", r)
         self.assertNotIn("liveness_token", r)
+
+
+class DemoScenarioTests(unittest.TestCase):
+    """Presentation mode: made-up input, real analysis, nothing stored. Pins what the demo shows."""
+
+    def test_script_and_call(self):
+        s = C.get("/api/v1/bio/demo/scenario").json()
+        r = C.post("/api/v1/bio/demo/call", json={"number": s["number"]}).json()
+        self.assertEqual(r["risk_level"], "MEDIUM"); self.assertFalse(r["stored"])
+
+    def test_speech_grows_to_high(self):
+        from backend.app.biometrics import demo_scenario as D
+        first = C.post("/api/v1/bio/demo/text", json={"text": D.caller_text(1)}).json()
+        full = C.post("/api/v1/bio/demo/text", json={"text": D.caller_text(len(D.CALL))}).json()
+        self.assertNotEqual(first["risk_level"], "HIGH")
+        self.assertEqual(full["risk_level"], "HIGH")
+        cats = {t["category"] for t in full["tactics"]}
+        self.assertIn("credentials_request", cats); self.assertIn("safe_account_transfer", cats)
+
+    def test_sms_phishing_and_normal(self):
+        from backend.app.biometrics import demo_scenario as D
+        sms = C.post("/api/v1/bio/demo/sms", json={"text": D.SMS}).json()
+        self.assertEqual(sms["risk_level"], "HIGH"); self.assertNotIn("4821", str(sms))   # the code itself is never returned
+        ph = C.post("/api/v1/bio/demo/text", json={"text": D.PHISHING}).json()
+        self.assertEqual(ph["risk_level"], "HIGH"); self.assertIn("phishing_link", {t["category"] for t in ph["tactics"]})
+        self.assertEqual(C.post("/api/v1/bio/demo/text", json={"text": D.NORMAL}).json()["risk_level"], "LOW")
+
+    def test_demo_is_not_stored(self):
+        before = C.get("/api/v1/bio/history").json()["total"]
+        C.post("/api/v1/bio/demo/text", json={"text": "Продиктуйте код из СМС, срочно"})
+        self.assertEqual(C.get("/api/v1/bio/history").json()["total"], before)
+
+
+class LinkCheckTests(unittest.TestCase):
+    def test_links(self):
+        from backend.app.biometrics import link_check as L
+        self.assertGreaterEqual(L.check("https://kaspi-verify.top/login")["score"], 70)
+        for u in ("https://kaspi.kz/shop", "https://www.halykbank.kz", "https://egov.kz/cms/ru", "https://t.me/x"):
+            self.assertEqual(L.check(u)["score"], 0, u)
+        self.assertGreaterEqual(L.check("https://bit.ly/3xYz")["score"], 35)
+        self.assertNotEqual(scam_text.analyze("Скидки тут https://bit.ly/abc")["risk_level"], "HIGH")
+        self.assertEqual(scam_text.analyze("Смотри фото https://photos.google.com/share/abc")["risk_level"], "LOW")

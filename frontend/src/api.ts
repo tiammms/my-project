@@ -106,6 +106,11 @@ export const bio = {
   privacy: () => call<Privacy>("/api/v1/bio/privacy"),
   putPrivacy: (body: Partial<Privacy>) => call<Privacy>("/api/v1/bio/privacy", { method: "PUT", json: body }),
   eraseAll: () => call<any>("/api/v1/bio/privacy/erase-all", { method: "POST" }),
+  // presentation mode: made-up input, real analysis, nothing stored
+  demoScenario: () => call<any>("/api/v1/bio/demo/scenario"),
+  demoCall: (body: { number: string; home_code?: string }) => call<any>("/api/v1/bio/demo/call", { method: "POST", json: body }),
+  demoText: (text: string) => call<any>("/api/v1/bio/demo/text", { method: "POST", json: { text } }),
+  demoSms: (text: string) => call<any>("/api/v1/bio/demo/sms", { method: "POST", json: { text } }),
 };
 
 export const api = {

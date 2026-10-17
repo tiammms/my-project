@@ -43,6 +43,8 @@ data class Warning(
     val excerpt: String? = null,
     val offerListening: Boolean = false,
     val isTest: Boolean = false,
+    /** Demo scenario: scripted input, real analysis. Saved to history with the «Демо» mark, shown with a «ДЕМО» label. */
+    val demo: Boolean = false,
 )
 
 /**
@@ -142,7 +144,7 @@ object Warnings {
         header.addView(iconBox, LinearLayout.LayoutParams(iconSize, iconSize))
         val titles = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 14f), 0, 0, 0) }
         val label = when (w.level) { RiskLevel.HIGH -> "⚠ ВНИМАНИЕ"; RiskLevel.MEDIUM -> "ОСТОРОЖНО"; RiskLevel.LOW -> "NEUROSHIELD" }
-        titles.addView(tv(if (w.isTest) "$label · ТЕСТ" else label, 11f, c, bold = true, lines = 1, spacing = 0.1f))
+        titles.addView(tv(if (w.isTest) "$label · ТЕСТ" else if (w.demo) "$label · ДЕМО" else label, 11f, c, bold = true, lines = 1, spacing = 0.1f))
         val headlineText = when (w.level) { RiskLevel.HIGH -> "Возможно, мошенник!"; RiskLevel.MEDIUM -> "Есть признаки обмана"; RiskLevel.LOW -> "Незнакомый номер" }
         titles.addView(tv(headlineText, 21f, TEXT, bold = true, lines = 2).apply { setLineSpacing(0f, 0.95f) })
         header.addView(titles, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
@@ -178,7 +180,7 @@ object Warnings {
 
         // one-tap help for HIGH threats: call a trusted person or the bank (opens the dialer, never calls by itself)
         val pr = ctx.app.prefs
-        if (w.level == RiskLevel.HIGH && !w.isTest || w.isTest) {
+        if (w.level == RiskLevel.HIGH || w.isTest) {
             val help = mutableListOf<Pair<String, String>>()
             if (pr.trustedNumber.isNotBlank()) help += ("Позвонить: " + pr.trustedName.ifBlank { "близкому" }) to pr.trustedNumber
             if (pr.bankNumber.isNotBlank()) help += "Позвонить в банк" to pr.bankNumber
@@ -248,7 +250,7 @@ object Warnings {
                 duration = 1300; repeatCount = android.animation.ValueAnimator.INFINITE; start()
             }
         } else ring.alpha = 0f
-        if (w.level == RiskLevel.LOW && !w.isTest) main.postDelayed({ if (view === wrap) { dismiss(wrap); view = null } }, 12_000)
+        if (w.level == RiskLevel.LOW && !w.isTest && !w.demo) main.postDelayed({ if (view === wrap) { dismiss(wrap); view = null } }, 12_000)
     }
 
     /** Small chip during a call with an unknown number: one tap opens the app and starts speech analysis. */

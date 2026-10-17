@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -181,6 +182,7 @@ fun sourceIcon(source: String): ImageVector = when (source) {
     "video_call" -> Icons.Filled.Videocam
     "face" -> Icons.Filled.Face
     "manual_text" -> Icons.Filled.TextSnippet
+    "demo" -> Icons.Filled.PlayCircle
     else -> Icons.Filled.Shield
 }
 
@@ -262,6 +264,19 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
         }
 
         if (alerts.isNotEmpty()) WeekChart(alerts)
+
+        // demo scenario for presentations: scripted call, real analysis
+        GlassCard(accent = NS.violet, onClick = { go("demo") }, padding = 16.dp) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(Icons.Filled.PlayCircle, NS.violet, 44.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Демо-показ", style = MaterialTheme.typography.titleMedium, color = NS.text)
+                    Text("Сценарий звонка мошенника по шагам — для презентации", style = MaterialTheme.typography.bodySmall, color = NS.text2)
+                }
+                Icon(Icons.Filled.ChevronRight, null, tint = NS.violet)
+            }
+        }
 
         SectionTitle("Быстрые проверки")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

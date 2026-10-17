@@ -75,6 +75,16 @@ adb shell am start -n $P/.MainActivity --es route settings; sleep 3; tap_text "�
 adb shell input keyevent KEYCODE_HOME; sleep 1
 adb emu gsm call 87015550123; sleep 6; adb emu gsm cancel 87015550123; sleep 2
 adb shell am start -n $P/.MainActivity --es route history; shot 20-history-blocked-call 4
+# demo scenario for presentations (scripted input, real analysis)
+adb shell am start -n $P/.MainActivity --es route demo; shot 21-demo 4
+tap_text "▶  Запустить весь сценарий"; shot 22-demo-call 3
+tap_text "Понятно"; shot 23-demo-speech 12
+shot 24-demo-speech-alert 6
+shot 25-demo-sms 8
+shot 26-demo-phishing 5
+tap_text "Понятно"; sleep 8
+adb shell input swipe 500 1500 500 400 300; shot 27-demo-finished 2
+adb shell am start -n $P/.MainActivity --es route history; shot 28-history-demo 4
 adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true
