@@ -267,3 +267,57 @@ class DemoScenarioTest {
         assertEquals(RiskLevel.LOW, ScamAnalyzer.analyze(DemoScenario.NORMAL).level)
     }
 }
+
+class VideoChallengesTest {
+    // a face frame every 333 ms; yaw/eyes/area set per moment
+    private fun frames(totalMs: Long, f: (Long) -> ScreenFace): List<ScreenFace> = (0..totalMs step 333).map(f)
+    private fun face(t: Long, yaw: Float = 0f, eyes: Float = 0.9f, area: Float = 0.12f, faces: Int = 1, jitter: Boolean = true) =
+        ScreenFace(t, faces, area, 0.5f + (if (jitter) ((t / 333) % 3 - 1) * 0.01f else 0f), 0.4f,
+            yaw + (if (jitter) ((t / 333) % 5 - 2).toFloat() else 0f), eyes, eyes)
+    private val plan = listOf(Challenge(ChallengeKind.TURN, 5_000, 14_000), Challenge(ChallengeKind.HAND, 14_000, 23_000))
+
+    @Test fun planIsTwoDifferentChallengesInARow() {
+        val p = VideoChallenges.plan(kotlin.random.Random(1))
+        assertEquals(2, p.size); assertNotEquals(p[0].kind, p[1].kind)
+        assertEquals(p[0].endMs, p[1].startMs)
+        assertEquals(p[1], VideoChallenges.current(p, p[1].startMs + 10))
+    }
+
+    @Test fun livePersonFollowingRequestsPasses() {
+        val fr = frames(30_000) { t ->
+            when {
+                t in 7_000..8_500 -> face(t, yaw = 30f)                        // turns the head
+                t in 16_000..16_700 -> face(t, faces = 0, area = 0f)           // hand covers the face
+                t % 4_000 < 333 -> face(t, eyes = 0.1f)                        // ordinary blinks
+                else -> face(t)
+            }
+        }
+        val r = VideoChallenges.checkAll(fr, plan)
+        assertTrue(r.all { it.passed })
+        val v = VideoCallCheck.evaluate(fr, r)
+        assertEquals(RiskLevel.LOW, v.level)
+        assertTrue(v.reasons.first().contains("2 из 2"))
+    }
+
+    @Test fun movingRecordingThatIgnoresRequestsIsMedium() {
+        val fr = frames(30_000) { t -> if (t % 4_000 < 333) face(t, eyes = 0.1f) else face(t) }   // blinks and jitters, never reacts
+        val r = VideoChallenges.checkAll(fr, plan)
+        assertTrue(r.none { it.passed })
+        assertEquals(RiskLevel.MEDIUM, VideoCallCheck.evaluate(fr, r).level)
+    }
+
+    @Test fun photoStaysHighAndFailsChallenges() {
+        val fr = frames(30_000) { t -> face(t, jitter = false) }
+        val r = VideoChallenges.checkAll(fr, plan)
+        assertTrue(r.none { it.passed })
+        assertEquals(RiskLevel.HIGH, VideoCallCheck.evaluate(fr, r).level)
+    }
+
+    @Test fun closingEyesLongerThanABlink() {
+        val eyes = Challenge(ChallengeKind.EYES, 5_000, 14_000)
+        val blinkOnly = frames(20_000) { t -> if (t % 4_000 < 333) face(t, eyes = 0.1f) else face(t) }
+        assertFalse(VideoChallenges.check(blinkOnly, eyes).passed)
+        val closed = frames(20_000) { t -> if (t in 8_000..9_200) face(t, eyes = 0.05f) else face(t) }
+        assertTrue(VideoChallenges.check(closed, eyes).passed)
+    }
+}

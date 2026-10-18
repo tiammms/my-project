@@ -23,8 +23,10 @@ import ai.neuroshield.app.R
 import ai.neuroshield.app.alert.Warning
 import ai.neuroshield.app.alert.Warnings
 import ai.neuroshield.app.app
+import ai.neuroshield.app.core.Challenge
 import ai.neuroshield.app.core.RiskLevel
 import ai.neuroshield.app.core.ScreenFace
+import ai.neuroshield.app.core.VideoChallenges
 import ai.neuroshield.app.core.VideoCallCheck
 import ai.neuroshield.app.core.VideoVerdict
 import androidx.core.app.NotificationCompat
@@ -35,7 +37,7 @@ import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 
 data class VideoUi(val running: Boolean = false, val seconds: Int = 0, val faceFrames: Int = 0, val frames: Int = 0,
-                   val result: VideoVerdict? = null, val message: String? = null)
+                   val result: VideoVerdict? = null, val message: String? = null, val prompt: String? = null)
 
 object VideoState { val ui = MutableStateFlow(VideoUi()) }
 
@@ -53,6 +55,8 @@ class VideoCheckService : Service() {
     private var started = 0L
     private var busy = false
     private var done = false
+    private var plan: List<Challenge> = emptyList()
+    private var shown: Challenge? = null
     private val detector by lazy {
         FaceDetection.getClient(FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
@@ -67,7 +71,7 @@ class VideoCheckService : Service() {
         val open = PendingIntent.getActivity(this, 21, Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_ROUTE, "protection"),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN).setSmallIcon(R.drawable.ic_shield)
-            .setContentTitle("Saqtan проверяет видеозвонок").setContentText("Анализ лица на экране, ~30 секунд. Кадры не сохраняются")
+            .setContentTitle("Saqtan проверяет видеозвонок").setContentText("30 секунд: лицо собеседника и два задания для него. Кадры не сохраняются")
             .setOngoing(true).setContentIntent(open).build()
         try {
             ServiceCompat.startForeground(this, NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
@@ -93,7 +97,9 @@ class VideoCheckService : Service() {
         val r = ImageReader.newInstance(w, hgt, PixelFormat.RGBA_8888, 2); reader = r
         display = p.createVirtualDisplay("neuroshield-video-check", w, hgt, dm.densityDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, r.surface, null, h)
         started = System.currentTimeMillis()
+        plan = VideoChallenges.plan()
         VideoState.ui.value = VideoUi(running = true, message = "Смотрю на лицо собеседника…")
+        Warnings.showPrompt(this, "Saqtan смотрит на лицо собеседника… Скоро подскажу, о чём его попросить")
         // A virtual display only produces a new image when the screen changes. Sample on a fixed clock instead and
         // re-use the last picture when nothing changed: an unchanged screen IS a frozen picture.
         var lastBmp: Bitmap? = null
@@ -101,6 +107,7 @@ class VideoCheckService : Service() {
             override fun run() {
                 if (done) return
                 val now = System.currentTimeMillis()
+                updatePrompt(now - started)
                 r.acquireLatestImage()?.let { img ->
                     try {
                         val plane = img.planes[0]
@@ -133,11 +140,31 @@ class VideoCheckService : Service() {
         h.postDelayed({ conclude() }, DURATION_MS + 3000)
     }
 
+    /** Shows the current challenge (step i of n) over the call screen, in the notification and in the app. */
+    private fun updatePrompt(t: Long) {
+        val c = VideoChallenges.current(plan, t)
+        if (c == shown) return
+        shown = c
+        val text = if (c != null) "Задание ${plan.indexOf(c) + 1} из ${plan.size}: ${c.kind.ask}"
+            else if (t < VideoChallenges.FIRST_AT_MS) "Saqtan смотрит на лицо собеседника…"
+            else "Готово, заканчиваю проверку…"
+        Warnings.showPrompt(this, text)
+        VideoState.ui.value = VideoState.ui.value.copy(prompt = text)
+        try {
+            val n = NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN).setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle("Saqtan проверяет видеозвонок").setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text)).setOngoing(true).setOnlyAlertOnce(true).build()
+            getSystemService(android.app.NotificationManager::class.java).notify(NOTIF_ID, n)
+        } catch (_: Exception) {}
+    }
+
     @Synchronized private fun conclude() {
         if (done) return
         done = true
-        val v = VideoCallCheck.evaluate(synchronized(frames) { frames.toList() })
-        VideoState.ui.value = VideoState.ui.value.copy(running = false, result = v, message = null)
+        Warnings.hidePrompt()
+        val all = synchronized(frames) { frames.toList() }
+        val v = VideoCallCheck.evaluate(all, VideoChallenges.checkAll(all, plan))
+        VideoState.ui.value = VideoState.ui.value.copy(running = false, result = v, message = null, prompt = null)
         val p = app.prefs
         Warnings.show(this, Warning(level = v.level, score = v.score, source = "video_call", number = p.voipNumber,
             title = "Видеозвонок: ${v.title.replaceFirstChar { it.lowercase() }}", reasons = v.reasons, advice = v.advice))
@@ -145,6 +172,7 @@ class VideoCheckService : Service() {
     }
 
     private fun finish(message: String?) {
+        Warnings.hidePrompt()
         if (message != null) VideoState.ui.value = VideoState.ui.value.copy(running = false, message = message)
         else if (VideoState.ui.value.running) VideoState.ui.value = VideoState.ui.value.copy(running = false)
         try { display?.release() } catch (_: Exception) {}

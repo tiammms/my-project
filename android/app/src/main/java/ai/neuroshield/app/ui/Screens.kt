@@ -504,13 +504,20 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
                         Text("Кадров с лицом: ${vui.faceFrames} из ${vui.frames}", style = MaterialTheme.typography.bodySmall, color = NS.muted)
                     }
                 }
+                vui.prompt?.let { Text(it, color = NS.violet, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold) }
             } else {
-                ListRow(Icons.Filled.Videocam, "Проверить видеозвонок", "30 секунд · фото или запись вместо человека?", tint = NS.violet, onClick = onVideo) {
+                ListRow(Icons.Filled.Videocam, "Проверить видеозвонок", "30 секунд · лицо и два задания собеседнику", tint = NS.violet, onClick = onVideo) {
                     Icon(Icons.Filled.ChevronRight, null, tint = NS.muted)
                 }
             }
             vui.result?.let { v ->
                 Verdict(v.level, v.title, "Морганий ${v.blinks} · лицо видно ${(v.facePresentRatio * 100).toInt()}% · ${v.seconds.toInt()} с")
+                v.challenges.forEach { c ->
+                    Bullet((if (c.passed) "Выполнено: " else "Не выполнено: ") + c.challenge.kind.done + " — " + c.detail,
+                        if (c.passed) NS.safe else NS.warn)
+                }
+                Text("Задания мешают обмануть фото или заранее записанным видео. Дипфейк, который повторяет просьбы, они не распознают.",
+                    style = MaterialTheme.typography.bodySmall, color = NS.muted)
             }
             vui.message?.let { Text(it, color = NS.text2, style = MaterialTheme.typography.bodySmall) }
         }
@@ -789,7 +796,7 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                     Bullet("Код из SMS во время звонка с незнакомцем — сразу тревога.")
                     Bullet("Мессенджеры: по уведомлению видит звонки и проверяет сообщения.")
                     Bullet("Речь: офлайн-распознавание Vosk, только через громкую связь (ограничение Android).")
-                    Bullet("Видео: 30 секунд анализа лица на экране (ML Kit) — фото или запись вместо человека.")
+                    Bullet("Видео: 30 секунд анализа лица на экране (ML Kit) и два случайных задания собеседнику — против фото и заранее записанного видео. Дипфейки не распознаются.")
                     Bullet("Не распознаёт дипфейки и клонированный голос; по голосу человека мошенником не называет.")
                     Text("Исследовательский прототип · не заменяет банк", color = NS.muted, style = MaterialTheme.typography.bodySmall)
                 }

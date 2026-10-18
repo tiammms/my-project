@@ -272,6 +272,33 @@ object Warnings {
 
     fun hideListenOffer() = main.post { removeView(offerView); offerView = null }
 
+    private var promptView: TextView? = null
+
+    /**
+     * Instruction strip during the video-call check («Попросите собеседника повернуть голову…»). It never takes
+     * touches, so the call app underneath stays fully usable. Without the overlay permission the same text is in
+     * the ongoing notification and in the app.
+     */
+    fun showPrompt(ctx: Context, text: String) = main.post {
+        if (!Perms.overlay(ctx)) return@post
+        val c = ctx.applicationContext
+        val v = promptView ?: TextView(c).apply {
+            setTextColor(Color.WHITE); textSize = 15f; gravity = Gravity.CENTER
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+            setPadding(dp(c, 18f), dp(c, 12f), dp(c, 18f), dp(c, 12f))
+            background = GradientDrawable().apply { setColor(0xF20F1115.toInt()); cornerRadius = dp(c, 18f).toFloat(); setStroke(dp(c, 1.5f), 0xFF8B7CF6.toInt()) }
+        }.also { tv ->
+            val p = WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                PixelFormat.TRANSLUCENT).apply { gravity = Gravity.TOP; y = dp(c, 56f); horizontalMargin = 0.04f }
+            try { (c.getSystemService(Context.WINDOW_SERVICE) as WindowManager).addView(tv, p); promptView = tv } catch (_: Exception) { return@post }
+        }
+        v.text = text
+    }
+
+    fun hidePrompt() = main.post { removeView(promptView); promptView = null }
+
     private var videoOfferView: View? = null
 
     /** Chip during a messenger video call: one tap starts the 30-second check of the caller's face on screen. */

@@ -15,6 +15,7 @@ data class ScreenFace(
 data class VideoVerdict(
     val level: RiskLevel, val score: Double, val title: String, val reasons: List<String>, val advice: List<String>,
     val seconds: Double, val facePresentRatio: Double, val blinks: Int, val movement: Double, val conclusive: Boolean,
+    val challenges: List<ChallengeResult> = emptyList(),
 )
 
 /**
@@ -28,7 +29,33 @@ object VideoCallCheck {
     const val MIN_SECONDS = 10.0
     private const val MIN_FACE_AREA = 0.02f      // ignore the small self-view thumbnail
 
-    fun evaluate(frames: List<ScreenFace>): VideoVerdict {
+    fun evaluate(frames: List<ScreenFace>, challenges: List<ChallengeResult> = emptyList()): VideoVerdict =
+        withChallenges(evaluateFace(frames), challenges)
+
+    /**
+     * Challenges add evidence on top of the face check: a static picture stays HIGH; a moving face that did none of
+     * the requested actions becomes MEDIUM (maybe a recording, or the user did not ask); passing them is noted,
+     * never presented as proof of who the person is.
+     */
+    private fun withChallenges(v: VideoVerdict, results: List<ChallengeResult>): VideoVerdict {
+        if (results.isEmpty() || !v.conclusive) return v.copy(challenges = results)
+        val passed = results.count { it.passed }
+        val lines = results.map { (if (it.passed) "✓ " else "✗ ") + it.challenge.kind.ask.removePrefix("Попросите собеседника ") + ": " + it.detail }
+        val summary = "Задания собеседнику: выполнено $passed из ${results.size}"
+        return when {
+            v.level == RiskLevel.HIGH -> v.copy(reasons = v.reasons + summary + lines, challenges = results)
+            v.facePresentRatio >= 0.3 && passed == 0 -> v.copy(level = RiskLevel.MEDIUM, score = 55.0,
+                title = "Собеседник не выполнил ни одной просьбы — возможно, запись или подделка",
+                reasons = listOf(summary) + lines + v.reasons,
+                advice = listOf("Если вы не успели попросить — запустите проверку ещё раз",
+                    "Если человек отказывается повернуться или показать лицо — это тревожный знак",
+                    "Не выполняйте просьбы о деньгах и кодах") + v.advice.filter { it.startsWith("Проверка не") },
+                challenges = results)
+            else -> v.copy(reasons = listOf(summary) + lines + v.reasons, challenges = results)
+        }
+    }
+
+    private fun evaluateFace(frames: List<ScreenFace>): VideoVerdict {
         val limits = "Проверка не распознаёт дипфейки и не определяет, кто именно на видео."
         if (frames.size < 2) return inconclusive(0.0, "Слишком мало кадров", limits)
         val secs = (frames.last().tMs - frames.first().tMs) / 1000.0
