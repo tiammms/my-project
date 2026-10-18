@@ -84,8 +84,30 @@ shot 24-demo-speech-alert 6
 shot 25-demo-sms 8
 shot 26-demo-phishing 5
 tap_text "Понятно"; sleep 8
-adb shell input swipe 500 1500 500 400 300; shot 27-demo-finished 2
+adb shell input swipe 540 1700 540 500 300; shot 27-demo-finished 2
 adb shell am start -n $P/.MainActivity --es route history; shot 28-history-demo 4
+# --- screen-recorded walkthrough (for people who cannot install the APK) ---
+read W H <<< "$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1 | tr 'x' ' ')"
+swipe_up() { adb shell input swipe $((W/2)) $((H*3/4)) $((W/2)) $((H/4)) 450; }
+adb shell am start -n $P/.MainActivity --es route home; sleep 3; tap_text "Понятно"; sleep 1
+adb shell screenrecord --time-limit 175 --bit-rate 5000000 /sdcard/walk.mp4 &
+sleep 2
+adb shell am start -n $P/.MainActivity --es route home; sleep 4
+swipe_up; sleep 2
+tap_text "Тест"; sleep 5; tap_text "Понятно"; sleep 2
+adb shell am start -n $P/.MainActivity --es route text; sleep 3
+tap_text "Пример"; sleep 2; tap_text "Проверить"; sleep 4; swipe_up; sleep 4
+adb shell input keyevent KEYCODE_HOME; sleep 2
+adb emu gsm call 87017770011; sleep 7
+adb emu gsm accept 87017770011; sleep 4
+adb emu sms send 7700 "Kod podtverzhdeniya 4821. Nikomu ne soobshchayte"; sleep 8
+adb emu gsm cancel 87017770011; sleep 2
+adb shell am start -n $P/.MainActivity --es route demo; sleep 3
+tap_text "▶  Запустить весь сценарий"; sleep 45
+swipe_up; sleep 4
+adb shell am start -n $P/.MainActivity --es route history; sleep 5
+adb shell pkill -INT screenrecord; sleep 4
+adb pull /sdcard/walk.mp4 shots/walkthrough-raw.mp4 || true
 adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true

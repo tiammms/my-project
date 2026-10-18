@@ -113,6 +113,7 @@ jobs:
           api-level: 31
           target: default
           arch: x86_64
+          profile: pixel_5
           ram-size: 3072M
           emulator-boot-timeout: 1200
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
@@ -126,6 +127,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 -c "t=open('shots/crash.txt').read() if __import__('os').path.exists('shots/crash.txt') else 'no crash.txt';print('::notice title=emulator::'+t[:3000].replace('%','%25').replace('\r','').replace('\n','%0A'))"
+          if [ -f shots/walkthrough-raw.mp4 ]; then
+            command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+            ffmpeg -loglevel error -y -i shots/walkthrough-raw.mp4 -vf "scale=540:-2" -c:v libx264 -crf 27 -preset veryfast -pix_fmt yuv420p -movflags +faststart shots/walkthrough.mp4 && rm shots/walkthrough-raw.mp4
+          fi
           cd shots && git init -q && git checkout -q -b ci-screens && git add . && \
             git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "emulator screenshots ${{ github.sha }}" && \
             git push -qf https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ci-screens
