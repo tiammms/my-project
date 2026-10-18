@@ -78,7 +78,7 @@ struct WarningCard: View {
     }
 
     private var levelIndex: Int { w.level == .high ? 2 : w.level == .medium ? 1 : 0 }
-    private var label: String { w.level == .high ? "⚠ ВНИМАНИЕ" : w.level == .medium ? "ОСТОРОЖНО" : "NEUROSHIELD" }
+    private var label: String { w.level == .high ? "⚠ ВНИМАНИЕ" : w.level == .medium ? "ОСТОРОЖНО" : "SAQTAN" }
     private var headline: String { w.level == .high ? "Возможно, мошенник!" : w.level == .medium ? "Есть признаки обмана" : "Незнакомый номер" }
     private var helpButtons: [(String, String)] {
         var out: [(String, String)] = []

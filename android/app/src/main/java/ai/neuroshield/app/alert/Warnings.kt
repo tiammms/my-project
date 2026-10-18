@@ -143,7 +143,7 @@ object Warnings {
         iconBox.addView(disc, FrameLayout.LayoutParams(iconSize, iconSize))
         header.addView(iconBox, LinearLayout.LayoutParams(iconSize, iconSize))
         val titles = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 14f), 0, 0, 0) }
-        val label = when (w.level) { RiskLevel.HIGH -> "⚠ ВНИМАНИЕ"; RiskLevel.MEDIUM -> "ОСТОРОЖНО"; RiskLevel.LOW -> "NEUROSHIELD" }
+        val label = when (w.level) { RiskLevel.HIGH -> "⚠ ВНИМАНИЕ"; RiskLevel.MEDIUM -> "ОСТОРОЖНО"; RiskLevel.LOW -> "SAQTAN" }
         titles.addView(tv(if (w.isTest) "$label · ТЕСТ" else if (w.demo) "$label · ДЕМО" else label, 11f, c, bold = true, lines = 1, spacing = 0.1f))
         val headlineText = when (w.level) { RiskLevel.HIGH -> "Возможно, мошенник!"; RiskLevel.MEDIUM -> "Есть признаки обмана"; RiskLevel.LOW -> "Незнакомый номер" }
         titles.addView(tv(headlineText, 21f, TEXT, bold = true, lines = 2).apply { setLineSpacing(0f, 0.95f) })

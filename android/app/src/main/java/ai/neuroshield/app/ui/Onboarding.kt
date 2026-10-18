@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -55,7 +56,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
     val pager = rememberPagerState { SLIDES.size }
     val scope = rememberCoroutineScope()
     val last = pager.currentPage == SLIDES.lastIndex
-    Column(Modifier.fillMaxSize().background(NS.bg).padding(horizontal = 24.dp, vertical = 16.dp)) {
+    Column(Modifier.fillMaxSize().background(NS.bg).systemBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("Saq", style = MaterialTheme.typography.titleLarge, color = NS.text)
             Text("tan", style = MaterialTheme.typography.titleLarge, color = NS.cyan)
