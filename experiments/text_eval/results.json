@@ -1,0 +1,139 @@
+{
+ "normal/all": {
+  "LOW": 28,
+  "HIGH": 1,
+  "MEDIUM": 1
+ },
+ "normal/en": {
+  "LOW": 5
+ },
+ "normal/kk": {
+  "LOW": 5
+ },
+ "normal/ru": {
+  "LOW": 18,
+  "HIGH": 1,
+  "MEDIUM": 1
+ },
+ "scam/all": {
+  "HIGH": 11,
+  "LOW": 10,
+  "MEDIUM": 9
+ },
+ "scam/en": {
+  "HIGH": 2,
+  "MEDIUM": 2,
+  "LOW": 1
+ },
+ "scam/kk": {
+  "HIGH": 1,
+  "MEDIUM": 2,
+  "LOW": 2
+ },
+ "scam/ru": {
+  "HIGH": 8,
+  "LOW": 7,
+  "MEDIUM": 5
+ },
+ "scam_warned": "20/30",
+ "scam_high": "11/30",
+ "normal_false_warnings": "2/30",
+ "errors": [
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Мама, я попал в аварию, срочно нужны деньги, переведи на эту карту, только папе не говори.",
+   "level": "LOW",
+   "score": 20.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Я из Нацбанка. Ваши сбережения нужно задекларировать, иначе их заморозят. Время ограничено.",
+   "level": "LOW",
+   "score": 25.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Не кладите трубку, иначе операция пройдёт и вы потеряете деньги.",
+   "level": "LOW",
+   "score": 20.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Привет, это я, сменил номер. Скинь 20 тысяч до вечера, очень надо, потом объясню.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Инвестиционная платформа: гарантированный доход 30% в месяц, внесите депозит сегодня.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Курьер не смог доставить посылку. Оплатите повторную доставку 490 тг по ссылке.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Ваш родственник задержан полицией, чтобы решить вопрос, нужно передать деньги.",
+   "level": "LOW",
+   "score": 25.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "kk",
+   "text": "Ұтыс ұтып алдыңыз! Сыйлықты алу үшін сілтемеге өтіп, карта деректерін енгізіңіз.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "kk",
+   "text": "Анашым, телефоным бұзылды, жаңа нөмірге тез ақша жіберші.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "en",
+   "text": "Your parcel is on hold. Pay the customs fee here: http://post-delivery.click/pay",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "normal",
+   "lang": "ru",
+   "text": "Kaspi.kz: код подтверждения 4821. Никому не сообщайте этот код.",
+   "level": "HIGH",
+   "score": 75.0,
+   "ok": false
+  },
+  {
+   "label": "normal",
+   "lang": "ru",
+   "text": "Не забудь пароль от вайфая на даче, он на холодильнике.",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "ok": false
+  }
+ ]
+}
