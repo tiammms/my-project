@@ -116,6 +116,7 @@ adb shell am start -n $P/.MainActivity --es route history; sleep 5
 adb shell pkill -INT screenrecord; sleep 4
 adb pull /sdcard/walk.mp4 shots/walkthrough-raw.mp4 || true
 adb logcat -d > shots/logcat.txt
+grep "SaqtanCall" shots/logcat.txt > shots/calls.txt || true
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true
 echo "alive: $(adb shell pidof $P)" >> shots/crash.txt

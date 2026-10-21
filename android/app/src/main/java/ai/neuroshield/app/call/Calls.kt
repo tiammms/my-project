@@ -53,6 +53,7 @@ class PhoneStateReceiver : BroadcastReceiver() {
         if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
         val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
         @Suppress("DEPRECATION") val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
+        android.util.Log.i("SaqtanCall", "phone state $state number=${number != null}")
         when (state) {
             TelephonyManager.EXTRA_STATE_RINGING -> if (number != null) CallTracker.onIncoming(ctx, number, screened = false)
             TelephonyManager.EXTRA_STATE_OFFHOOK -> CallTracker.onOffhook(ctx, number)
@@ -91,6 +92,7 @@ object CallTracker {
         val now = System.currentTimeMillis()
         // the screening service and the phone-state broadcast both report the same call: handle it once
         if (n == lastWarnedNumber && now - lastWarnedAt < 30_000) { p.callState = "RINGING"; return }
+        android.util.Log.i("SaqtanCall", "incoming screened=$screened")
         lastWarnedNumber = n; lastWarnedAt = now
         if (p.blockMarked && n != null && n in p.scamNumbers()) { p.callState = "RINGING"; return }   // already rejected
         val contact = Contacts.contains(ctx, n)

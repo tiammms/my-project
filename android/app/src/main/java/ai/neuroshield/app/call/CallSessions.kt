@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import ai.neuroshield.app.MainActivity
 import ai.neuroshield.app.NeuroShieldApp
 import ai.neuroshield.app.Perms
@@ -33,6 +34,7 @@ import org.json.JSONObject
 object CallSessions {
     private const val KEY = "call_session"
     private const val NOTIF_REPORT = 3101
+    private const val TAG = "SaqtanCall"
 
     private fun load(ctx: Context): CallSession? {
         val raw = ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).getString(KEY, null) ?: return null
@@ -61,12 +63,14 @@ object CallSessions {
         val s = CallSession(ReputationSources.status())
         s.on(CallEvent.Ringing(System.currentTimeMillis(), number, channel, app, pre))
         save(ctx, s)
+        Log.i(TAG, "start $channel level=${pre.level}")
     }
 
     /** Adds an event to the current call, if there is one (calls with contacts have no session). */
     @Synchronized fun on(ctx: Context, e: CallEvent) {
         val s = load(ctx) ?: return
         if (s.isEnded) return
+        Log.i(TAG, "event ${e.javaClass.simpleName}")
         s.on(e)
         save(ctx, s)
     }
@@ -75,7 +79,7 @@ object CallSessions {
 
     /** Ends the current call. [channel] = only if the current call came through that channel. */
     @Synchronized fun end(ctx: Context, channel: CallChannel? = null) {
-        val s = load(ctx) ?: return
+        val s = load(ctx) ?: run { Log.i(TAG, "end: no session"); return }
         if (channel != null && (s.events.firstOrNull() as? CallEvent.Ringing)?.channel != channel) return
         if (!s.isEnded) s.on(CallEvent.Ended(System.currentTimeMillis()))
         finish(ctx, s)
@@ -84,13 +88,14 @@ object CallSessions {
     private fun finish(ctx: Context, s: CallSession) {
         save(ctx, null)
         val r = s.report() ?: return
+        Log.i(TAG, "report level=${r.level} answered=${r.answered} title=${r.title}")
         val reasons = r.findings + r.checks.map { "Проверка — $it" } + r.advice.map { "Совет — $it" }
         val id = ctx.app.alerts.add("call_report", r.number ?: "скрытый номер", r.level, r.score, r.title, reasons, null)
         notifyReport(ctx, r, id)
     }
 
     private fun notifyReport(ctx: Context, r: CallReport, alertId: Long) {
-        if (!Perms.notifications(ctx)) return
+        if (!Perms.notifications(ctx)) { Log.i(TAG, "no notification permission"); return }
         val open = PendingIntent.getActivity(ctx, 31, Intent(ctx, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_ROUTE, "history"); putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
