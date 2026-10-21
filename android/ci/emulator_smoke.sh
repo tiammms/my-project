@@ -46,7 +46,7 @@ check() { if adb shell dumpsys notification --noredact | grep -q "$2"; then echo
 check "report after scam call (code during call)" "Отчёт о звонке: Возможное мошенничество: код из SMS во время звонка"
 shot 06a-report-notification 1
 adb shell cmd statusbar expand-notifications; shot 06b-report-in-shade 3; adb shell cmd statusbar collapse
-adb emu gsm call 87015550199; sleep 6; adb emu gsm cancel 87015550199; sleep 4
+adb emu gsm call 87015550199; sleep 6; adb emu gsm cancel 87015550199; sleep 12
 check "report after missed call" "Отчёт о звонке: Пропущенный звонок с незнакомого номера"
 adb shell am start -n $P/.MainActivity --es route history; shot 06-history-after-call 5
 adb shell am start -n $P/.MainActivity --ez start_listen true; shot 07-listen-without-model 5
