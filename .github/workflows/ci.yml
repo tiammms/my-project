@@ -110,13 +110,13 @@ jobs:
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
       - uses: ReactiveCircus/android-emulator-runner@v2
         with:
-          api-level: 31
-          target: default
+          api-level: 34
+          target: google_apis
           arch: x86_64
           profile: pixel_5
           ram-size: 3072M
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           working-directory: android
           script: ./ci/emulator_smoke.sh
