@@ -97,7 +97,7 @@ jobs:
           gh release create android-latest Saqtan-$V-*.apk --title "Saqtan для Android (сборка ${{ github.run_number }})" \
             --notes "Установочные файлы Android-приложения, собраны автоматически из коммита ${{ github.sha }}. Для большинства телефонов: файл -arm64.apk. Если не устанавливается — -universal.apk (подходит всем, но больше). Старые телефоны (32-бит): -armeabi-v7a.apk. Установка: скачайте APK на телефон, откройте и разрешите установку из этого источника." --latest
   android-emulator:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [android]
     steps:
       - uses: actions/checkout@v4
