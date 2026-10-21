@@ -742,7 +742,7 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                 onClick = { warnUnknown = !warnUnknown; p.warnUnknownCallers = warnUnknown }) { NeoSwitch(warnUnknown) { warnUnknown = it; p.warnUnknownCallers = it } }
             ListRow(Icons.Filled.Mic, "Кнопка анализа речи", "Во время звонка с незнакомцем",
                 onClick = { offer = !offer; p.offerListening = offer }) { NeoSwitch(offer) { offer = it; p.offerListening = it } }
-            ListRow(Icons.Filled.GraphicEq, "Автоанализ речи", "Начинать слушать сразу после ответа",
+            ListRow(Icons.Filled.GraphicEq, "Автоанализ речи", "Сам включается после ответа незнакомцу: нужны модель речи и громкая связь",
                 onClick = { auto = !auto; p.autoListen = auto }) { NeoSwitch(auto) { auto = it; p.autoListen = it } }
             ListRow(Icons.Filled.Block, "Блокировать отмеченных мошенников", if (Perms.screeningRole(ctx)) "Звонки с отмеченных номеров сбрасываются" else "Нужен модуль «Определитель номера»",
                 tint = NS.threat, onClick = { block = !block; p.blockMarked = block }) { NeoSwitch(block) { block = it; p.blockMarked = it } }

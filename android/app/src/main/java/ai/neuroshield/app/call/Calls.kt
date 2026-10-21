@@ -10,10 +10,18 @@ import ai.neuroshield.app.Contacts
 import ai.neuroshield.app.alert.Warning
 import ai.neuroshield.app.alert.Warnings
 import ai.neuroshield.app.app
+import ai.neuroshield.app.Perms
+import ai.neuroshield.app.core.CallChannel
+import ai.neuroshield.app.core.CallEvent
 import ai.neuroshield.app.core.CallFacts
 import ai.neuroshield.app.core.CallRisk
+import ai.neuroshield.app.core.CallRiskResult
+import ai.neuroshield.app.core.Reason
+import ai.neuroshield.app.core.ReputationSources
 import ai.neuroshield.app.core.RiskLevel
+import ai.neuroshield.app.core.SpeechStatus
 import ai.neuroshield.app.listen.ListenService
+import ai.neuroshield.app.listen.SpeechModels
 
 /**
  * Android calls this service for every incoming call from a number that is NOT in contacts
@@ -88,10 +96,13 @@ object CallTracker {
         val contact = Contacts.contains(ctx, n)
         p.callState = "RINGING"; p.callNumber = n; p.callIsContact = contact
         if (contact) return
-        val facts = CallFacts(n, contact, p.homeCallingCode, p.countRecentCall(n), n != null && n in p.scamNumbers(), n != null && n in p.safeNumbers())
-        val r = CallRisk.assess(facts)
-        if (r.level == RiskLevel.LOW && !p.warnUnknownCallers) return
+        val prior = p.senderRisk(n)
+        val facts = CallFacts(n, contact, p.homeCallingCode, p.countRecentCall(n), n != null && n in p.scamNumbers(), n != null && n in p.safeNumbers(),
+            priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList())
         if (facts.userMarkedSafe) return
+        val r = withReputation(CallRisk.assess(facts), n)
+        CallSessions.start(ctx, n, CallChannel.CELLULAR, null, r)
+        if (r.level == RiskLevel.LOW && !p.warnUnknownCallers) return
         Warnings.show(ctx, Warning(
             level = r.level, score = r.score, source = "incoming_call", number = n ?: "скрытый номер",
             title = if (r.level == RiskLevel.LOW) "Звонит незнакомый номер" else "Подозрительный входящий звонок",
@@ -110,13 +121,34 @@ object CallTracker {
             p.callNumber = n; p.callIsContact = Contacts.contains(ctx, n)
         }
         Warnings.hide()
-        if (!p.callIsContact && p.autoListen && ai.neuroshield.app.Perms.overlay(ctx)) {
-            // automatic mode: open the app for a moment (allowed with the overlay permission), start listening, go back to the call
-            Warnings.openListen(ctx, auto = true)
-        } else if (!p.callIsContact && p.offerListening) {
-            Warnings.showListenOffer(ctx)
-            Warnings.notifyListenOffer(ctx, p.callNumber)
+        if (p.callIsContact || !CallSessions.active(ctx)) return
+        CallSessions.on(ctx, CallEvent.Answered(System.currentTimeMillis()))
+        // automatic speech analysis: only when it can actually run, otherwise record why and offer the manual way
+        val status = when {
+            !p.autoListen -> SpeechStatus.AUTO_OFF
+            !Perms.mic(ctx) -> SpeechStatus.NO_PERMISSION
+            SpeechModels.modelDir(ctx, p.speechLang) == null -> SpeechStatus.NO_MODEL
+            !Perms.overlay(ctx) -> SpeechStatus.AUTO_OFF
+            else -> null
         }
+        if (status == null) {
+            // open the app for a moment (allowed with the overlay permission), start listening, go back to the call
+            Warnings.openListen(ctx, auto = true)
+        } else {
+            CallSessions.on(ctx, CallEvent.SpeechState(System.currentTimeMillis(), status))
+            if (p.offerListening) { Warnings.showListenOffer(ctx); Warnings.notifyListenOffer(ctx, p.callNumber) }
+        }
+    }
+
+    /** Adds verdicts of connected outside reputation sources (none in this build) to the number check. */
+    fun withReputation(r: CallRiskResult, n: String?): CallRiskResult {
+        if (n == null) return r
+        val hits = ReputationSources.lookup(n)
+        if (hits.isEmpty()) return r
+        val pts = hits.maxOf { if (it.level == RiskLevel.HIGH) 75 else if (it.level == RiskLevel.MEDIUM) 40 else 0 }
+        val score = maxOf(r.score, pts.toDouble())
+        return r.copy(score = score, level = ai.neuroshield.app.core.levelOf(score),
+            reasons = r.reasons + hits.map { Reason("${it.source}: ${it.reason}", if (it.level == RiskLevel.LOW) 0 else pts) })
     }
 
     fun onIdle(ctx: Context) {
@@ -126,5 +158,6 @@ object CallTracker {
         Warnings.hideListenOffer()
         Warnings.cancelListenOffer(ctx)
         ListenService.stop(ctx, reason = "Звонок завершён")
+        CallSessions.end(ctx, CallChannel.CELLULAR)
     }
 }

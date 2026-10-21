@@ -7,6 +7,10 @@ import ai.neuroshield.app.Contacts
 import ai.neuroshield.app.alert.Warning
 import ai.neuroshield.app.alert.Warnings
 import ai.neuroshield.app.app
+import ai.neuroshield.app.call.CallSessions
+import ai.neuroshield.app.call.CallTracker
+import ai.neuroshield.app.core.CallChannel
+import ai.neuroshield.app.core.CallEvent
 import ai.neuroshield.app.core.CallFacts
 import ai.neuroshield.app.core.CallRisk
 import ai.neuroshield.app.core.Messenger
@@ -23,6 +27,7 @@ import ai.neuroshield.app.core.ScamAnalyzer
  */
 class MessengerListener : NotificationListenerService() {
     private val warnedCalls = mutableMapOf<String, Long>()
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val n = sbn.notification ?: return
@@ -38,6 +43,7 @@ class MessengerListener : NotificationListenerService() {
                 val wasActive = p.voipActive && activeKey == sbn.key
                 p.voipActive = true; p.voipApp = event.app; p.voipNumber = event.number ?: event.caller; p.voipIsContact = contact
                 activeKey = sbn.key
+                if (!contact && !wasActive) CallSessions.on(this, CallEvent.Answered(System.currentTimeMillis()))
                 if (!contact && !wasActive) {
                     if (event.video) Warnings.showVideoOffer(this) else if (p.offerListening) Warnings.showListenOffer(this)
                 }
@@ -52,8 +58,13 @@ class MessengerListener : NotificationListenerService() {
             if (sbn.key == activeKey) {
                 p.voipActive = false; p.voipEndedAt = System.currentTimeMillis(); activeKey = null
                 Warnings.hideListenOffer(); Warnings.hideVideoOffer()
+                CallSessions.end(this, CallChannel.MESSENGER)
             }
-            if (sbn.key == ringingKey) ringingKey = null
+            if (sbn.key == ringingKey) {
+                ringingKey = null
+                // not answered (missed or declined): the "ongoing call" notification never appears
+                main.postDelayed({ if (!app.prefs.voipActive && activeKey == null) CallSessions.end(this, CallChannel.MESSENGER) }, 8_000)
+            }
         }
     }
 
@@ -72,7 +83,8 @@ class MessengerListener : NotificationListenerService() {
         val facts = CallFacts(num, false, p.homeCallingCode, p.countRecentCall(num), num in p.scamNumbers(),
             num in p.safeNumbers(), messenger = e.app, priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList())
         if (facts.userMarkedSafe) return
-        val r = CallRisk.assess(facts)
+        val r = CallTracker.withReputation(CallRisk.assess(facts), num)
+        CallSessions.start(this, num, CallChannel.MESSENGER, e.app, r)
         Warnings.show(this, Warning(
             level = r.level, score = r.score, source = "messenger_call", number = num,
             title = (if (e.video) "Видеозвонок" else "Звонок") + " в ${e.app} с незнакомого номера",

@@ -26,7 +26,7 @@ class Prefs(ctx: Context) {
         get() = p.getBoolean("offer_listen", true)
         set(v) = p.edit().putBoolean("offer_listen", v).apply()
     var autoListen: Boolean
-        get() = p.getBoolean("auto_listen", false)
+        get() = p.getBoolean("auto_listen", true)
         set(v) = p.edit().putBoolean("auto_listen", v).apply()
     var storeExcerpts: Boolean
         get() = p.getBoolean("store_excerpts", false)
@@ -142,7 +142,7 @@ data class Alert(
         "incoming_call" -> "Входящий звонок"; "sms_code" -> "SMS с кодом во время звонка"; "sms_text" -> "Подозрительное SMS"
         "live_speech" -> "Речь во время звонка"; "manual_text" -> "Проверка текста"; "face" -> "Проверка лица"
         "blocked_call" -> "Заблокированный звонок"; "messenger_call" -> "Звонок в мессенджере"; "video_call" -> "Проверка видеозвонка"; "messenger_text" -> "Сообщение в мессенджере"
-        "demo" -> "Демо-сценарий (учебные данные)"; else -> source
+        "demo" -> "Демо-сценарий (учебные данные)"; "call_report" -> "Отчёт о звонке"; else -> source
     }
 }
 

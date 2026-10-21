@@ -40,7 +40,14 @@ adb shell input keyevent KEYCODE_HOME; sleep 2
 adb emu gsm call 87015550123; shot 03-incoming-call 6
 adb emu gsm accept 87015550123; shot 04-in-call 5
 adb emu sms send 1414 "Kod podtverzhdeniya 482913. Nikomu ne soobshchayte"; shot 05-sms-code-during-call 6
-adb emu gsm cancel 87015550123; sleep 3
+adb emu gsm cancel 87015550123; sleep 4
+# automatic chain: after hang-up the app must post a call report on its own (no tap in the app)
+check() { if adb shell dumpsys notification --noredact | grep -q "$2"; then echo "PASS $1" >> shots/asserts.txt; else echo "FAIL $1" >> shots/asserts.txt; fi; }
+check "report after scam call (code during call)" "Отчёт о звонке: Возможное мошенничество: код из SMS во время звонка"
+shot 06a-report-notification 1
+adb shell cmd statusbar expand-notifications; shot 06b-report-in-shade 3; adb shell cmd statusbar collapse
+adb emu gsm call 87015550199; sleep 6; adb emu gsm cancel 87015550199; sleep 4
+check "report after missed call" "Отчёт о звонке: Пропущенный звонок с незнакомого номера"
 adb shell am start -n $P/.MainActivity --es route history; shot 06-history-after-call 5
 adb shell am start -n $P/.MainActivity --ez start_listen true; shot 07-listen-without-model 5
 # messenger protection: notifications posted from the shell stand in for WhatsApp (the app labels them as an ADB test)
@@ -112,4 +119,5 @@ adb logcat -d > shots/logcat.txt
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true
 adb shell dumpsys window | grep -i "neuroshield" | head -20 > shots/windows.txt || true
 echo "alive: $(adb shell pidof $P)" >> shots/crash.txt
+cat shots/asserts.txt
 exit 0

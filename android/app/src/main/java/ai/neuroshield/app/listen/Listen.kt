@@ -200,12 +200,18 @@ class ListenService : Service() {
         val buf = ShortArray(SAMPLE_RATE / 5)
         val started = System.currentTimeMillis()
         audio.startRecording()
+        ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.SpeechState(System.currentTimeMillis(), ai.neuroshield.app.core.SpeechStatus.STARTED))
+        var silenceRecorded = false
         ListenState.ui.value = ListenState.ui.value.copy(message = if (inCall) "Слушаю звонок" else "Проверка микрофона: скажите фразу")
         try {
             while (scope.isActive && job?.isActive == true) {
                 val n = audio.read(buf, 0, buf.size)
                 if (n <= 0) continue
                 if (silence.onBuffer(buf, n)) {
+                    if (!silenceRecorded) {
+                        silenceRecorded = true
+                        ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.SpeechState(System.currentTimeMillis(), ai.neuroshield.app.core.SpeechStatus.SILENCE))
+                    }
                     ListenState.ui.value = ListenState.ui.value.copy(silenceDetected = true,
                         message = "Телефон отдаёт приложению тишину: на этом устройстве Android не разрешает слушать звонок. " +
                             "Используйте проверку текста или SMS-защиту.")
@@ -232,6 +238,7 @@ class ListenService : Service() {
 
     private fun warn(r: TextRisk, transcript: String) {
         if (r.level == RiskLevel.LOW) return
+        ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.Speech(System.currentTimeMillis(), r))
         Warnings.show(this, Warning(
             level = r.level, score = r.score, source = "live_speech", number = app.prefs.callNumber,
             title = "В разговоре звучат фразы мошенников",

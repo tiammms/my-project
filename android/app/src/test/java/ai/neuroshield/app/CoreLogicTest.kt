@@ -321,3 +321,111 @@ class VideoChallengesTest {
         assertTrue(VideoChallenges.check(closed, eyes).passed)
     }
 }
+
+/** The automatic chain for one call, from known scam and safe scenarios to the report shown after hang-up. */
+class CallSessionTest {
+    private fun pre(number: String?, home: String = "+7", prior: RiskLevel? = null, messenger: String? = null) =
+        CallRisk.assess(CallFacts(number, false, home, 1, false, false, messenger = messenger, priorMessageLevel = prior))
+
+    private fun session(number: String?, channel: CallChannel = CallChannel.CELLULAR, app: String? = null, p: CallRiskResult = pre(number)) =
+        CallSession().also { it.on(CallEvent.Ringing(0, number, channel, app, p)) }
+
+    @Test fun bankScamCallWithCodeAndScamSpeechIsHigh() {
+        val s = session("+447700900123")
+        s.on(CallEvent.Answered(5_000))
+        s.on(CallEvent.SpeechState(6_000, SpeechStatus.STARTED))
+        s.on(CallEvent.Speech(30_000, ScamAnalyzer.analyze("служба безопасности банка, срочно продиктуйте код из смс")))
+        s.on(CallEvent.SmsCodeArrived(40_000, "Kaspi.kz", "4••1"))
+        s.on(CallEvent.Ended(125_000))
+        val r = s.report()!!
+        assertEquals(RiskLevel.HIGH, r.level)
+        assertTrue(r.title.startsWith("Возможное мошенничество"))
+        assertTrue(r.findings.any { it.contains("код из SMS") })
+        assertTrue(r.findings.any { it.startsWith("В разговоре:") })
+        assertTrue(r.findings.any { it.contains("Международный номер") })
+        assertEquals(120, r.durationSec)
+        assertTrue(r.checks.any { it.startsWith("Анализ речи: запущен") })
+        assertTrue(r.advice.isNotEmpty())
+    }
+
+    @Test fun ordinaryUnknownCallStaysLowAndSaysNothingFound() {
+        val s = session("+77015550123")
+        s.on(CallEvent.Answered(3_000))
+        s.on(CallEvent.SpeechState(4_000, SpeechStatus.STARTED))
+        s.on(CallEvent.Speech(20_000, ScamAnalyzer.analyze("здравствуйте, это курьер, буду у вас через час")))
+        s.on(CallEvent.Ended(60_000))
+        val r = s.report()!!
+        assertEquals(RiskLevel.LOW, r.level)
+        assertTrue(r.title.contains("признаков мошенничества не найдено"))
+        assertFalse(r.findings.any { it.startsWith("В разговоре:") })
+    }
+
+    @Test fun singleUrgencyWordDoesNotRaiseRisk() {
+        val s = session("+77015550124")
+        s.on(CallEvent.Answered(1_000))
+        s.on(CallEvent.Speech(5_000, ScamAnalyzer.analyze("перезвони срочно, когда сможешь")))
+        s.on(CallEvent.Ended(9_000))
+        assertEquals(RiskLevel.LOW, s.report()!!.level)
+    }
+
+    @Test fun missedCallIsReportedWithoutSpeechCheck() {
+        val s = session("+77015550125")
+        s.on(CallEvent.Ended(20_000))
+        val r = s.report()!!
+        assertFalse(r.answered)
+        assertTrue(r.title.startsWith("Пропущенный"))
+        assertTrue(r.checks.any { it == "Анализ речи: не нужен: звонок не принят" })
+    }
+
+    @Test fun reportIsHonestAboutWhatWasNotChecked() {
+        val s = session("+77015550126")
+        s.on(CallEvent.Answered(1_000))
+        s.on(CallEvent.SpeechState(1_500, SpeechStatus.NO_MODEL))
+        s.on(CallEvent.Ended(10_000))
+        val r = s.report()!!
+        assertTrue(r.checks.any { it.contains("модель распознавания речи не скачана") })
+        assertTrue(r.checks.any { it.startsWith("Внешняя база мошеннических номеров: не подключена") })
+        assertTrue(r.checks.any { it.contains("Синтетический") && it.contains("не проверялся") })
+    }
+
+    @Test fun silenceOverridesStartedSoTheUserKnowsTheCallWasNotHeard() {
+        val s = session("+77015550127")
+        s.on(CallEvent.Answered(1_000))
+        s.on(CallEvent.SpeechState(2_000, SpeechStatus.STARTED))
+        s.on(CallEvent.SpeechState(8_000, SpeechStatus.SILENCE))
+        s.on(CallEvent.SpeechState(9_000, SpeechStatus.STARTED))
+        s.on(CallEvent.Ended(20_000))
+        assertTrue(s.report()!!.checks.any { it.contains("тишину") })
+    }
+
+    @Test fun messengerCallAfterScamMessageIsRiskyAndAudioIsNotClaimed() {
+        val s = session("+447911123456", CallChannel.MESSENGER, "WhatsApp", pre("+447911123456", prior = RiskLevel.HIGH, messenger = "WhatsApp"))
+        s.on(CallEvent.Answered(4_000))
+        s.on(CallEvent.Ended(50_000))
+        val r = s.report()!!
+        assertEquals(RiskLevel.HIGH, r.level)
+        assertTrue(r.checks.any { it.contains("звук звонков в мессенджерах закрыт") })
+    }
+
+    @Test fun codeDuringCallAloneMakesItHigh() {
+        val s = session("+77015550128")
+        s.on(CallEvent.Answered(1_000))
+        s.on(CallEvent.SmsCodeArrived(30_000, "1414", "4••3"))
+        s.on(CallEvent.Ended(90_000))
+        val r = s.report()!!
+        assertEquals(RiskLevel.HIGH, r.level)
+        assertEquals("Возможное мошенничество: код из SMS во время звонка", r.title)
+    }
+
+    @Test fun noRingingMeansNoReport() {
+        val s = CallSession(); s.on(CallEvent.Answered(1)); s.on(CallEvent.Ended(2))
+        assertNull(s.report())
+    }
+
+    @Test fun pluggableModelsDefaultToNotConnected() {
+        assertFalse(SyntheticVoiceDetector.NotConnected.available)
+        assertNull(SyntheticVoiceDetector.NotConnected.score(ShortArray(10), 10))
+        assertEquals(ReputationSources.NOT_CONNECTED, ReputationSources.status())
+        assertEquals(RiskLevel.HIGH, ScamTextClassifier.RuleBased.analyze("назовите код из смс, переведите деньги на безопасный счёт").level)
+    }
+}

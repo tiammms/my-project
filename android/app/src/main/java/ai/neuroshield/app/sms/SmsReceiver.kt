@@ -31,6 +31,7 @@ class SmsReceiver : BroadcastReceiver() {
         val call = CallTracker.riskyCall(ctx)
         if (code != null && call != null) {
             val active = call.active
+            ai.neuroshield.app.call.CallSessions.on(ctx, ai.neuroshield.app.core.CallEvent.SmsCodeArrived(System.currentTimeMillis(), sender ?: "?", code.masked))
             Warnings.show(ctx, Warning(
                 level = RiskLevel.HIGH, score = 90.0, source = "sms_code", number = call.number ?: "номер неизвестен",
                 title = "Код из SMS " + (if (active) "во время" else "сразу после") + " ${call.channel} с незнакомым номером",
