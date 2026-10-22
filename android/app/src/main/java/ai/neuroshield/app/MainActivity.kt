@@ -96,9 +96,17 @@ class MainActivity : ComponentActivity() {
 
     private fun handle(i: Intent?) {
         i ?: return
-        i.getStringExtra(EXTRA_ROUTE)?.let { route.value = it }
+        // The launcher entry is exported, so any app can start it with any extras. Navigation is harmless;
+        // starting the microphone or the screen-capture check is accepted only through the non-exported alias
+        // (InternalEntry), which only this app can target.
+        val trusted = i.component?.className == INTERNAL_ENTRY
+        i.getStringExtra(EXTRA_ROUTE)?.takeIf { it in ROUTES }?.let { route.value = it }
         i.getLongExtra(EXTRA_ALERT_ID, -1L).takeIf { it > 0 }?.let { openAlert.value = it; route.value = "history" }
         i.removeExtra(EXTRA_ALERT_ID)
+        if (!trusted && (i.hasExtra(EXTRA_START_LISTEN) || i.hasExtra(EXTRA_START_VIDEO) || i.hasExtra(EXTRA_AUTO))) {
+            android.util.Log.w("SaqtanSecurity", "ignored microphone/video request from an outside intent")
+            i.removeExtra(EXTRA_START_LISTEN); i.removeExtra(EXTRA_START_VIDEO); i.removeExtra(EXTRA_AUTO)
+        }
         if (i.getBooleanExtra(EXTRA_START_LISTEN, false)) {
             route.value = "protection"
             startListening()
@@ -175,6 +183,10 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        const val INTERNAL_ENTRY = "ai.neuroshield.app.InternalEntry"
+        val ROUTES = setOf("home", "protection", "history", "settings", "text", "face", "demo")
+        /** Intent for starting the app from its own notifications, overlay and tile (non-exported alias). */
+        fun internalIntent(ctx: android.content.Context): Intent = Intent().setClassName(ctx, INTERNAL_ENTRY)
         const val EXTRA_ROUTE = "route"
         const val EXTRA_START_LISTEN = "start_listen"
         const val EXTRA_START_VIDEO = "start_video"

@@ -29,6 +29,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import ai.neuroshield.app.MainActivity
 import ai.neuroshield.app.NeuroShieldApp
+import ai.neuroshield.app.LockScreen
 import ai.neuroshield.app.Perms
 import ai.neuroshield.app.R
 import ai.neuroshield.app.app
@@ -326,14 +327,14 @@ object Warnings {
     fun hideVideoOffer() = main.post { removeView(videoOfferView); videoOfferView = null }
 
     fun openVideoCheck(ctx: Context) {
-        ctx.startActivity(Intent(ctx, MainActivity::class.java).apply {
+        ctx.startActivity(MainActivity.internalIntent(ctx).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_START_VIDEO, true)
         })
     }
 
     fun openListen(ctx: Context, auto: Boolean = false) {
-        ctx.startActivity(Intent(ctx, MainActivity::class.java).apply {
+        ctx.startActivity(MainActivity.internalIntent(ctx).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_START_LISTEN, true)
             putExtra(MainActivity.EXTRA_AUTO, auto)
@@ -341,7 +342,7 @@ object Warnings {
     }
 
     fun openApp(ctx: Context, route: String, alertId: Long = -1L) {
-        ctx.startActivity(Intent(ctx, MainActivity::class.java).apply {
+        ctx.startActivity(MainActivity.internalIntent(ctx).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_ROUTE, route)
             if (alertId > 0) putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
@@ -349,13 +350,13 @@ object Warnings {
     }
 
     fun listenIntent(ctx: Context): PendingIntent = PendingIntent.getActivity(ctx, 7,
-        Intent(ctx, MainActivity::class.java).apply {
+        MainActivity.internalIntent(ctx).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_START_LISTEN, true)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
     private fun notify(ctx: Context, w: Warning, alertId: Long = -1L) {
         if (!Perms.notifications(ctx)) return
-        val open = PendingIntent.getActivity(ctx, 3, Intent(ctx, MainActivity::class.java).apply {
+        val open = PendingIntent.getActivity(ctx, 3, MainActivity.internalIntent(ctx).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_ROUTE, "history")
             if (alertId > 0) putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -371,6 +372,7 @@ object Warnings {
             .setContentIntent(open)
             .setAutoCancel(true)
             .apply { if (w.offerListening) addAction(0, tr("Слушать звонок", "Қоңырауды тыңдау"), listenIntent(ctx)) }
+            .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS) }
             .build()
         ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_ALERT, n)
     }

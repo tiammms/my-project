@@ -10,6 +10,7 @@ import android.content.Intent
 import android.util.Log
 import ai.neuroshield.app.MainActivity
 import ai.neuroshield.app.NeuroShieldApp
+import ai.neuroshield.app.LockScreen
 import ai.neuroshield.app.Perms
 import ai.neuroshield.app.R
 import ai.neuroshield.app.app
@@ -99,7 +100,7 @@ object CallSessions {
 
     private fun notifyReport(ctx: Context, r: CallReport, alertId: Long) {
         if (!Perms.notifications(ctx)) { Log.i(TAG, "no notification permission"); return }
-        val open = PendingIntent.getActivity(ctx, 31, Intent(ctx, MainActivity::class.java).apply {
+        val open = PendingIntent.getActivity(ctx, 31, MainActivity.internalIntent(ctx).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_ROUTE, "history"); putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -115,6 +116,7 @@ object CallSessions {
             .setPriority(if (risky) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW)
             .setContentIntent(open).setAutoCancel(true)
         ReportActionReceiver.addTo(n, ctx, r.number, risky, NOTIF_REPORT)
+        LockScreen.hideDetails(n, ctx, if (risky) NeuroShieldApp.CH_ALERTS else NeuroShieldApp.CH_CALL)
         ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_REPORT, n.build())
     }
 

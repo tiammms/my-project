@@ -82,7 +82,13 @@ if [ -n "$B" ]; then adb shell input tap $B; sleep 3; fi
 adb shell cmd statusbar collapse
 if adb logcat -d | grep -q "report action: marked scam"; then echo "PASS mark-number button marks the number" >> shots/asserts.txt; else echo "FAIL mark-number button marks the number (button at: ${B:-not found})" >> shots/asserts.txt; fi
 adb shell am start -n $P/.MainActivity --es route history; shot 06-history-after-call 5
-adb shell am start -n $P/.MainActivity --ez start_listen true; shot 07-listen-without-model 5
+# security: another app (here: the shell) must not be able to start the microphone through the launcher activity
+adb shell am start -n $P/.MainActivity --ez start_listen true --ez auto true; sleep 4
+if adb logcat -d | grep -q "ignored microphone/video request from an outside intent" && ! adb shell dumpsys activity services $P | grep -q ListenService; then
+  echo "PASS outside app cannot start the microphone" >> shots/asserts.txt; else echo "FAIL outside app cannot start the microphone" >> shots/asserts.txt; fi
+if adb shell am start -n $P/.InternalEntry --ez start_listen true 2>&1 | grep -qiE "Permission Denial|not exported|SecurityException"; then
+  echo "PASS internal entry is not reachable from outside" >> shots/asserts.txt; else echo "FAIL internal entry is not reachable from outside" >> shots/asserts.txt; fi
+adb shell am start -n $P/.MainActivity --es route protection; shot 07-listen-without-model 5
 # messenger protection: notifications posted from the shell stand in for WhatsApp (the app labels them as an ADB test)
 adb shell cmd notification allow_listener $P/$P.notify.MessengerListener
 adb shell input keyevent KEYCODE_HOME; sleep 3
@@ -99,7 +105,9 @@ if [ -f face.jpg ]; then
   else adb shell am start -a android.intent.action.VIEW -d file:///sdcard/Pictures/face.jpg -t image/jpeg; fi
   shot 11-photo-on-screen 5
   adb shell appops set $P PROJECT_MEDIA allow
-  adb shell am start -n $P/.MainActivity --ez start_video true; shot 12-video-check-running 6
+  adb shell am start -n $P/.MainActivity --es route protection; sleep 3
+  adb shell input swipe 540 1700 540 600 400; sleep 2; tap_text "Проверить видеозвонок"; sleep 3
+  tap_text "Start now"; tap_text "START NOW"; tap_text "Начать"; shot 12-video-check-running 6
   sleep 34; shot 13-video-check-result 4
   adb shell am start -n $P/.MainActivity --es route protection; shot 14-video-check-in-app 4
 fi

@@ -71,7 +71,7 @@ class VideoCheckService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) { finish(tr("Остановлено", "Тоқтатылды")); return START_NOT_STICKY }
-        val open = PendingIntent.getActivity(this, 21, Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_ROUTE, "protection"),
+        val open = PendingIntent.getActivity(this, 21, MainActivity.internalIntent(this).putExtra(MainActivity.EXTRA_ROUTE, "protection"),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN).setSmallIcon(R.drawable.ic_shield)
             .setContentTitle(tr("Saqtan проверяет видеозвонок", "Saqtan бейнеқоңырауды тексеруде")).setContentText(tr("30 секунд: лицо собеседника и два задания для него. Кадры не сохраняются", "30 секунд: әңгімелесушінің беті және оған екі тапсырма. Кадрлар сақталмайды"))

@@ -24,6 +24,7 @@ class NeuroShieldApp : Application() {
         prefs = Prefs(this)
         I18n.kk = prefs.uiLang == "kk"
         alerts = AlertStore(this)
+        Thread { runCatching { alerts.purgeOld(); alerts.encryptLegacyExcerpts() } }.start()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CH_ALERTS, tr("Предупреждения о мошенничестве", "Алаяқтық туралы ескертулер"), NotificationManager.IMPORTANCE_HIGH).apply {
             description = tr("Срочные предупреждения во время звонков и при получении кодов", "Қоңырау кезінде және код келгенде шұғыл ескертулер")
@@ -64,6 +65,20 @@ object Perms {
         val rm = ctx.getSystemService(RoleManager::class.java) ?: return false
         return rm.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
     }
+}
+
+/**
+ * Lock-screen privacy: numbers, SMS senders and call details are shown only after unlocking.
+ * On the lock screen the user sees a neutral notice that Saqtan has a warning.
+ */
+object LockScreen {
+    fun hideDetails(b: androidx.core.app.NotificationCompat.Builder, ctx: Context, channel: String): androidx.core.app.NotificationCompat.Builder =
+        b.setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(androidx.core.app.NotificationCompat.Builder(ctx, channel)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle("Saqtan")
+                .setContentText(tr("Есть предупреждение. Разблокируйте телефон, чтобы посмотреть", "Ескерту бар. Көру үшін телефонның құлпын ашыңыз"))
+                .build())
 }
 
 object Contacts {

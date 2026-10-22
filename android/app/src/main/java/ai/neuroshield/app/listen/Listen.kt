@@ -49,14 +49,21 @@ import java.net.URL
 import java.util.zip.ZipInputStream
 
 // ------------------------------------------------------------------ offline speech models (Vosk)
-data class SpeechModel(val lang: String, val title: String, val url: String, val sizeMb: Int)
+/**
+ * [sha256] pins the exact archive published by the Vosk project: a changed or damaged file is rejected
+ * before anything is unpacked or loaded into the native recogniser.
+ */
+data class SpeechModel(val lang: String, val title: String, val url: String, val sizeMb: Int, val sha256: String)
 
 object SpeechModels {
     val all = listOf(
-        SpeechModel("ru", "Русский", "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip", 45),
-        SpeechModel("kk", "Қазақша", "https://alphacephei.com/vosk/models/vosk-model-small-kz-0.15.zip", 42),
-        SpeechModel("en", "English", "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip", 40),
+        SpeechModel("ru", "Русский", "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip", 45, SHA_RU),
+        SpeechModel("kk", "Қазақша", "https://alphacephei.com/vosk/models/vosk-model-small-kz-0.15.zip", 42, SHA_KK),
+        SpeechModel("en", "English", "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip", 40, SHA_EN),
     )
+    private const val MAX_DOWNLOAD = 150L * 1024 * 1024      // bytes; the real archives are 40–50 MB
+    private const val MAX_UNPACKED = 400L * 1024 * 1024      // protects against "zip bombs"
+    private const val MAX_ENTRIES = 5_000
 
     sealed interface Status {
         data object Missing : Status
@@ -88,46 +95,77 @@ object SpeechModels {
 
     fun delete(ctx: Context, lang: String) { root(ctx, lang).deleteRecursively(); refresh(ctx) }
 
-    /** Downloads and unpacks a model once (needs internet only for this step). */
+    /** Downloads, verifies (SHA-256) and unpacks a model once. Internet is used only for this step, over HTTPS. */
     fun download(ctx: Context, scope: CoroutineScope, lang: String): Job = scope.launch(Dispatchers.IO) {
         val m = all.first { it.lang == lang }
         val dst = root(ctx, lang)
         val tmp = File(ctx.cacheDir, "vosk-$lang.zip")
+        val staging = File(ctx.filesDir, "vosk/.staging-$lang")
         try {
             set(lang, Status.Downloading(0))
-            val conn = (URL(m.url).openConnection() as HttpURLConnection).apply { connectTimeout = 20_000; readTimeout = 60_000 }
+            require(m.url.startsWith("https://")) { "insecure url" }
+            val conn = (URL(m.url).openConnection() as javax.net.ssl.HttpsURLConnection).apply {
+                connectTimeout = 20_000; readTimeout = 60_000; instanceFollowRedirects = true
+            }
             conn.connect()
-            if (conn.responseCode !in 200..299) throw IllegalStateException("сервер ответил ${conn.responseCode}")
+            if (conn.responseCode !in 200..299) throw DownloadError(tr("сервер недоступен, попробуйте позже", "сервер қолжетімсіз, кейінірек көріңіз"))
             val total = conn.contentLengthLong
+            if (total > MAX_DOWNLOAD) throw DownloadError(tr("файл модели неожиданно большой", "модель файлы күтпегендей үлкен"))
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
             conn.inputStream.use { inp ->
                 FileOutputStream(tmp).use { out ->
                     val buf = ByteArray(1 shl 16); var done = 0L; var last = -1
                     while (true) {
                         val n = inp.read(buf); if (n < 0) break
-                        out.write(buf, 0, n); done += n
+                        done += n
+                        if (done > MAX_DOWNLOAD) throw DownloadError(tr("файл модели неожиданно большой", "модель файлы күтпегендей үлкен"))
+                        out.write(buf, 0, n); digest.update(buf, 0, n)
                         val pct = if (total > 0) (100 * done / total).toInt() else 0
                         if (pct != last) { last = pct; set(lang, Status.Downloading(pct)) }
                         if (!isActive) throw InterruptedException()
                     }
                 }
             }
-            dst.deleteRecursively(); dst.mkdirs()
-            val canonical = dst.canonicalPath + File.separator
+            val got = digest.digest().joinToString("") { "%02x".format(it) }
+            if (!got.equals(m.sha256, ignoreCase = true))
+                throw DownloadError(tr("файл не прошёл проверку подлинности и удалён", "файл түпнұсқалық тексеруден өтпеді және жойылды"))
+            staging.deleteRecursively(); staging.mkdirs()
+            val canonical = staging.canonicalPath + File.separator
+            var unpacked = 0L; var entries = 0
             ZipInputStream(tmp.inputStream().buffered()).use { z ->
                 while (true) {
                     val e = z.nextEntry ?: break
-                    val f = File(dst, e.name)
-                    if (!f.canonicalPath.startsWith(canonical)) throw SecurityException("архив модели повреждён")   // zip-slip guard
-                    if (e.isDirectory) f.mkdirs() else { f.parentFile?.mkdirs(); FileOutputStream(f).use { z.copyTo(it) } }
+                    if (++entries > MAX_ENTRIES) throw DownloadError(tr("архив модели повреждён", "модель архиві бүлінген"))
+                    val f = File(staging, e.name)
+                    if (!f.canonicalPath.startsWith(canonical)) throw DownloadError(tr("архив модели повреждён", "модель архиві бүлінген"))   // zip-slip guard
+                    if (e.isDirectory) { f.mkdirs(); continue }
+                    f.parentFile?.mkdirs()
+                    FileOutputStream(f).use { out ->
+                        val buf = ByteArray(1 shl 16)
+                        while (true) {
+                            val n = z.read(buf); if (n < 0) break
+                            unpacked += n
+                            if (unpacked > MAX_UNPACKED) throw DownloadError(tr("архив модели повреждён", "модель архиві бүлінген"))
+                            out.write(buf, 0, n)
+                        }
+                    }
                 }
             }
-            val dir = modelDir(ctx, lang) ?: throw IllegalStateException("в архиве нет модели")
-            set(lang, Status.Ready(dir))
-        } catch (e: Exception) {
             dst.deleteRecursively()
-            set(lang, Status.Failed(e.message ?: e.javaClass.simpleName))
-        } finally { tmp.delete() }
+            if (!staging.renameTo(dst)) throw DownloadError(tr("не хватает места на телефоне", "телефонда орын жетпейді"))
+            val dir = modelDir(ctx, lang) ?: throw DownloadError(tr("в архиве нет модели", "архивте модель жоқ"))
+            set(lang, Status.Ready(dir))
+        } catch (e: DownloadError) {
+            dst.deleteRecursively(); set(lang, Status.Failed(e.message ?: ""))
+        } catch (e: InterruptedException) {
+            dst.deleteRecursively(); set(lang, Status.Missing)
+        } catch (e: Exception) {
+            // technical details (exception text, URLs) are not shown to the user
+            dst.deleteRecursively(); set(lang, Status.Failed(tr("нет связи с сервером, проверьте интернет", "сервермен байланыс жоқ, интернетті тексеріңіз")))
+        } finally { tmp.delete(); staging.deleteRecursively() }
     }
+
+    private class DownloadError(msg: String) : Exception(msg)
 }
 
 // ------------------------------------------------------------------ live state for the UI
@@ -171,7 +209,7 @@ class ListenService : Service() {
     }
 
     private fun notification(text: String): Notification {
-        val open = PendingIntent.getActivity(this, 11, Intent(this, MainActivity::class.java).apply {
+        val open = PendingIntent.getActivity(this, 11, MainActivity.internalIntent(this).apply {
             addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_ROUTE, "protection")
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val stop = PendingIntent.getService(this, 12, Intent(this, ListenService::class.java).setAction(ACTION_STOP),

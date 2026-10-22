@@ -46,6 +46,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Entry used by the app's own notifications, overlay and tile. Not exported: other apps cannot use it
+             to start the microphone or the screen-capture check. -->
+        <activity-alias
+            android:name=".InternalEntry"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+
         <!-- Called by Android for every incoming call from a number that is not in contacts -->
         <service
             android:name=".call.ScreeningService"

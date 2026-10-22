@@ -27,7 +27,7 @@ class Prefs(ctx: Context) {
         get() = p.getBoolean("offer_listen", true)
         set(v) = p.edit().putBoolean("offer_listen", v).apply()
     var autoListen: Boolean
-        get() = p.getBoolean("auto_listen", true)
+        get() = p.getBoolean("auto_listen", false)   // opt-in: the microphone never starts by itself unless the user turned this on
         set(v) = p.edit().putBoolean("auto_listen", v).apply()
     var storeExcerpts: Boolean
         get() = p.getBoolean("store_excerpts", false)
@@ -121,6 +121,9 @@ class Prefs(ctx: Context) {
     }
 
     /** Registers a call from [number] and returns how many calls came from it within the last hour. */
+    /** Removes every setting, mark and cached call state (used by "delete all data"). */
+    fun wipe() { p.edit().clear().commit() }
+
     fun countRecentCall(number: String?, now: Long = System.currentTimeMillis()): Int {
         val n = CallRisk.normalizeNumber(number) ?: return 1
         val o = JSONObject(p.getString("recent_calls", "{}") ?: "{}")
@@ -153,10 +156,47 @@ data class Alert(
     }
 }
 
-/** Local history of warnings (SQLite). No audio, no SMS bodies; transcript excerpts only if the user enabled it. */
-class AlertStore(ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 1) {
+/**
+ * Local history of warnings (SQLite, app-private storage). No audio, no SMS bodies.
+ * Transcript excerpts only if the user enabled it, and then encrypted with a Keystore key ([LocalCrypto]).
+ * Records older than [RETENTION_DAYS] are deleted automatically; deleted rows are overwritten (secure_delete).
+ */
+class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 1) {
     private val _version = MutableStateFlow(0)
     val version: StateFlow<Int> = _version
+
+    companion object { const val RETENTION_DAYS = 90 }
+
+    override fun onConfigure(db: SQLiteDatabase) {
+        super.onConfigure(db)
+        db.execSQL("PRAGMA secure_delete = ON")
+    }
+
+    /** Deletes records older than the retention period. Called on start and after each new record. */
+    fun purgeOld(now: Long = System.currentTimeMillis()): Int {
+        val n = writableDatabase.delete("alerts", "ts < ?", arrayOf((now - RETENTION_DAYS * 86_400_000L).toString()))
+        if (n > 0) _version.value++
+        return n
+    }
+
+    /** Encrypts excerpts saved in plain text by versions before 1.0.53. */
+    fun encryptLegacyExcerpts() {
+        val rows = mutableListOf<Pair<Long, String>>()
+        readableDatabase.rawQuery("SELECT id, excerpt FROM alerts WHERE excerpt IS NOT NULL AND excerpt NOT LIKE 'enc1:%'", null).use { c ->
+            while (c.moveToNext()) rows += c.getLong(0) to c.getString(1)
+        }
+        for ((id, plain) in rows) {
+            val v = ContentValues().apply { put("excerpt", LocalCrypto.encrypt(plain)) }   // null if Keystore fails: dropped, never kept in plain
+            writableDatabase.update("alerts", v, "id = ?", arrayOf(id.toString()))
+        }
+    }
+
+    /** Removes the whole database file (history, local reputation) — used by "delete all data". */
+    fun wipe() {
+        close()
+        ctx.deleteDatabase("alerts.db")
+        _version.value++
+    }
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""CREATE TABLE alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, source TEXT NOT NULL,
@@ -169,9 +209,10 @@ class AlertStore(ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 1) {
     fun add(source: String, number: String?, level: RiskLevel, score: Double, title: String, reasons: List<String>, excerpt: String?): Long {
         val v = ContentValues().apply {
             put("ts", System.currentTimeMillis()); put("source", source); put("number", number); put("level", level.name)
-            put("score", score); put("title", title); put("reasons", JSONArray(reasons).toString()); put("excerpt", excerpt)
+            put("score", score); put("title", title); put("reasons", JSONArray(reasons).toString()); put("excerpt", LocalCrypto.encrypt(excerpt))
         }
         val id = writableDatabase.insert("alerts", null, v)
+        purgeOld()
         _version.value++
         return id
     }
@@ -183,7 +224,7 @@ class AlertStore(ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 1) {
             while (c.moveToNext()) {
                 val arr = JSONArray(c.getString(7))
                 out += Alert(c.getLong(0), c.getLong(1), c.getString(2), c.getString(3), RiskLevel.valueOf(c.getString(4)), c.getDouble(5),
-                    c.getString(6), (0 until arr.length()).map { arr.getString(it) }, c.getString(8))
+                    c.getString(6), (0 until arr.length()).map { arr.getString(it) }, LocalCrypto.decrypt(c.getString(8)))
             }
         }
         return out

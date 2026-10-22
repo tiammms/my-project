@@ -386,7 +386,7 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
 
     fun request(vararg p: String) = perms.launch(p.toList().toTypedArray())
     fun runtimeAll() = request(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_CONTACTS,
-        Manifest.permission.RECEIVE_SMS, Manifest.permission.RECORD_AUDIO,
+        Manifest.permission.RECEIVE_SMS,   // the microphone is asked separately, only when the user turns on speech analysis
         *(if (android.os.Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.POST_NOTIFICATIONS) else emptyArray()))
     fun fix(i: Int) {
         when (i) {
@@ -724,10 +724,12 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     var warnUnknown by remember { mutableStateOf(p.warnUnknownCallers) }
     var offer by remember { mutableStateOf(p.offerListening) }
     var auto by remember { mutableStateOf(p.autoListen) }
+    var autoAsk by remember { mutableStateOf(false) }
     var excerpts by remember { mutableStateOf(p.storeExcerpts) }
     var marks by remember { mutableIntStateOf(0) }
     var about by remember { mutableStateOf(false) }
     var cleared by remember { mutableStateOf(false) }
+    var wipeAsk by remember { mutableStateOf(false) }
     var trustedName by remember { mutableStateOf(p.trustedName) }
     var trustedNumber by remember { mutableStateOf(p.trustedNumber) }
     var bankNumber by remember { mutableStateOf(p.bankNumber) }
@@ -768,7 +770,14 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
             ListRow(Icons.Filled.Mic, tr("Кнопка анализа речи", "Сөйлеуді талдау түймесі"), tr("Во время звонка с незнакомцем", "Бейтаныс адаммен сөйлескенде"),
                 onClick = { offer = !offer; p.offerListening = offer }) { NeoSwitch(offer) { offer = it; p.offerListening = it } }
             ListRow(Icons.Filled.GraphicEq, tr("Автоанализ речи", "Сөйлеуді автоталдау"), tr("Сам включается после ответа незнакомцу: нужны модель речи и громкая связь", "Бейтанысқа жауап бергеннен кейін өзі қосылады: сөйлеу моделі мен дауыс зорайтқыш қажет"),
-                onClick = { auto = !auto; p.autoListen = auto }) { NeoSwitch(auto) { auto = it; p.autoListen = it } }
+                onClick = { if (auto) { auto = false; p.autoListen = false } else autoAsk = true }) {
+                    NeoSwitch(auto) { on -> if (on) autoAsk = true else { auto = false; p.autoListen = false } } }
+            if (autoAsk) AlertDialog(onDismissRequest = { autoAsk = false }, containerColor = NS.surface2,
+                confirmButton = { TextButton(onClick = { auto = true; p.autoListen = true; autoAsk = false }) { Text(tr("Включить", "Қосу"), color = NS.cyan) } },
+                dismissButton = { TextButton(onClick = { autoAsk = false }) { Text(tr("Отмена", "Болдырмау"), color = NS.text2) } },
+                title = { Text(tr("Автоматический анализ речи", "Сөйлеуді автоматты талдау"), color = NS.text) },
+                text = { Text(tr("После ответа на звонок с незнакомого номера Saqtan сам включит микрофон и будет распознавать речь на телефоне. Звук не записывается и никуда не отправляется. Пока микрофон работает, в шторке видно уведомление, его можно остановить в любой момент. Звонки с номеров из контактов не анализируются.",
+                    "Бейтаныс нөмірден келген қоңырауға жауап бергеннен кейін Saqtan микрофонды өзі қосып, сөйлеуді телефонда таниды. Дыбыс жазылмайды және ешқайда жіберілмейді. Микрофон жұмыс істеп тұрғанда хабарландыру көрінеді, оны кез келген уақытта тоқтатуға болады. Контактілердегі нөмірлерден келген қоңыраулар талданбайды."), color = NS.text2) })
             ListRow(Icons.Filled.Block, tr("Блокировать отмеченных мошенников", "Белгіленген алаяқ нөмірлерді бұғаттау"), if (Perms.screeningRole(ctx)) tr("Звонки с отмеченных номеров сбрасываются", "Белгіленген нөмірлерден келген қоңыраулар қабылданбайды") else tr("Нужен модуль «Определитель номера»", "«Нөмір анықтағыш» модулі қажет"),
                 tint = NS.threat, onClick = { block = !block; p.blockMarked = block }) { NeoSwitch(block) { block = it; p.blockMarked = it } }
         }
@@ -788,7 +797,24 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                 onClick = { excerpts = !excerpts; p.storeExcerpts = excerpts }) { NeoSwitch(excerpts) { excerpts = it; p.storeExcerpts = it } }
             ListRow(Icons.Filled.DeleteOutline, tr("Очистить историю угроз", "Қауіптер тарихын тазалау"), if (cleared) tr("История удалена", "Тарих жойылды") else tr("Удалить все записи с телефона", "Барлық жазбаны телефоннан жою"), tint = NS.threat,
                 onClick = { ctx.app.alerts.clear(); cleared = true })
+            ListRow(Icons.Filled.DeleteOutline, tr("Удалить все данные", "Барлық деректерді жою"),
+                tr("История, отметки номеров, настройки и ключ шифрования", "Тарих, нөмір белгілері, баптаулар және шифрлау кілті"), tint = NS.threat,
+                onClick = { wipeAsk = true })
         }
+        Text(tr("Записи хранятся только на телефоне и удаляются автоматически через ${ai.neuroshield.app.data.AlertStore.RETENTION_DAYS} дней. Приложение не отправляет данные на серверы, в нём нет рекламы и аналитики. Интернет нужен только для однократного скачивания модели речи.",
+                "Жазбалар тек телефонда сақталады және ${ai.neuroshield.app.data.AlertStore.RETENTION_DAYS} күннен кейін автоматты түрде жойылады. Қосымша деректерді серверлерге жібермейді, онда жарнама мен аналитика жоқ. Интернет тек сөйлеу моделін бір рет жүктеу үшін қажет."),
+            style = MaterialTheme.typography.bodySmall, color = NS.muted, modifier = Modifier.padding(horizontal = 4.dp))
+        if (wipeAsk) AlertDialog(onDismissRequest = { wipeAsk = false }, containerColor = NS.surface2,
+            confirmButton = { TextButton(onClick = {
+                wipeAsk = false
+                ai.neuroshield.app.data.DataWipe.all(ctx)
+                I18n.kk = false
+                (ctx as? android.app.Activity)?.recreate()
+            }) { Text(tr("Удалить", "Жою"), color = NS.threat) } },
+            dismissButton = { TextButton(onClick = { wipeAsk = false }) { Text(tr("Отмена", "Болдырмау"), color = NS.text2) } },
+            title = { Text(tr("Удалить все данные?", "Барлық деректерді жою керек пе?"), color = NS.text) },
+            text = { Text(tr("История угроз, отмеченные номера, настройки и ключ шифрования будут удалены с телефона. Разрешения Android отзываются в настройках телефона.",
+                "Қауіптер тарихы, белгіленген нөмірлер, баптаулар және шифрлау кілті телефоннан жойылады. Android рұқсаттары телефон баптауларында қайтарылады."), color = NS.text2) })
 
         SectionTitle(tr("Отмеченные номера", "Белгіленген нөмірлер"))
         GlassCard(padding = 10.dp) {
