@@ -1,0 +1,188 @@
+{
+ "normal/all": {
+  "LOW": 30
+ },
+ "normal/en": {
+  "LOW": 5
+ },
+ "normal/kk": {
+  "LOW": 5
+ },
+ "normal/ru": {
+  "LOW": 20
+ },
+ "scam/all": {
+  "MEDIUM": 9,
+  "LOW": 19,
+  "HIGH": 2
+ },
+ "scam/en": {
+  "LOW": 5
+ },
+ "scam/kk": {
+  "LOW": 3,
+  "MEDIUM": 2
+ },
+ "scam/ru": {
+  "MEDIUM": 7,
+  "LOW": 11,
+  "HIGH": 2
+ },
+ "scam_warned": "11/30",
+ "scam_high": "2/30",
+ "normal_false_warnings": "0/30",
+ "errors": [
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Мам, у меня новый номер, старый телефон украли. Кинь, пожалуйста, 30 тысяч на эту карту, вечером всё объясню.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Ваш сын в больнице после аварии, на операцию нужно 200 тысяч, переведите прямо сейчас.",
+   "level": "LOW",
+   "score": 20.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Пассивный доход от 15% в неделю, вложите 50 000 тенге и через месяц получите в три раза больше.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Компания Казмунайгаз запускает инвестиционную программу для граждан: внесите от 90 000 тенге и получайте ежемесячные выплаты.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Ваш брокер подобрал выгодную криптовалюту, гарантированная прибыль, нужно только пополнить счёт сегодня.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Ваша посылка задержана на таможне. Для получения оплатите пошлину 1500 тенге по ссылке: kazpost-delivery.top/pay",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Курьерская служба: адрес доставки указан неверно, подтвердите адрес и оплатите 300 тенге: dostavka-kz.click",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Вы выиграли автомобиль в розыгрыше! Чтобы забрать приз, оплатите налог 25 000 тенге.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Оставайтесь на линии и не прерывайте разговор, сейчас подключится специалист банка.",
+   "level": "LOW",
+   "score": 25.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Не отключайтесь, иначе заявка на кредит будет одобрена автоматически.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Привет, это Айгерим, срочно одолжи 15 тысяч до завтра, скинь на карту, я в банке не могу войти.",
+   "level": "LOW",
+   "score": 20.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "kk",
+   "text": "Апа, бұл мен, балаңыз. Жол апатына түстім, тез ақша жіберіңізші, полицияға беру керек.",
+   "level": "LOW",
+   "score": 25.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "kk",
+   "text": "Сіздің ұтысыңыз бар! Сыйлықты алу үшін салықты төлеңіз.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "kk",
+   "text": "Ай сайын 20 пайыз табыс, бүгін ақша салыңыз.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "en",
+   "text": "Grandma, it's me, I'm in jail and need bail money, please send it now and don't tell mom.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "en",
+   "text": "Guaranteed returns of 30% per month, invest today before the offer closes.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "en",
+   "text": "You have won a prize! Pay a small processing fee to receive it.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "en",
+   "text": "Stay on the line, do not hang up, your bank account is being compromised.",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  },
+  {
+   "label": "scam",
+   "lang": "en",
+   "text": "Your package could not be delivered, pay the redelivery fee at parcel-track.top",
+   "level": "LOW",
+   "score": 0.0,
+   "ok": false
+  }
+ ]
+}

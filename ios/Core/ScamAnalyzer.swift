@@ -58,6 +58,7 @@ public enum ScamAnalyzer {
             #"құпия\s+сөз"#,
             #"(tell|give|read|send)\s+(me\s+)?(the\s+|your\s+)?(code|password|pin)"#,
             #"verification\s+code|one[\s-]time\s+(code|password)"#,
+            #"подтвердите\s+(ваши\s+|свои\s+)?(данные|личност)"#,
         ]),
         Category(id: "safe_account_transfer", title: "Просят перевести деньги на «безопасный» или чужой счёт",
                  advice: "«Безопасных» и «резервных» счетов не существует. Не переводите деньги по просьбе звонящего.", weight: 40, patterns: [
@@ -83,6 +84,8 @@ public enum ScamAnalyzer {
             #"не\s+кладите\s+трубку"#,
             #"жедел|дереу|қазір\s+бірден"#,
             #"\burgent\b|immediately|right\s+now|within\s+\d+\s+minutes|before\s+it'?s\s+too\s+late"#,
+            #"оставайтесь\s+на\s+линии|не\s+(прерывайте|отключайтесь|отключайте)"#,
+            #"stay\s+on\s+the\s+line|do\s+not\s+hang\s+up|don'?t\s+hang\s+up"#,
         ]),
         Category(id: "authority_impersonation", title: "Представляются банком, полицией или госорганом",
                  advice: "Положите трубку и сами перезвоните в банк по номеру на обратной стороне карты.", weight: 25, patterns: [
@@ -93,6 +96,8 @@ public enum ScamAnalyzer {
             #"(национальн|центральн)\w*\s+банк|\bнацбанк|\bцб\s+рф|\bафм\b|\bкнб\b|\bфсб\b|прокуратур|\bмвд\b"#,
             #"банктің\s+қауіпсіздік|полиция\s+қызметкері"#,
             #"(bank'?s?\s+)?security\s+(department|team|service)|\bpolice\b|fraud\s+department"#,
+            #"служб\w+\s+поддержки|(сотрудник|служб\w*|специалист)\w*\s+(kaspi|каспи|halyk|халык)"#,
+            #"банк\s+қызметкер"#,
         ]),
         Category(id: "secrecy_isolation", title: "Просят держать разговор в тайне",
                  advice: "Требование никому не говорить — тревожный признак. Обсудите ситуацию с близкими.", weight: 20, patterns: [
@@ -102,6 +107,8 @@ public enum ScamAnalyzer {
             #"это\s+конфиденциальн"#,
             #"ешкімге\s+айтпаңыз"#,
             #"don'?t\s+tell\s+(anyone|your\s+family|the\s+bank)|keep\s+(this|it)\s+(secret|confidential)"#,
+            #"не\s+говори\s+(маме|папе|никому)|никому\s+не\s+говори"#,
+            #"don'?t\s+tell\s+(mom|dad|your\s+parents)"#,
         ]),
         Category(id: "remote_access", title: "Просят установить программу или показать экран",
                  advice: "Не устанавливайте программы удалённого доступа по просьбе звонящего.", weight: 35, patterns: [
@@ -118,6 +125,50 @@ public enum ScamAnalyzer {
             #"уголовн|\bарест|соучастни"#,
             #"мошенники\s+пытаются"#,
             #"your\s+(\w+\s+)?(account|card)\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised|suspended)|arrest|loan\s+in\s+your\s+name"#,
+            #"(аккаунт|профил|учетн\w+\s+запис)\w*\s+(\w+\s+)?(будет\s+)?заблокир"#,
+            #"заявк\w+\s+на\s+кредит|кредит\w*\s+(будет\s+)?одобрен"#,
+            #"шот\w*\s+бұғат"#,
+            #"your\s+(\w+\s+)?(account|card)\s+is\s+being\s+(compromised|blocked|hacked)"#,
+        ]),
+        Category(id: "family_emergency", title: "Рассказывают, что близкий человек в беде",
+                 advice: "Положите трубку и сами перезвоните родственнику по его старому номеру. Задайте вопрос, ответ на который знает только он.", weight: 35, patterns: [
+            #"это\s+я[\s,]+(тво[йя]|ваш[аи]?)\s+(сын|дочь|внук|внучка|племянни\w*)"#,
+            #"(сын|дочь|дочка|внук|внучка|муж|жена|брат|сестра|ребен)\w*\s+(\w+\s+)?(в\s+больниц|в\s+реанимац|в\s+полици|задержа|попал|сбил|разбил)"#,
+            #"(сбил|сбила)\s+(человека|пешехода)|попал\w*\s+в\s+(авари|дтп|беду)|после\s+авари"#,
+            #"\bя\s+в\s+беде|на\s+операци\w*\s+(нужн|надо)|(у\s+меня|это\s+мой)\s+новый\s+номер|телефон\s+(украли|разбил|сломал)"#,
+            #"бұл\s+мен[\s,]+(балаң|немерең|ұлың|қызың)|жол\s+апат|апатқа\s+түст"#,
+            #"it'?s\s+me[\s,]+(your\s+)?(grandson|granddaughter|son|daughter)|grandma[\s,]+it'?s\s+me|i'?m\s+in\s+(jail|trouble|the\s+hospital)|bail\s+money|had\s+an\s+accident"#,
+        ]),
+        Category(id: "money_request", title: "Просят срочно прислать деньги",
+                 advice: "Прежде чем переводить, перезвоните человеку сами по номеру, который вы знаете.", weight: 20, patterns: [
+            #"(кинь|скинь|переведи|перекинь|одолжи|займи|пришли)\w*[\s,]+(мне[\s,]+)?(пожалуйста[\s,]+)?(\d+|деньги|денег)"#,
+            #"на\s+(эту|мою|этот|другую|новую)\s+(карт|номер)"#,
+            #"передать\s+деньги|нужн\w*\s+\d+\s*(тысяч|тыс|тенге|₸)"#,
+            #"ақша\s+жібер"#,
+            #"send\s+(me\s+)?(the\s+|some\s+)?money|send\s+it\s+now|wire\s+(me\s+)?(the\s+)?money"#,
+        ]),
+        Category(id: "investment_promise", title: "Обещают гарантированный или очень высокий доход",
+                 advice: "Гарантированного высокого дохода не бывает. Проверьте компанию в реестре АРРФР и не вносите деньги по звонку или рекламе.", weight: 35, patterns: [
+            #"гарантирован\w*\s+(доход|прибыл|выплат)|пассивн\w+\s+доход"#,
+            #"\d+\s*%\s+(в|за)\s+(день|сутки|неделю|месяц)|в\s+(два|три|пять|\d+)\s+раза\s+больше"#,
+            #"инвестиционн\w+\s+(программ|проект|платформ)|ежемесячн\w+\s+выплат|(вложите|вложить|внесите|инвестируйте)\s+(от\s+)?\d+"#,
+            #"(выгодн|перспективн)\w*\s+криптовалют"#,
+            #"\d+\s+пайыз\s+табыс|ақша\s+салыңыз"#,
+            #"guaranteed\s+(return|profit|income)s?|\d+\s*%\s+(per|a)\s+(day|week|month)|invest\s+(today|now)"#,
+        ]),
+        Category(id: "prize_delivery", title: "Сообщают о выигрыше или проблеме с посылкой",
+                 advice: "Проверьте посылку по трек-номеру на официальном сайте службы доставки. Если вы ни в чём не участвовали, выигрыша нет.", weight: 20, patterns: [
+            #"вы\s+выиграли|ваш\s+номер\s+выиграл|(получить|забрать)\s+приз|розыгрыш|выигрыш"#,
+            #"посылк\w*\s+(\w+\s+)?задержан|задержан\w*\s+на\s+таможн|адрес\w*\s+доставки\s+указан\s+неверно|не\s+удалось\s+доставить"#,
+            #"ұтыс|сыйлық"#,
+            #"you\s+(have\s+)?won|claim\s+your\s+prize|could\s+not\s+be\s+delivered|delivery\s+failed"#,
+        ]),
+        Category(id: "fee_request", title: "Просят оплатить «налог», пошлину или доставку, чтобы что-то получить",
+                 advice: "Настоящий выигрыш или посылка не требуют оплаты по ссылке из сообщения или по звонку.", weight: 35, patterns: [
+            #"(оплатит|оплатить|заплатит|заплатить)\w*\s+(налог|пошлин|комисси|сбор|доставк)"#,
+            #"налог\w*\s+(на\s+выигрыш|\d+)"#,
+            #"салық\w*\s+төле"#,
+            #"pay\s+(a\s+|the\s+)?(small\s+)?(processing\s+|redelivery\s+|delivery\s+|customs\s+)?fee"#,
         ]),
     ]
 
@@ -170,6 +221,7 @@ public enum ScamAnalyzer {
         if ids.count <= 1 && !forgedSite { score = min(score, 45) }
         if forgedSite { score = max(score, 75) }
         let critical = ids.contains("credentials_request") || ids.contains("safe_account_transfer") || ids.contains("remote_access")
+            || ids.contains("family_emergency") || ids.contains("fee_request")
             || links.contains { $0.score >= 50 }
         if critical && ids.count >= 2 { score = max(score, 75) }
         let words = t.isEmpty ? 0 : t.split(separator: " ").count

@@ -17,6 +17,14 @@ final class ScamAnalyzerTests: XCTestCase {
         XCTAssertFalse(ScamAnalyzer.analyze("Кодты айтыңыз, ешкімге айтпаңыз").tactics.isEmpty)
         XCTAssertEqual(ScamAnalyzer.analyze("This is the bank security team. Tell me the verification code right now.").level, .high)
     }
+    func testNewSchemes() {
+        XCTAssertEqual(ScamAnalyzer.analyze("Мам, у меня новый номер, старый телефон украли. Кинь, пожалуйста, 30 тысяч на эту карту").level, .high)
+        XCTAssertEqual(ScamAnalyzer.analyze("Пассивный доход от 15% в неделю, вложите 50 000 тенге").level, .medium)
+        XCTAssertEqual(ScamAnalyzer.analyze("Вы выиграли автомобиль! Чтобы забрать приз, оплатите налог 25 000 тенге.").level, .high)
+        for t in ["Переведи мне 500 тенге за обед", "Не клади трубку, сейчас передам телефон папе", "Мы выиграли матч со счётом 3:1"] {
+            XCTAssertEqual(ScamAnalyzer.analyze(t).level, .low, t)
+        }
+    }
     func testEvidenceIsShown() {
         let r = ScamAnalyzer.analyze("Продиктуйте код из смс")
         XCTAssertFalse(r.tactics.first?.evidence.isEmpty ?? true)

@@ -1,0 +1,45 @@
+{
+ "normal/all": {
+  "LOW": 30
+ },
+ "normal/en": {
+  "LOW": 5
+ },
+ "normal/kk": {
+  "LOW": 5
+ },
+ "normal/ru": {
+  "LOW": 20
+ },
+ "scam/all": {
+  "HIGH": 17,
+  "MEDIUM": 12,
+  "LOW": 1
+ },
+ "scam/en": {
+  "HIGH": 3,
+  "MEDIUM": 2
+ },
+ "scam/kk": {
+  "HIGH": 4,
+  "MEDIUM": 1
+ },
+ "scam/ru": {
+  "HIGH": 10,
+  "MEDIUM": 9,
+  "LOW": 1
+ },
+ "scam_warned": "29/30",
+ "scam_high": "17/30",
+ "normal_false_warnings": "0/30",
+ "errors": [
+  {
+   "label": "scam",
+   "lang": "ru",
+   "text": "Курьерская служба: адрес доставки указан неверно, подтвердите адрес и оплатите 300 тенге: dostavka-kz.click",
+   "level": "LOW",
+   "score": 20.0,
+   "ok": false
+  }
+ ]
+}

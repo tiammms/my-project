@@ -40,6 +40,28 @@ class ScamAnalyzerTest {
         assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("this is the bank security team read me the verification code right now").level)
     }
 
+    @Test fun newSchemes() {
+        val cases = listOf(
+            Triple("Мам, у меня новый номер, старый телефон украли. Кинь, пожалуйста, 30 тысяч на эту карту", RiskLevel.HIGH, "family_emergency"),
+            Triple("Пассивный доход от 15% в неделю, вложите 50 000 тенге", RiskLevel.MEDIUM, "investment_promise"),
+            Triple("Вы выиграли автомобиль! Чтобы забрать приз, оплатите налог 25 000 тенге.", RiskLevel.HIGH, "fee_request"),
+            Triple("Оставайтесь на линии, сейчас подключится специалист банка", RiskLevel.MEDIUM, "urgency_pressure"),
+            Triple("апа бұл мен балаңыз жол апатына түстім тез ақша жіберіңізші", RiskLevel.HIGH, "family_emergency"),
+        )
+        for ((text, level, id) in cases) {
+            val r = ScamAnalyzer.analyze(text)
+            assertEquals(text, level, r.level)
+            assertTrue(r.tactics.any { it.id == id })
+        }
+    }
+
+    @Test fun newSchemesNoFalseAlarms() {
+        for (t in listOf("Переведи мне 500 тенге за обед", "Не клади трубку, сейчас передам телефон папе",
+                "Мы выиграли матч со счётом 3:1", "На паре обсуждали инвестиции и риски", "Посылка придёт завтра")) {
+            assertEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+        }
+    }
+
     @Test fun evidenceIsReported() {
         val t = ScamAnalyzer.analyze("продиктуйте код из смс").tactics.first { it.id == "credentials_request" }
         assertTrue(t.evidence.isNotEmpty())

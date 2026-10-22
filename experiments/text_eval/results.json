@@ -16,14 +16,13 @@
   "MEDIUM": 1
  },
  "scam/all": {
-  "HIGH": 11,
-  "LOW": 10,
-  "MEDIUM": 9
+  "HIGH": 13,
+  "MEDIUM": 11,
+  "LOW": 6
  },
  "scam/en": {
   "HIGH": 2,
-  "MEDIUM": 2,
-  "LOW": 1
+  "MEDIUM": 3
  },
  "scam/kk": {
   "HIGH": 1,
@@ -31,22 +30,14 @@
   "LOW": 2
  },
  "scam/ru": {
-  "HIGH": 8,
-  "LOW": 7,
-  "MEDIUM": 5
+  "HIGH": 10,
+  "MEDIUM": 6,
+  "LOW": 4
  },
- "scam_warned": "20/30",
- "scam_high": "11/30",
+ "scam_warned": "24/30",
+ "scam_high": "13/30",
  "normal_false_warnings": "2/30",
  "errors": [
-  {
-   "label": "scam",
-   "lang": "ru",
-   "text": "Мама, я попал в аварию, срочно нужны деньги, переведи на эту карту, только папе не говори.",
-   "level": "LOW",
-   "score": 20.0,
-   "ok": false
-  },
   {
    "label": "scam",
    "lang": "ru",
@@ -68,15 +59,7 @@
    "lang": "ru",
    "text": "Привет, это я, сменил номер. Скинь 20 тысяч до вечера, очень надо, потом объясню.",
    "level": "LOW",
-   "score": 0.0,
-   "ok": false
-  },
-  {
-   "label": "scam",
-   "lang": "ru",
-   "text": "Инвестиционная платформа: гарантированный доход 30% в месяц, внесите депозит сегодня.",
-   "level": "LOW",
-   "score": 0.0,
+   "score": 20.0,
    "ok": false
   },
   {
@@ -89,18 +72,10 @@
   },
   {
    "label": "scam",
-   "lang": "ru",
-   "text": "Ваш родственник задержан полицией, чтобы решить вопрос, нужно передать деньги.",
-   "level": "LOW",
-   "score": 25.0,
-   "ok": false
-  },
-  {
-   "label": "scam",
    "lang": "kk",
    "text": "Ұтыс ұтып алдыңыз! Сыйлықты алу үшін сілтемеге өтіп, карта деректерін енгізіңіз.",
    "level": "LOW",
-   "score": 0.0,
+   "score": 20.0,
    "ok": false
   },
   {
@@ -108,15 +83,7 @@
    "lang": "kk",
    "text": "Анашым, телефоным бұзылды, жаңа нөмірге тез ақша жіберші.",
    "level": "LOW",
-   "score": 0.0,
-   "ok": false
-  },
-  {
-   "label": "scam",
-   "lang": "en",
-   "text": "Your parcel is on hold. Pay the customs fee here: http://post-delivery.click/pay",
-   "level": "LOW",
-   "score": 0.0,
+   "score": 20.0,
    "ok": false
   },
   {

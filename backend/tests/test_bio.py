@@ -69,6 +69,23 @@ class TestCallText(unittest.TestCase):
         self.assertEqual(scam_text.analyze("Банктің қауіпсіздік қызметі. Кодты айтыңыз, жедел!")["risk_level"], "HIGH")
         self.assertEqual(scam_text.analyze("This is the bank security team, read me the verification code right now")["risk_level"], "HIGH")
 
+    def test_new_schemes(self):
+        cases = {
+            "Мам, у меня новый номер, старый телефон украли. Кинь, пожалуйста, 30 тысяч на эту карту": ("HIGH", "family_emergency"),
+            "Пассивный доход от 15% в неделю, вложите 50 000 тенге": ("MEDIUM", "investment_promise"),
+            "Вы выиграли автомобиль! Чтобы забрать приз, оплатите налог 25 000 тенге.": ("HIGH", "fee_request"),
+            "Оставайтесь на линии, сейчас подключится специалист банка": ("MEDIUM", "urgency_pressure"),
+        }
+        for text, (level, cat) in cases.items():
+            r = scam_text.analyze(text)
+            self.assertEqual(r["risk_level"], level, text)
+            self.assertIn(cat, {t["category"] for t in r["tactics"]}, text)
+
+    def test_new_schemes_no_false_alarms(self):
+        for t in ["Переведи мне 500 тенге за обед", "Не клади трубку, сейчас передам телефон папе",
+                  "Мы выиграли матч со счётом 3:1", "На паре обсуждали инвестиции и риски", "Посылка придёт завтра"]:
+            self.assertEqual(scam_text.analyze(t)["risk_level"], "LOW", t)
+
     def test_disclaimer_never_labels_person(self):
         r = scam_text.analyze(SCAM)
         self.assertIn("не личность", r["disclaimer"])
