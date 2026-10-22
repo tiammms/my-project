@@ -14,7 +14,7 @@ class ShieldTile : TileService() {
         qsTile?.apply {
             val running = ListenState.ui.value.running
             state = if (running) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-            if (Build.VERSION.SDK_INT >= 29) subtitle = if (running) "слушает звонок" else "проверить звонок"
+            if (Build.VERSION.SDK_INT >= 29) subtitle = if (running) tr("слушает звонок", "қоңырауды тыңдап жатыр") else tr("проверить звонок", "қоңырауды тексеру")
             updateTile()
         }
     }

@@ -124,6 +124,15 @@ swipe_up; sleep 4
 adb shell am start -n $P/.MainActivity --es route history; sleep 5
 adb shell pkill -INT screenrecord; sleep 4
 adb pull /sdcard/walk.mp4 shots/walkthrough-raw.mp4 || true
+# Kazakh interface: switch the language in settings like a user would, then look at the main screens
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3
+tap_text "Қазақша"; sleep 4
+adb shell am start -n $P/.MainActivity --es route home; shot 30-kk-home 4
+adb shell uiautomator dump /sdcard/kk.xml >/dev/null 2>&1; adb pull /sdcard/kk.xml shots/ui-kk.xml >/dev/null 2>&1 || true
+if grep -q "Шолу" shots/ui-kk.xml 2>/dev/null && grep -q "Қорғаныс" shots/ui-kk.xml 2>/dev/null; then echo "PASS interface switches to Kazakh" >> shots/asserts.txt; else echo "FAIL interface switches to Kazakh" >> shots/asserts.txt; fi
+adb shell am start -n $P/.MainActivity --es route protection; shot 31-kk-protection 4
+adb shell am start -n $P/.MainActivity --es route history; shot 32-kk-history 4
+adb shell am start -n $P/.MainActivity --es route settings; shot 33-kk-settings 4
 adb logcat -d > shots/logcat.txt
 grep "SaqtanCall" shots/logcat.txt > shots/calls.txt || true
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true

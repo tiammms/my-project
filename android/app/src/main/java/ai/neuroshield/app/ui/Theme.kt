@@ -84,7 +84,7 @@ object NS {
 }
 
 fun levelColor(l: RiskLevel) = when (l) { RiskLevel.HIGH -> NS.threat; RiskLevel.MEDIUM -> NS.warn; RiskLevel.LOW -> NS.safe }
-fun levelShort(l: RiskLevel) = when (l) { RiskLevel.HIGH -> "Высокий риск"; RiskLevel.MEDIUM -> "Средний риск"; RiskLevel.LOW -> "Безопасно" }
+fun levelShort(l: RiskLevel) = when (l) { RiskLevel.HIGH -> tr("Высокий риск", "Жоғары қауіп"); RiskLevel.MEDIUM -> tr("Средний риск", "Орташа қауіп"); RiskLevel.LOW -> tr("Безопасно", "Қауіпсіз") }
 
 private val AppType = Typography(
     displaySmall = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp, lineHeight = 38.sp),

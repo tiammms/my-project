@@ -40,14 +40,14 @@ import kotlinx.coroutines.launch
 private data class Slide(val icon: ImageVector, val color: Color, val title: String, val text: String)
 
 private val SLIDES = listOf(
-    Slide(Icons.Filled.Shield, NS.cyan, "Защита от телефонных мошенников",
-        "Saqtan оценивает каждый звонок с незнакомого номера и предупреждает прямо поверх экрана звонка."),
-    Slide(Icons.Filled.GraphicEq, NS.threat, "Код из SMS во время звонка — тревога",
-        "Самый частый обман: «продиктуйте код». Если код пришёл, пока вы говорите с незнакомцем, вы сразу увидите предупреждение."),
-    Slide(Icons.Filled.Forum, NS.violet, "Мессенджеры, ссылки и видео",
-        "Звонки в WhatsApp и Telegram, фишинговые ссылки в сообщениях и проверка видеозвонка: живой ли человек в кадре."),
-    Slide(Icons.Filled.Lock, NS.safe, "Всё на вашем телефоне",
-        "Распознавание речи и анализ работают без интернета. Звук, SMS и кадры не сохраняются и никуда не отправляются."),
+    Slide(Icons.Filled.Shield, NS.cyan, tr("Защита от телефонных мошенников", "Телефон алаяқтарынан қорғау"),
+        tr("Saqtan оценивает каждый звонок с незнакомого номера и предупреждает прямо поверх экрана звонка.", "Saqtan бейтаныс нөмірден келген әр қоңырауды бағалап, қоңырау экранының үстінен ескертеді.")),
+    Slide(Icons.Filled.GraphicEq, NS.threat, tr("Код из SMS во время звонка — тревога", "Қоңырау кезінде SMS-код келсе — дабыл"),
+        tr("Самый частый обман: «продиктуйте код». Если код пришёл, пока вы говорите с незнакомцем, вы сразу увидите предупреждение.", "Ең жиі алдау: «кодты айтыңыз». Бейтаныс адаммен сөйлесіп тұрғанда код келсе, бірден ескерту көресіз.")),
+    Slide(Icons.Filled.Forum, NS.violet, tr("Мессенджеры, ссылки и видео", "Мессенджерлер, сілтемелер және бейне"),
+        tr("Звонки в WhatsApp и Telegram, фишинговые ссылки в сообщениях и проверка видеозвонка: живой ли человек в кадре.", "WhatsApp пен Telegram-дағы қоңыраулар, хабарламалардағы фишингтік сілтемелер және бейнеқоңырауды тексеру: кадрдағы адам тірі ме.")),
+    Slide(Icons.Filled.Lock, NS.safe, tr("Всё на вашем телефоне", "Барлығы сіздің телефоныңызда"),
+        tr("Распознавание речи и анализ работают без интернета. Звук, SMS и кадры не сохраняются и никуда не отправляются.", "Сөйлеуді тану мен талдау интернетсіз жұмыс істейді. Дыбыс, SMS және кадрлар сақталмайды және ешқайда жіберілмейді.")),
 )
 
 /** First launch: four short slides, then straight to enabling the protection modules. */
@@ -61,7 +61,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
             Text("Saq", style = MaterialTheme.typography.titleLarge, color = NS.text)
             Text("tan", style = MaterialTheme.typography.titleLarge, color = NS.cyan)
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDone) { Text("Пропустить", color = NS.muted) }
+            TextButton(onClick = onDone) { Text(tr("Пропустить", "Өткізіп жіберу"), color = NS.muted) }
         }
         HorizontalPager(state = pager, modifier = Modifier.weight(1f)) { i ->
             val s = SLIDES[i]
@@ -81,7 +81,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                 Box(Modifier.padding(horizontal = 4.dp).width(w).height(8.dp).clip(RoundedCornerShape(4.dp)).background(c))
             }
         }
-        PrimaryButton(if (last) "Включить защиту" else "Далее", Modifier.fillMaxWidth()) {
+        PrimaryButton(if (last) tr("Включить защиту", "Қорғанысты қосу") else tr("Далее", "Әрі қарай"), Modifier.fillMaxWidth()) {
             if (last) onDone() else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) }
         }
     }

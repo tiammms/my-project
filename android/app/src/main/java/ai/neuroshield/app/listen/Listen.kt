@@ -156,11 +156,11 @@ class ListenService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) { stopSelfNow(intent.getStringExtra("reason")); return START_NOT_STICKY }
-        val notif = notification("Слушаю разговор: анализ речи на телефоне, без интернета")
+        val notif = notification(tr("Слушаю разговор: анализ речи на телефоне, без интернета", "Әңгімені тыңдап жатырмын: сөйлеу телефонда, интернетсіз талданады"))
         try {
             ServiceCompat.startForeground(this, NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
         } catch (e: Exception) {
-            ListenState.ui.value = ListenUi(message = "Android не разрешил запустить прослушивание: ${e.message}")
+            ListenState.ui.value = ListenUi(message = tr("Android не разрешил запустить прослушивание: ${e.message}", "Android тыңдауды іске қосуға рұқсат бермеді: ${e.message}"))
             stopSelf(); return START_NOT_STICKY
         }
         if (job?.isActive != true) job = scope.launch { run() }
@@ -174,27 +174,27 @@ class ListenService : Service() {
         val stop = PendingIntent.getService(this, 12, Intent(this, ListenService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         return NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN)
-            .setSmallIcon(R.drawable.ic_shield).setContentTitle("Saqtan слушает звонок").setContentText(text)
-            .setOngoing(true).setContentIntent(open).addAction(0, "Остановить", stop).build()
+            .setSmallIcon(R.drawable.ic_shield).setContentTitle(tr("Saqtan слушает звонок", "Saqtan қоңырауды тыңдап жатыр")).setContentText(text)
+            .setOngoing(true).setContentIntent(open).addAction(0, tr("Остановить", "Тоқтату"), stop).build()
     }
 
     @SuppressLint("MissingPermission")
     private suspend fun run() {
         val lang = app.prefs.speechLang
         val dir = SpeechModels.modelDir(this, lang)
-        if (dir == null) { finish("Сначала скачайте модель распознавания речи (${lang}) на вкладке «Защита»"); return }
-        if (!Perms.mic(this)) { finish("Нет разрешения на микрофон"); return }
+        if (dir == null) { finish(tr("Сначала скачайте модель распознавания речи (${lang}) на вкладке «Защита»", "Алдымен «Қорғаныс» бетінде сөйлеуді тану моделін (${lang}) жүктеңіз")); return }
+        if (!Perms.mic(this)) { finish(tr("Нет разрешения на микрофон", "Микрофонға рұқсат жоқ")); return }
         val am = getSystemService(AudioManager::class.java)
         val inCall = app.prefs.callState == "OFFHOOK"
         ListenState.ui.value = ListenUi(running = true, inCall = inCall, speakerOn = isSpeakerOn(am),
-            message = "Загружаю модель распознавания…")
+            message = tr("Загружаю модель распознавания…", "Тану моделі жүктелуде…"))
         LibVosk.setLogLevel(LogLevel.WARNINGS)
-        val model = try { Model(dir.absolutePath) } catch (e: Exception) { finish("Модель не загрузилась: ${e.message}"); return }
+        val model = try { Model(dir.absolutePath) } catch (e: Exception) { finish(tr("Модель не загрузилась: ${e.message}", "Модель жүктелмеді: ${e.message}")); return }
         val rec = Recognizer(model, SAMPLE_RATE.toFloat())
         val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val audio = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuf, SAMPLE_RATE))
-        if (audio.state != AudioRecord.STATE_INITIALIZED) { rec.close(); model.close(); finish("Микрофон занят или недоступен"); return }
+        if (audio.state != AudioRecord.STATE_INITIALIZED) { rec.close(); model.close(); finish(tr("Микрофон занят или недоступен", "Микрофон бос емес немесе қолжетімсіз")); return }
         val monitor = LiveCallMonitor()
         val silence = SilenceDetector(SAMPLE_RATE)
         val buf = ShortArray(SAMPLE_RATE / 5)
@@ -202,7 +202,7 @@ class ListenService : Service() {
         audio.startRecording()
         ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.SpeechState(System.currentTimeMillis(), ai.neuroshield.app.core.SpeechStatus.STARTED))
         var silenceRecorded = false
-        ListenState.ui.value = ListenState.ui.value.copy(message = if (inCall) "Слушаю звонок" else "Проверка микрофона: скажите фразу")
+        ListenState.ui.value = ListenState.ui.value.copy(message = if (inCall) tr("Слушаю звонок", "Қоңырауды тыңдап жатырмын") else tr("Проверка микрофона: скажите фразу", "Микрофонды тексеру: бір сөйлем айтыңыз"))
         try {
             while (scope.isActive && job?.isActive == true) {
                 val n = audio.read(buf, 0, buf.size)
@@ -213,8 +213,8 @@ class ListenService : Service() {
                         ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.SpeechState(System.currentTimeMillis(), ai.neuroshield.app.core.SpeechStatus.SILENCE))
                     }
                     ListenState.ui.value = ListenState.ui.value.copy(silenceDetected = true,
-                        message = "Телефон отдаёт приложению тишину: на этом устройстве Android не разрешает слушать звонок. " +
-                            "Используйте проверку текста или SMS-защиту.")
+                        message = tr("Телефон отдаёт приложению тишину: на этом устройстве Android не разрешает слушать звонок. ", "Телефон қосымшаға тек тыныштық береді: бұл құрылғыда Android қоңырауды тыңдауға рұқсат бермейді. ") +
+                            tr("Используйте проверку текста или SMS-защиту.", "Мәтінді тексеруді немесе SMS-қорғанысты пайдаланыңыз."))
                 }
                 val escalation = if (rec.acceptWaveForm(buf, n)) monitor.onFinal(JSONObject(rec.result).optString("text"))
                 else monitor.onPartial(JSONObject(rec.partialResult).optString("partial"))

@@ -22,17 +22,18 @@ class NeuroShieldApp : Application() {
         super.onCreate()
         instance = this
         prefs = Prefs(this)
+        I18n.kk = prefs.uiLang == "kk"
         alerts = AlertStore(this)
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CH_ALERTS, "Предупреждения о мошенничестве", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "Срочные предупреждения во время звонков и при получении кодов"
+        nm.createNotificationChannel(NotificationChannel(CH_ALERTS, tr("Предупреждения о мошенничестве", "Алаяқтық туралы ескертулер"), NotificationManager.IMPORTANCE_HIGH).apply {
+            description = tr("Срочные предупреждения во время звонков и при получении кодов", "Қоңырау кезінде және код келгенде шұғыл ескертулер")
             enableVibration(true)
         })
-        nm.createNotificationChannel(NotificationChannel(CH_CALL, "Защита звонка", NotificationManager.IMPORTANCE_DEFAULT).apply {
-            description = "Предложение включить анализ речи во время звонка с незнакомого номера"
+        nm.createNotificationChannel(NotificationChannel(CH_CALL, tr("Защита звонка", "Қоңырауды қорғау"), NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = tr("Предложение включить анализ речи во время звонка с незнакомого номера", "Бейтаныс нөмірмен сөйлескенде сөйлеуді талдауды қосу ұсынысы")
         })
-        nm.createNotificationChannel(NotificationChannel(CH_LISTEN, "Анализ речи", NotificationManager.IMPORTANCE_LOW).apply {
-            description = "Показывается, пока приложение слушает звонок через микрофон"
+        nm.createNotificationChannel(NotificationChannel(CH_LISTEN, tr("Анализ речи", "Сөйлеуді талдау"), NotificationManager.IMPORTANCE_LOW).apply {
+            description = tr("Показывается, пока приложение слушает звонок через микрофон", "Қосымша қоңырауды микрофон арқылы тыңдап тұрғанда көрсетіледі")
         })
     }
 

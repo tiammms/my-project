@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
         if (r.resultCode == RESULT_OK && data != null) {
             VideoCheckService.start(this, r.resultCode, data)
             moveTaskToBack(true)       // back to the video call; the result pops up on top of it
-        } else VideoState.ui.value = VideoState.ui.value.copy(running = false, message = "Запись экрана не разрешена — проверка видео отменена")
+        } else VideoState.ui.value = VideoState.ui.value.copy(running = false, message = tr("Запись экрана не разрешена — проверка видео отменена", "Экранды жазуға рұқсат берілмеді — бейнені тексеру тоқтатылды"))
     }
 
     fun startVideoCheck() {
@@ -102,7 +102,7 @@ class MainActivity : ComponentActivity() {
         if (i.getBooleanExtra(EXTRA_START_LISTEN, false)) {
             route.value = "protection"
             startListening()
-            if (i.getBooleanExtra(EXTRA_AUTO, false) && ListenState.ui.value.message?.startsWith("Скачайте") != true) moveTaskToBack(true)
+            if (i.getBooleanExtra(EXTRA_AUTO, false) && SpeechModels.modelDir(this, app.prefs.speechLang) != null) moveTaskToBack(true)
         }
         if (i.getBooleanExtra(EXTRA_START_VIDEO, false)) {
             ai.neuroshield.app.alert.Warnings.hide()       // our own warning must not cover the caller's face
@@ -115,8 +115,8 @@ class MainActivity : ComponentActivity() {
     fun startListening() {
         val lang = app.prefs.speechLang
         when {
-            !Perms.mic(this) -> ListenState.ui.value = ListenState.ui.value.copy(message = "Разрешите доступ к микрофону в списке ниже")
-            SpeechModels.modelDir(this, lang) == null -> ListenState.ui.value = ListenState.ui.value.copy(message = "Скачайте модель распознавания речи ниже (один раз)")
+            !Perms.mic(this) -> ListenState.ui.value = ListenState.ui.value.copy(message = tr("Разрешите доступ к микрофону в списке ниже", "Төмендегі тізімде микрофонға рұқсат беріңіз"))
+            SpeechModels.modelDir(this, lang) == null -> ListenState.ui.value = ListenState.ui.value.copy(message = tr("Скачайте модель распознавания речи ниже (один раз)", "Төменде сөйлеуді тану моделін жүктеңіз (бір рет)"))
             else -> ListenService.start(this)
         }
     }
@@ -129,8 +129,8 @@ class MainActivity : ComponentActivity() {
         }
         val r by route
         val tabs = listOf(
-            Triple("home", "Обзор", Icons.Outlined.GridView), Triple("protection", "Защита", Icons.Outlined.Shield),
-            Triple("history", "Угрозы", Icons.Outlined.Radar), Triple("settings", "Настройки", Icons.Outlined.Tune))
+            Triple("home", tr("Обзор", "Шолу"), Icons.Outlined.GridView), Triple("protection", tr("Защита", "Қорғаныс"), Icons.Outlined.Shield),
+            Triple("history", tr("Угрозы", "Қауіптер"), Icons.Outlined.Radar), Triple("settings", tr("Настройки", "Баптаулар"), Icons.Outlined.Tune))
         val tab = when (r) { "text", "face", "demo" -> "home"; else -> r }
         Scaffold(containerColor = NS.bg, bottomBar = { BottomBar(tabs, tab) { route.value = it } }) { pad ->
             Box(Modifier.fillMaxSize().padding(pad).background(Brush.verticalGradient(listOf(Color(0xFF0B0E13), NS.bg)))) {

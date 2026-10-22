@@ -66,15 +66,15 @@ fun FaceScreen(onBack: () -> Unit) {
     var yaw by remember { mutableStateOf(0f) }
     var faces by remember { mutableIntStateOf(0) }
     var camError by remember { mutableStateOf<String?>(
-        if (!ctx.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_FRONT)) "На этом устройстве нет фронтальной камеры" else null) }
+        if (!ctx.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_FRONT)) tr("На этом устройстве нет фронтальной камеры", "Бұл құрылғыда алдыңғы камера жоқ") else null) }
 
-    Page("Проверка лица", "Подтверждение, что перед телефоном живой человек", onBack) {
-        SectionCard(sub = "Когда пригодится: перед важным действием в приложении, если кто-то просит «подтвердить личность» по телефону — " +
-            "проверку проходите только сами, в своём приложении. Фото, видео и кадры не сохраняются.") {}
+    Page(tr("Проверка лица", "Бетті тексеру"), tr("Подтверждение, что перед телефоном живой человек", "Телефон алдында тірі адам екенін растау"), onBack) {
+        SectionCard(sub = tr("Когда пригодится: перед важным действием в приложении, если кто-то просит «подтвердить личность» по телефону — ", "Қашан керек: қосымшадағы маңызды әрекет алдында. Біреу телефон арқылы «жеке басыңызды растауды» сұраса — ") +
+            tr("проверку проходите только сами, в своём приложении. Фото, видео и кадры не сохраняются.", "тексеруден тек өзіңіз, өз қосымшаңызда өтіңіз. Фото, бейне және кадрлар сақталмайды.")) {}
         if (camError != null) {
-            Verdict(RiskLevel.MEDIUM, "Камера недоступна", camError)
+            Verdict(RiskLevel.MEDIUM, tr("Камера недоступна", "Камера қолжетімсіз"), camError)
         } else if (!camOk) {
-            Button(onClick = { ask.launch(Manifest.permission.CAMERA) }) { Text("Разрешить камеру") }
+            Button(onClick = { ask.launch(Manifest.permission.CAMERA) }) { Text(tr("Разрешить камеру", "Камераға рұқсат беру")) }
         } else {
             Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(16.dp)).background(Color.Black)) {
                 CameraWithFaces(onError = { camError = it }, onFrame = { f ->
@@ -88,27 +88,27 @@ fun FaceScreen(onBack: () -> Unit) {
                     Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color(0xCC0B1016)).padding(14.dp),
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(s.current?.arrow ?: "", fontSize = 44.sp, color = NS.teal)
-                        Text(s.current?.instruction ?: "", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = NS.text, textAlign = TextAlign.Center)
-                        Text("Шаг ${s.index + 1} из ${s.steps.size}" + if (frameTick < 0) "" else "", color = NS.muted, fontSize = 12.sp)
+                        Text(I18n.core(s.current?.instruction), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = NS.text, textAlign = TextAlign.Center)
+                        Text(tr("Шаг ${s.index + 1} из ${s.steps.size}", "Қадам ${s.index + 1} / ${s.steps.size}") + if (frameTick < 0) "" else "", color = NS.muted, fontSize = 12.sp)
                     }
                 }
             }
-            Text("Лиц в кадре: $faces · поворот головы: ${"%.0f".format(yaw)}°", color = NS.muted, fontSize = 12.sp)
+            Text(tr("Лиц в кадре: $faces · поворот головы: ${"%.0f".format(yaw)}°", "Кадрдағы беттер: $faces · бастың бұрылуы: ${"%.0f".format(yaw)}°"), color = NS.muted, fontSize = 12.sp)
             val s = session
             if (s == null || s.state != LivenessState.RUNNING) {
                 Button(onClick = { session = LivenessSession(); tick++ }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (s == null) "Начать проверку" else "Пройти ещё раз")
+                    Text(if (s == null) tr("Начать проверку", "Тексеруді бастау") else tr("Пройти ещё раз", "Қайта өту"))
                 }
-            } else OutlinedButton(onClick = { session = null }, modifier = Modifier.fillMaxWidth()) { Text("Отменить") }
+            } else OutlinedButton(onClick = { session = null }, modifier = Modifier.fillMaxWidth()) { Text(tr("Отменить", "Болдырмау")) }
             if (s != null && s.state != LivenessState.RUNNING) {
                 val passed = s.state == LivenessState.PASSED
                 Verdict(if (passed) RiskLevel.LOW else RiskLevel.HIGH,
-                    if (passed) "Живой человек подтверждён" else "Проверка не пройдена",
-                    if (passed) "Повороты и моргание выполнены в случайном порядке, который нельзя знать заранее" else s.failure)
-                s.log.forEach { Bullet(it) }
-                Text("Ограничения: не защищает от объёмной маски и от дипфейка, подменяющего камеру. Не определяет, кто именно перед камерой.",
+                    if (passed) tr("Живой человек подтверждён", "Тірі адам расталды") else tr("Проверка не пройдена", "Тексеруден өтпеді"),
+                    if (passed) tr("Повороты и моргание выполнены в случайном порядке, который нельзя знать заранее", "Бұрылыстар мен жыпылықтау алдын ала білуге болмайтын кездейсоқ ретпен орындалды") else s.failure)
+                s.log.forEach { Bullet(I18n.core(it)) }
+                Text(tr("Ограничения: не защищает от объёмной маски и от дипфейка, подменяющего камеру. Не определяет, кто именно перед камерой.", "Шектеулер: көлемді маскадан және камераны алмастыратын дипфейктен қорғамайды. Камера алдында нақты кім екенін анықтамайды."),
                     color = NS.muted, fontSize = 12.sp)
-                if (!passed) Text("Если вы держали перед камерой фото или экран — так и должно быть: проверка их не пропускает.", color = NS.text2, fontSize = 13.sp)
+                if (!passed) Text(tr("Если вы держали перед камерой фото или экран — так и должно быть: проверка их не пропускает.", "Камера алдында фото немесе экран ұстасаңыз — солай болуы керек: тексеру оларды өткізбейді."), color = NS.text2, fontSize = 13.sp)
                 LaunchedEffect(s) {
                     ctx.app.alerts.add("face", null, if (passed) RiskLevel.LOW else RiskLevel.HIGH, if (passed) 5.0 else 85.0,
                         if (passed) "Проверка лица пройдена" else "Проверка лица не пройдена", s.log.takeLast(4), null)
@@ -139,7 +139,7 @@ private fun CameraWithFaces(onError: (String) -> Unit, onFrame: (FaceFrame) -> U
         val providerFuture = ProcessCameraProvider.getInstance(c)
         providerFuture.addListener({
             val provider = try { providerFuture.get() } catch (e: Exception) {
-                onError("Камера не запустилась: ${e.cause?.message ?: e.message}"); return@addListener
+                onError(tr("Камера не запустилась: ${e.cause?.message ?: e.message}", "Камера іске қосылмады: ${e.cause?.message ?: e.message}")); return@addListener
             }
             val preview = Preview.Builder().build().also { it.setSurfaceProvider(view.surfaceProvider) }
             val analysis = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
@@ -161,7 +161,7 @@ private fun CameraWithFaces(onError: (String) -> Unit, onFrame: (FaceFrame) -> U
             try {
                 provider.unbindAll()
                 provider.bindToLifecycle(owner, CameraSelector.DEFAULT_FRONT_CAMERA, preview, analysis)
-            } catch (e: Exception) { onError("Камера не запустилась: ${e.message}") }
+            } catch (e: Exception) { onError(tr("Камера не запустилась: ${e.message}", "Камера іске қосылмады: ${e.message}")) }
         }, main)
         view
     })

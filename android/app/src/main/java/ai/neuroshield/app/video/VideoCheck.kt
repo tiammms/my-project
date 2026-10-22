@@ -67,20 +67,20 @@ class VideoCheckService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) { finish("Остановлено"); return START_NOT_STICKY }
+        if (intent?.action == ACTION_STOP) { finish(tr("Остановлено", "Тоқтатылды")); return START_NOT_STICKY }
         val open = PendingIntent.getActivity(this, 21, Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_ROUTE, "protection"),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN).setSmallIcon(R.drawable.ic_shield)
-            .setContentTitle("Saqtan проверяет видеозвонок").setContentText("30 секунд: лицо собеседника и два задания для него. Кадры не сохраняются")
+            .setContentTitle(tr("Saqtan проверяет видеозвонок", "Saqtan бейнеқоңырауды тексеруде")).setContentText(tr("30 секунд: лицо собеседника и два задания для него. Кадры не сохраняются", "30 секунд: әңгімелесушінің беті және оған екі тапсырма. Кадрлар сақталмайды"))
             .setOngoing(true).setContentIntent(open).build()
         try {
             ServiceCompat.startForeground(this, NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
-        } catch (e: Exception) { finish("Android не разрешил запуск: ${e.message}"); return START_NOT_STICKY }
+        } catch (e: Exception) { finish(tr("Android не разрешил запуск: ${e.message}", "Android іске қосуға рұқсат бермеді: ${e.message}")); return START_NOT_STICKY }
         val code = intent?.getIntExtra(EXTRA_CODE, Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
         val data: Intent? = if (Build.VERSION.SDK_INT >= 33) intent?.getParcelableExtra(EXTRA_DATA, Intent::class.java)
             else @Suppress("DEPRECATION") intent?.getParcelableExtra(EXTRA_DATA)
-        if (code != Activity.RESULT_OK || data == null) { finish("Запись экрана не разрешена"); return START_NOT_STICKY }
-        try { begin(code, data) } catch (e: Exception) { finish("Не удалось начать запись экрана: ${e.message}") }
+        if (code != Activity.RESULT_OK || data == null) { finish(tr("Запись экрана не разрешена", "Экранды жазуға рұқсат берілмеді")); return START_NOT_STICKY }
+        try { begin(code, data) } catch (e: Exception) { finish(tr("Не удалось начать запись экрана: ${e.message}", "Экранды жазуды бастау мүмкін болмады: ${e.message}")) }
         return START_NOT_STICKY
     }
 
@@ -98,8 +98,8 @@ class VideoCheckService : Service() {
         display = p.createVirtualDisplay("neuroshield-video-check", w, hgt, dm.densityDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, r.surface, null, h)
         started = System.currentTimeMillis()
         plan = VideoChallenges.plan()
-        VideoState.ui.value = VideoUi(running = true, message = "Смотрю на лицо собеседника…")
-        Warnings.showPrompt(this, "Saqtan смотрит на лицо собеседника… Скоро подскажу, о чём его попросить")
+        VideoState.ui.value = VideoUi(running = true, message = tr("Смотрю на лицо собеседника…", "Әңгімелесушінің бетіне қарап тұрмын…"))
+        Warnings.showPrompt(this, tr("Saqtan смотрит на лицо собеседника… Скоро подскажу, о чём его попросить", "Saqtan әңгімелесушінің бетіне қарап тұр… Одан не сұрау керегін жақында айтамын"))
         // A virtual display only produces a new image when the screen changes. Sample on a fixed clock instead and
         // re-use the last picture when nothing changed: an unchanged screen IS a frozen picture.
         var lastBmp: Bitmap? = null
@@ -145,14 +145,14 @@ class VideoCheckService : Service() {
         val c = VideoChallenges.current(plan, t)
         if (c == shown) return
         shown = c
-        val text = if (c != null) "Задание ${plan.indexOf(c) + 1} из ${plan.size}: ${c.kind.ask}"
-            else if (t < VideoChallenges.FIRST_AT_MS) "Saqtan смотрит на лицо собеседника…"
-            else "Готово, заканчиваю проверку…"
+        val text = if (c != null) tr("Задание ${plan.indexOf(c) + 1} из ${plan.size}: ${c.kind.ask}", "${plan.size} тапсырманың ${plan.indexOf(c) + 1}-сі: ${I18n.core(c.kind.ask)}")
+            else if (t < VideoChallenges.FIRST_AT_MS) tr("Saqtan смотрит на лицо собеседника…", "Saqtan әңгімелесушінің бетіне қарап тұр…")
+            else tr("Готово, заканчиваю проверку…", "Дайын, тексеруді аяқтап жатырмын…")
         Warnings.showPrompt(this, text)
         VideoState.ui.value = VideoState.ui.value.copy(prompt = text)
         try {
             val n = NotificationCompat.Builder(this, NeuroShieldApp.CH_LISTEN).setSmallIcon(R.drawable.ic_shield)
-                .setContentTitle("Saqtan проверяет видеозвонок").setContentText(text)
+                .setContentTitle(tr("Saqtan проверяет видеозвонок", "Saqtan бейнеқоңырауды тексеруде")).setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text)).setOngoing(true).setOnlyAlertOnce(true).build()
             getSystemService(android.app.NotificationManager::class.java).notify(NOTIF_ID, n)
         } catch (_: Exception) {}
@@ -194,7 +194,7 @@ class VideoCheckService : Service() {
         const val ACTION_STOP = "ai.neuroshield.STOP_VIDEO"
 
         fun start(ctx: Context, code: Int, data: Intent) {
-            VideoState.ui.value = VideoUi(running = true, message = "Запуск…")
+            VideoState.ui.value = VideoUi(running = true, message = tr("Запуск…", "Іске қосылуда…"))
             ctx.startForegroundService(Intent(ctx, VideoCheckService::class.java).putExtra(EXTRA_CODE, code).putExtra(EXTRA_DATA, data))
         }
     }

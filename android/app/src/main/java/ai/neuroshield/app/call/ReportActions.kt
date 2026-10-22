@@ -22,8 +22,8 @@ class ReportActionReceiver : BroadcastReceiver() {
         ctx.app.prefs.mark(number, scam)
         Log.i("SaqtanCall", "report action: marked ${if (scam) "scam" else "safe"}")
         ctx.getSystemService(NotificationManager::class.java).cancel(i.getIntExtra(EXTRA_NOTIF, 0))
-        Toast.makeText(ctx, if (scam) "Номер отмечен. Следующий звонок с него будет помечен как опасный"
-            else "Номер отмечен как надёжный", Toast.LENGTH_LONG).show()
+        Toast.makeText(ctx, if (scam) tr("Номер отмечен. Следующий звонок с него будет помечен как опасный", "Нөмір белгіленді. Одан келетін келесі қоңырау қауіпті деп белгіленеді")
+            else tr("Номер отмечен как надёжный", "Нөмір сенімді деп белгіленді"), Toast.LENGTH_LONG).show()
     }
 
     companion object {
@@ -49,11 +49,11 @@ class ReportActionReceiver : BroadcastReceiver() {
         fun addTo(b: NotificationCompat.Builder, ctx: Context, number: String?, risky: Boolean, notif: Int) {
             val p = ctx.app.prefs
             val actions = mutableListOf<Pair<String, PendingIntent>>()
-            if (number != null) actions += "Отметить номер" to mark(ctx, number, true, notif)
+            if (number != null) actions += tr("Отметить номер", "Нөмірді белгілеу") to mark(ctx, number, true, notif)
             if (risky) {
-                if (p.trustedNumber.isNotBlank()) actions += "Позвонить близкому" to dial(ctx, 43, p.trustedNumber)
-                if (p.bankNumber.isNotBlank()) actions += "Позвонить в банк" to dial(ctx, 44, p.bankNumber)
-            } else if (number != null) actions += "Номер надёжный" to mark(ctx, number, false, notif)
+                if (p.trustedNumber.isNotBlank()) actions += tr("Позвонить близкому", "Жақын адамға қоңырау") to dial(ctx, 43, p.trustedNumber)
+                if (p.bankNumber.isNotBlank()) actions += tr("Позвонить в банк", "Банкке қоңырау шалу") to dial(ctx, 44, p.bankNumber)
+            } else if (number != null) actions += tr("Номер надёжный", "Нөмір сенімді") to mark(ctx, number, false, notif)
             actions.take(3).forEach { (label, pi) -> b.addAction(0, label, pi) }
         }
     }

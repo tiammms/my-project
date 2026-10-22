@@ -142,7 +142,7 @@ fun Page(title: String, sub: String? = null, onBack: (() -> Unit)? = null, actio
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp)) {
             if (onBack != null) {
                 IconButton(onClick = onBack, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = NS.text)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Назад", "Артқа"), tint = NS.text)
                 }
                 Spacer(Modifier.width(12.dp))
             }
@@ -163,14 +163,14 @@ data class ProtectionItem(val title: String, val why: String, val ok: Boolean, v
 fun protectionItems(ctx: Context): List<ProtectionItem> {
     val model = SpeechModels.modelDir(ctx, ctx.app.prefs.speechLang) != null
     return listOf(
-        ProtectionItem("Определитель номера", "Оценка звонка до ответа", Perms.screeningRole(ctx), Icons.Filled.Call),
-        ProtectionItem("Состояние звонка", "Знать, что идёт разговор", Perms.phone(ctx), Icons.Filled.GppGood),
-        ProtectionItem("Контакты", "Не беспокоить при звонках знакомых", Perms.contacts(ctx), Icons.Filled.Contacts),
-        ProtectionItem("Коды из SMS", "Тревога, если код пришёл во время звонка", Perms.sms(ctx), Icons.Filled.Sms),
-        ProtectionItem("Окно поверх звонка", "Предупреждение прямо на экране звонка", Perms.overlay(ctx), Icons.Filled.Layers),
-        ProtectionItem("Уведомления", "Тревоги и быстрые действия", Perms.notifications(ctx), Icons.Filled.NotificationsActive),
-        ProtectionItem("Голосовой ИИ", "Микрофон и офлайн-модель речи", Perms.mic(ctx) && model, Icons.Filled.Mic),
-        ProtectionItem("Мессенджеры", "WhatsApp, Telegram, Viber и другие", Perms.notificationAccess(ctx), Icons.Filled.Forum),
+        ProtectionItem(tr("Определитель номера", "Нөмір анықтағыш"), tr("Оценка звонка до ответа", "Жауап бергенге дейін қоңырауды бағалау"), Perms.screeningRole(ctx), Icons.Filled.Call),
+        ProtectionItem(tr("Состояние звонка", "Қоңырау күйі"), tr("Знать, что идёт разговор", "Сөйлесу жүріп жатқанын білу"), Perms.phone(ctx), Icons.Filled.GppGood),
+        ProtectionItem(tr("Контакты", "Контактілер"), tr("Не беспокоить при звонках знакомых", "Таныстар қоңырау шалғанда мазаламау"), Perms.contacts(ctx), Icons.Filled.Contacts),
+        ProtectionItem(tr("Коды из SMS", "SMS кодтары"), tr("Тревога, если код пришёл во время звонка", "Код қоңырау кезінде келсе — дабыл"), Perms.sms(ctx), Icons.Filled.Sms),
+        ProtectionItem(tr("Окно поверх звонка", "Қоңырау үстіндегі терезе"), tr("Предупреждение прямо на экране звонка", "Ескерту тікелей қоңырау экранында"), Perms.overlay(ctx), Icons.Filled.Layers),
+        ProtectionItem(tr("Уведомления", "Хабарландырулар"), tr("Тревоги и быстрые действия", "Дабылдар және жылдам әрекеттер"), Perms.notifications(ctx), Icons.Filled.NotificationsActive),
+        ProtectionItem(tr("Голосовой ИИ", "Дауыстық ЖИ"), tr("Микрофон и офлайн-модель речи", "Микрофон және офлайн сөйлеу моделі"), Perms.mic(ctx) && model, Icons.Filled.Mic),
+        ProtectionItem(tr("Мессенджеры", "Мессенджерлер"), tr("WhatsApp, Telegram, Viber и другие", "WhatsApp, Telegram, Viber және басқалар"), Perms.notificationAccess(ctx), Icons.Filled.Forum),
     )
 }
 
@@ -192,9 +192,9 @@ private val dayFmt = SimpleDateFormat("d MMMM", Locale("ru"))
 fun dayLabel(ts: Long): String {
     val c = Calendar.getInstance(); val d = Calendar.getInstance().apply { timeInMillis = ts }
     val same = { a: Calendar, b: Calendar -> a.get(Calendar.YEAR) == b.get(Calendar.YEAR) && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR) }
-    if (same(c, d)) return "Сегодня"
+    if (same(c, d)) return tr("Сегодня", "Бүгін")
     c.add(Calendar.DAY_OF_YEAR, -1)
-    if (same(c, d)) return "Вчера"
+    if (same(c, d)) return tr("Вчера", "Кеше")
     return dayFmt.format(Date(ts))
 }
 
@@ -209,11 +209,11 @@ fun ThreatRow(a: Alert, onClick: () -> Unit) {
         IconBadge(sourceIcon(a.source), c, 36.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f).padding(vertical = 10.dp)) {
-            Text(a.title, color = NS.text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(I18n.core(a.title), color = NS.text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("${timeFmt.format(Date(a.ts))} · ${a.sourceRu}", color = NS.muted, style = MaterialTheme.typography.bodySmall, maxLines = 1)
         }
         Spacer(Modifier.width(8.dp))
-        Pill(a.level.let { if (it == RiskLevel.LOW) "Низкий" else if (it == RiskLevel.MEDIUM) "Средний" else "Высокий" }, c)
+        Pill(a.level.let { if (it == RiskLevel.LOW) tr("Низкий", "Төмен") else if (it == RiskLevel.MEDIUM) tr("Средний", "Орташа") else tr("Высокий", "Жоғары") }, c)
         Spacer(Modifier.width(12.dp))
     }
 }
@@ -239,7 +239,7 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
             Text("tan", style = MaterialTheme.typography.titleLarge, color = NS.cyan)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { go("settings") }, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
-                Icon(Icons.Filled.Settings, "Настройки", tint = NS.text2)
+                Icon(Icons.Filled.Settings, tr("Настройки", "Баптаулар"), tint = NS.text2)
             }
         }
 
@@ -249,18 +249,18 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
                 StatusOrb(accent, 96.dp, if (full) Icons.Filled.Shield else Icons.Filled.GppMaybe)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("СТАТУС ЗАЩИТЫ", style = MaterialTheme.typography.labelSmall, color = NS.muted)
-                    Text(if (full) "Под защитой" else "Частично", style = MaterialTheme.typography.headlineSmall, color = NS.text, maxLines = 1)
-                    Text("$on из ${items.size} модулей активны", style = MaterialTheme.typography.bodySmall, color = NS.text2)
+                    Text(tr("СТАТУС ЗАЩИТЫ", "ҚОРҒАНЫС КҮЙІ"), style = MaterialTheme.typography.labelSmall, color = NS.muted)
+                    Text(if (full) tr("Под защитой", "Қорғалған") else tr("Частично", "Ішінара"), style = MaterialTheme.typography.headlineSmall, color = NS.text, maxLines = 1)
+                    Text(tr("$on из ${items.size} модулей активны", "${items.size} модульдің $on белсенді"), style = MaterialTheme.typography.bodySmall, color = NS.text2)
                 }
             }
-            if (!full) PrimaryButton("Включить все модули", Modifier.fillMaxWidth(), color = NS.warn) { go("protection") }
+            if (!full) PrimaryButton(tr("Включить все модули", "Барлық модульдерді қосу"), Modifier.fillMaxWidth(), color = NS.warn) { go("protection") }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatTile(Modifier.weight(1f), "$today", "за сутки", NS.cyan) { go("history") }
-            StatTile(Modifier.weight(1f), "$high", "высокий риск", NS.threat) { go("history") }
-            StatTile(Modifier.weight(1f), "${alerts.size}", "всего", NS.text2) { go("history") }
+            StatTile(Modifier.weight(1f), "$today", tr("за сутки", "тәулік ішінде"), NS.cyan) { go("history") }
+            StatTile(Modifier.weight(1f), "$high", tr("высокий риск", "жоғары қауіп"), NS.threat) { go("history") }
+            StatTile(Modifier.weight(1f), "${alerts.size}", tr("всего", "барлығы"), NS.text2) { go("history") }
         }
 
         if (alerts.isNotEmpty()) WeekChart(alerts)
@@ -271,29 +271,29 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
                 IconBadge(Icons.Filled.PlayCircle, NS.violet, 44.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Демо-показ", style = MaterialTheme.typography.titleMedium, color = NS.text)
-                    Text("Сценарий звонка мошенника по шагам — для презентации", style = MaterialTheme.typography.bodySmall, color = NS.text2)
+                    Text(tr("Демо-показ", "Демо-көрсетілім"), style = MaterialTheme.typography.titleMedium, color = NS.text)
+                    Text(tr("Сценарий звонка мошенника по шагам — для презентации", "Алаяқ қоңырауының сценарийі қадам бойынша — таныстырылым үшін"), style = MaterialTheme.typography.bodySmall, color = NS.text2)
                 }
                 Icon(Icons.Filled.ChevronRight, null, tint = NS.violet)
             }
         }
 
-        SectionTitle("Быстрые проверки")
+        SectionTitle(tr("Быстрые проверки", "Жылдам тексерулер"))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile(Modifier.weight(1f), Icons.Filled.TextSnippet, "Текст", "SMS и слова звонящего", NS.cyan) { go("text") }
-            ActionTile(Modifier.weight(1f), Icons.Filled.Videocam, "Видео", "Живой ли собеседник", NS.violet) { go("video") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.TextSnippet, tr("Текст", "Мәтін"), tr("SMS и слова звонящего", "SMS және қоңырау шалушының сөздері"), NS.cyan) { go("text") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.Videocam, tr("Видео", "Бейне"), tr("Живой ли собеседник", "Әңгімелесуші тірі ме"), NS.violet) { go("video") }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile(Modifier.weight(1f), Icons.Filled.Face, "Лицо", "Проверка живости", NS.safe) { go("face") }
-            ActionTile(Modifier.weight(1f), Icons.Filled.Warning, "Тест", "Пример окна угрозы", NS.threat) {
-                Warnings.show(ctx, Warning(RiskLevel.HIGH, "Просят продиктовать код из SMS",
-                    listOf("Звонящий представился службой безопасности банка", "Просит назвать код из SMS"),
-                    listOf("Положите трубку и позвоните в банк сами"), source = "test", number = "+7 700 000 00 00", score = 92.0, isTest = true))
+            ActionTile(Modifier.weight(1f), Icons.Filled.Face, tr("Лицо", "Бет"), tr("Проверка живости", "Тірілікті тексеру"), NS.safe) { go("face") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.Warning, tr("Тест", "Тест"), tr("Пример окна угрозы", "Қауіп терезесінің үлгісі"), NS.threat) {
+                Warnings.show(ctx, Warning(RiskLevel.HIGH, tr("Просят продиктовать код из SMS", "SMS-тегі кодты айтуды сұрайды"),
+                    listOf(tr("Звонящий представился службой безопасности банка", "Қоңырау шалушы өзін банктің қауіпсіздік қызметі деп таныстырды"), tr("Просит назвать код из SMS", "SMS-тегі кодты айтуды сұрайды")),
+                    listOf(tr("Положите трубку и позвоните в банк сами", "Тұтқаны қойып, банкке өзіңіз хабарласыңыз")), source = "test", number = "+7 700 000 00 00", score = 92.0, isTest = true))
             }
         }
 
-        SectionTitle("Последние угрозы", if (alerts.isNotEmpty()) "Все" else null) { go("history") }
-        if (alerts.isEmpty()) EmptyState("Угроз не обнаружено", "Saqtan предупредит, если звонок или сообщение покажутся подозрительными")
+        SectionTitle(tr("Последние угрозы", "Соңғы қауіптер"), if (alerts.isNotEmpty()) tr("Все", "Барлығы") else null) { go("history") }
+        if (alerts.isEmpty()) EmptyState(tr("Угроз не обнаружено", "Қауіп анықталған жоқ"), tr("Saqtan предупредит, если звонок или сообщение покажутся подозрительными", "Қоңырау не хабарлама күдікті болса, Saqtan ескертеді"))
         else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { alerts.take(3).forEach { a -> ThreatRow(a) { openAlert(a.id) } } }
     }
 }
@@ -311,7 +311,7 @@ fun WeekChart(alerts: List<Alert>) {
     val anim by androidx.compose.animation.core.animateFloatAsState(1f, androidx.compose.animation.core.tween(700), label = "bars")
     GlassCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Угрозы за 7 дней", style = MaterialTheme.typography.titleMedium, color = NS.text, modifier = Modifier.weight(1f))
+            Text(tr("Угрозы за 7 дней", "7 күндегі қауіптер"), style = MaterialTheme.typography.titleMedium, color = NS.text, modifier = Modifier.weight(1f))
             Text("${days.sumOf { it.second.size }}", style = MaterialTheme.typography.titleMedium, color = NS.cyan)
         }
         Row(Modifier.fillMaxWidth().height(96.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
@@ -400,38 +400,38 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
         }
     }
 
-    Page("Защита звонков", "Модули, голосовой и видео-анализ") {
+    Page(tr("Защита звонков", "Қоңырауларды қорғау"), tr("Модули, голосовой и видео-анализ", "Модульдер, дауыс және бейне талдауы")) {
         // ---- overview
         GlassCard(accent = if (on == items.size) NS.cyan else NS.warn) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RingGauge(on / items.size.toFloat(), if (on == items.size) NS.cyan else NS.warn, 92.dp) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("$on/${items.size}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = NS.text)
-                        Text("модулей", fontSize = 11.sp, color = NS.muted)
+                        Text(tr("модулей", "модуль"), fontSize = 11.sp, color = NS.muted)
                     }
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(if (on == items.size) "Все модули активны" else "Включите все модули", style = MaterialTheme.typography.titleMedium, color = NS.text)
-                    Text("Данные анализируются на телефоне и никуда не отправляются", style = MaterialTheme.typography.bodySmall, color = NS.muted)
+                    Text(if (on == items.size) tr("Все модули активны", "Барлық модульдер белсенді") else tr("Включите все модули", "Барлық модульдерді қосыңыз"), style = MaterialTheme.typography.titleMedium, color = NS.text)
+                    Text(tr("Данные анализируются на телефоне и никуда не отправляются", "Деректер телефонда талданады және ешқайда жіберілмейді"), style = MaterialTheme.typography.bodySmall, color = NS.muted)
                 }
             }
-            if (on < items.size) PrimaryButton("Разрешить всё", Modifier.fillMaxWidth()) { runtimeAll() }
+            if (on < items.size) PrimaryButton(tr("Разрешить всё", "Бәріне рұқсат беру"), Modifier.fillMaxWidth()) { runtimeAll() }
         }
 
-        SectionTitle("Модули")
+        SectionTitle(tr("Модули", "Модульдер"))
         GlassCard(padding = 10.dp) {
             items.forEachIndexed { i, item ->
                 ListRow(item.icon, item.title, item.why, tint = if (item.ok) NS.cyan else NS.muted,
                     onClick = if (item.ok) null else ({ fix(i) })) {
-                    if (item.ok) Icon(Icons.Filled.CheckCircle, "включено", tint = NS.safe, modifier = Modifier.size(22.dp))
-                    else Text("Включить", color = NS.cyan, style = MaterialTheme.typography.labelLarge)
+                    if (item.ok) Icon(Icons.Filled.CheckCircle, tr("включено", "қосулы"), tint = NS.safe, modifier = Modifier.size(22.dp))
+                    else Text(tr("Включить", "Қосу"), color = NS.cyan, style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
 
         // ---- voice AI
-        SectionTitle("Голосовой ИИ")
+        SectionTitle(tr("Голосовой ИИ", "Дауыстық ЖИ"))
         GlassCard(accent = if (ui.running) (ui.risk?.level?.let { levelColor(it) } ?: NS.cyan) else null) {
             if (ui.running) {
                 val r = ui.risk
@@ -441,8 +441,8 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
                     }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(if (ui.inCall) "Слушаю звонок" else "Проверка микрофона", style = MaterialTheme.typography.titleMedium, color = NS.text)
-                        Text(if (ui.speakerOn) "Громкая связь включена" else "Включите громкую связь", style = MaterialTheme.typography.bodySmall,
+                        Text(if (ui.inCall) tr("Слушаю звонок", "Қоңырауды тыңдап жатырмын") else tr("Проверка микрофона", "Микрофонды тексеру"), style = MaterialTheme.typography.titleMedium, color = NS.text)
+                        Text(if (ui.speakerOn) tr("Громкая связь включена", "Дауыс зорайтқыш қосулы") else tr("Включите громкую связь", "Дауыс зорайтқышты қосыңыз"), style = MaterialTheme.typography.bodySmall,
                             color = if (ui.speakerOn) NS.safe else NS.warn)
                         LevelBars(ui.micLevel)
                     }
@@ -451,10 +451,10 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
                     Text("«…${ui.transcript.takeLast(180)}»", color = NS.text2, fontFamily = FontFamily.Monospace, fontSize = 12.5.sp)
                 r?.tactics?.takeIf { it.isNotEmpty() }?.let { t ->
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        t.forEach { Pill(it.title, levelColor(r.level)) }
+                        t.forEach { Pill(I18n.core(it.title), levelColor(r.level)) }
                     }
                 }
-                GhostButton("Остановить", Modifier.fillMaxWidth()) { ListenService.stop(ctx, "Остановлено") }
+                GhostButton(tr("Остановить", "Тоқтату"), Modifier.fillMaxWidth()) { ListenService.stop(ctx, tr("Остановлено", "Тоқтатылды")) }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SpeechModels.all.forEach { m ->
@@ -469,54 +469,54 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
                 val m = SpeechModels.all.first { it.lang == lang }
                 when (val s = models[lang] ?: SpeechModels.Status.Missing) {
                     is SpeechModels.Status.Ready -> {
-                        PrimaryButton(if (ctx.app.prefs.callState == "OFFHOOK") "Слушать звонок" else "Проверить микрофон", Modifier.fillMaxWidth()) { onListen() }
+                        PrimaryButton(if (ctx.app.prefs.callState == "OFFHOOK") tr("Слушать звонок", "Қоңырауды тыңдау") else tr("Проверить микрофон", "Микрофонды тексеру"), Modifier.fillMaxWidth()) { onListen() }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Модель речи «${m.title}» установлена · офлайн", color = NS.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                            Text("Удалить", color = NS.text2, style = MaterialTheme.typography.labelLarge,
+                            Text(tr("Модель речи «${m.title}» установлена · офлайн", "«${m.title}» сөйлеу моделі орнатылды · офлайн"), color = NS.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            Text(tr("Удалить", "Жою"), color = NS.text2, style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { SpeechModels.delete(ctx, lang); refresh++ }.padding(6.dp))
                         }
                     }
                     is SpeechModels.Status.Downloading -> {
-                        Text("Загрузка модели… ${s.percent}%", color = NS.text2, style = MaterialTheme.typography.bodyMedium)
+                        Text(tr("Загрузка модели… ${s.percent}%", "Модель жүктелуде… ${s.percent}%"), color = NS.text2, style = MaterialTheme.typography.bodyMedium)
                         LinearProgressIndicator(progress = { s.percent / 100f }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
                             color = NS.cyan, trackColor = NS.surface3)
                     }
                     is SpeechModels.Status.Failed -> {
-                        Text("Не удалось скачать: ${s.error}", color = NS.threat, style = MaterialTheme.typography.bodySmall)
-                        PrimaryButton("Повторить · ${m.sizeMb} МБ", Modifier.fillMaxWidth()) { SpeechModels.download(ctx, scope, lang) }
+                        Text(tr("Не удалось скачать: ${s.error}", "Жүктеп алу мүмкін болмады: ${s.error}"), color = NS.threat, style = MaterialTheme.typography.bodySmall)
+                        PrimaryButton(tr("Повторить · ${m.sizeMb} МБ", "Қайталау · ${m.sizeMb} МБ"), Modifier.fillMaxWidth()) { SpeechModels.download(ctx, scope, lang) }
                     }
-                    SpeechModels.Status.Missing -> PrimaryButton("Скачать модель речи · ${m.sizeMb} МБ", Modifier.fillMaxWidth()) { SpeechModels.download(ctx, scope, lang) }
+                    SpeechModels.Status.Missing -> PrimaryButton(tr("Скачать модель речи · ${m.sizeMb} МБ", "Сөйлеу моделін жүктеу · ${m.sizeMb} МБ"), Modifier.fillMaxWidth()) { SpeechModels.download(ctx, scope, lang) }
                 }
             }
             ui.message?.let { Text(it, color = if (ui.silenceDetected) NS.threat else NS.text2, style = MaterialTheme.typography.bodySmall) }
-            Text("Звук звонка доступен только через громкую связь — ограничение Android", color = NS.muted, style = MaterialTheme.typography.bodySmall)
+            Text(tr("Звук звонка доступен только через громкую связь — ограничение Android", "Қоңырау дыбысы тек дауыс зорайтқыш арқылы қолжетімді — Android шектеуі"), color = NS.muted, style = MaterialTheme.typography.bodySmall)
         }
 
         // ---- video AI
-        SectionTitle("Видео-анализ")
+        SectionTitle(tr("Видео-анализ", "Бейне талдау"))
         GlassCard(accent = vui.result?.level?.let { levelColor(it) }) {
             if (vui.running) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    RingGauge(vui.seconds / 30f, NS.violet, 72.dp, 7.dp) { Text("${vui.seconds}с", color = NS.text, fontWeight = FontWeight.Bold) }
+                    RingGauge(vui.seconds / 30f, NS.violet, 72.dp, 7.dp) { Text(tr("${vui.seconds}с", "${vui.seconds} с"), color = NS.text, fontWeight = FontWeight.Bold) }
                     Spacer(Modifier.width(14.dp))
                     Column {
-                        Text("Анализ лица на экране", style = MaterialTheme.typography.titleMedium, color = NS.text)
-                        Text("Кадров с лицом: ${vui.faceFrames} из ${vui.frames}", style = MaterialTheme.typography.bodySmall, color = NS.muted)
+                        Text(tr("Анализ лица на экране", "Экрандағы бетті талдау"), style = MaterialTheme.typography.titleMedium, color = NS.text)
+                        Text(tr("Кадров с лицом: ${vui.faceFrames} из ${vui.frames}", "Беті бар кадрлар: ${vui.frames} ішінен ${vui.faceFrames}"), style = MaterialTheme.typography.bodySmall, color = NS.muted)
                     }
                 }
                 vui.prompt?.let { Text(it, color = NS.violet, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold) }
             } else {
-                ListRow(Icons.Filled.Videocam, "Проверить видеозвонок", "30 секунд · лицо и два задания собеседнику", tint = NS.violet, onClick = onVideo) {
+                ListRow(Icons.Filled.Videocam, tr("Проверить видеозвонок", "Бейнеқоңырауды тексеру"), tr("30 секунд · лицо и два задания собеседнику", "30 секунд · бет және әңгімелесушіге екі тапсырма"), tint = NS.violet, onClick = onVideo) {
                     Icon(Icons.Filled.ChevronRight, null, tint = NS.muted)
                 }
             }
             vui.result?.let { v ->
-                Verdict(v.level, v.title, "Морганий ${v.blinks} · лицо видно ${(v.facePresentRatio * 100).toInt()}% · ${v.seconds.toInt()} с")
+                Verdict(v.level, I18n.core(v.title), tr("Морганий ${v.blinks} · лицо видно ${(v.facePresentRatio * 100).toInt()}% · ${v.seconds.toInt()} с", "Жыпылықтау: ${v.blinks} · бет көрінді: ${(v.facePresentRatio * 100).toInt()}% · ${v.seconds.toInt()} с"))
                 v.challenges.forEach { c ->
-                    Bullet((if (c.passed) "Выполнено: " else "Не выполнено: ") + c.challenge.kind.done + " — " + c.detail,
+                    Bullet((if (c.passed) tr("Выполнено: ", "Орындалды: ") else tr("Не выполнено: ", "Орындалмады: ")) + I18n.core(c.challenge.kind.done) + " — " + I18n.core(c.detail),
                         if (c.passed) NS.safe else NS.warn)
                 }
-                Text("Задания мешают обмануть фото или заранее записанным видео. Дипфейк, который повторяет просьбы, они не распознают.",
+                Text(tr("Задания мешают обмануть фото или заранее записанным видео. Дипфейк, который повторяет просьбы, они не распознают.", "Тапсырмалар фотосуретпен немесе алдын ала жазылған бейнемен алдауға кедергі жасайды. Өтініштерді қайталайтын дипфейкті олар анықтамайды."),
                     style = MaterialTheme.typography.bodySmall, color = NS.muted)
             }
             vui.message?.let { Text(it, color = NS.text2, style = MaterialTheme.typography.bodySmall) }
@@ -542,9 +542,9 @@ fun RiskDetails(r: TextRisk) {
         r.tactics.forEach { t ->
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(NS.surface3).padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(t.title, color = NS.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(I18n.core(t.title), color = NS.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                 t.evidence.firstOrNull()?.let { e -> Text("«${e.context}»", color = NS.text2, style = MaterialTheme.typography.bodySmall) }
-                Text(t.advice, color = NS.cyan, style = MaterialTheme.typography.bodySmall)
+                Text(I18n.core(t.advice), color = NS.cyan, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -556,19 +556,19 @@ fun TextCheckScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
     var text by remember { mutableStateOf("") }
     var result by remember { mutableStateOf<TextRisk?>(null) }
-    Page("Проверка текста", "SMS, сообщение или слова звонящего", onBack) {
+    Page(tr("Проверка текста", "Мәтінді тексеру"), tr("SMS, сообщение или слова звонящего", "SMS, хабарлама немесе қоңырау шалушының сөздері"), onBack) {
         OutlinedTextField(value = text, onValueChange = { text = it.take(ScamAnalyzer.MAX_TEXT) }, modifier = Modifier.fillMaxWidth().height(170.dp),
             shape = RoundedCornerShape(18.dp),
             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NS.cyan, unfocusedBorderColor = NS.border,
                 focusedContainerColor = NS.surface, unfocusedContainerColor = NS.surface),
-            placeholder = { Text("«Это служба безопасности банка, продиктуйте код из СМС…»", color = NS.muted) })
+            placeholder = { Text(tr("«Это служба безопасности банка, продиктуйте код из СМС…»", "«Бұл банктің қауіпсіздік қызметі, SMS-тегі кодты айтыңыз…»"), color = NS.muted) })
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PrimaryButton("Проверить", Modifier.weight(1f), enabled = text.isNotBlank()) {
+            PrimaryButton(tr("Проверить", "Тексеру"), Modifier.weight(1f), enabled = text.isNotBlank()) {
                 val r = ScamAnalyzer.analyze(text); result = r
                 if (r.level != RiskLevel.LOW) ctx.app.alerts.add("manual_text", null, r.level, r.score, "Проверка текста: ${r.summary.lowercase()}",
                     r.tactics.map { it.title }, if (ctx.app.prefs.storeExcerpts) text.take(600) else null)
             }
-            GhostButton("Пример") { text = "Здравствуйте, вас беспокоит служба безопасности банка. С вашей карты пытаются списать деньги. Срочно продиктуйте код из СМС и никому не говорите об этом звонке." }
+            GhostButton(tr("Пример", "Үлгі")) { text = tr("Здравствуйте, вас беспокоит служба безопасности банка. С вашей карты пытаются списать деньги. Срочно продиктуйте код из СМС и никому не говорите об этом звонке.", "Сәлеметсіз бе, банктің қауіпсіздік қызметі. Кодты айтыңыз, жедел! Ешкімге айтпаңыз.") }
         }
         result?.let { r ->
             GlassCard(accent = levelColor(r.level)) {
@@ -579,8 +579,8 @@ fun TextCheckScreen(onBack: () -> Unit) {
                     Spacer(Modifier.width(14.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(levelShort(r.level).uppercase(), style = MaterialTheme.typography.labelSmall, color = levelColor(r.level))
-                        Text(r.summary, style = MaterialTheme.typography.titleMedium, color = NS.text)
-                        if (r.words < 8) Text("Текст короткий — оценка неточная", style = MaterialTheme.typography.bodySmall, color = NS.muted)
+                        Text(I18n.core(r.summary), style = MaterialTheme.typography.titleMedium, color = NS.text)
+                        if (r.words < 8) Text(tr("Текст короткий — оценка неточная", "Мәтін қысқа — бағалау дәл емес"), style = MaterialTheme.typography.bodySmall, color = NS.muted)
                     }
                 }
             }
@@ -604,24 +604,24 @@ fun HistoryScreen(openId: Long? = null, onOpened: () -> Unit = {}) {
     }
     val shown = list.filter { filter == null || it.level == filter }
 
-    Page("Угрозы", "История хранится только на телефоне", actions = {
+    Page(tr("Угрозы", "Қауіптер"), tr("История хранится только на телефоне", "Тарих тек телефонда сақталады"), actions = {
         if (list.isNotEmpty()) {
             IconButton(onClick = { shareReport(ctx, shown) }, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
-                Icon(Icons.Filled.Share, "Поделиться отчётом", tint = NS.text2)
+                Icon(Icons.Filled.Share, tr("Поделиться отчётом", "Есептемені бөлісу"), tint = NS.text2)
             }
             Spacer(Modifier.width(8.dp))
             IconButton(onClick = { confirm = true }, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(NS.surface2)) {
-                Icon(Icons.Filled.DeleteOutline, "Очистить", tint = NS.text2)
+                Icon(Icons.Filled.DeleteOutline, tr("Очистить", "Тазалау"), tint = NS.text2)
             }
         }
     }) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterPill("Все · ${list.size}", filter == null, NS.cyan) { filter = null }
-            FilterPill("Высокий · ${list.count { it.level == RiskLevel.HIGH }}", filter == RiskLevel.HIGH, NS.threat) { filter = RiskLevel.HIGH }
-            FilterPill("Средний · ${list.count { it.level == RiskLevel.MEDIUM }}", filter == RiskLevel.MEDIUM, NS.warn) { filter = RiskLevel.MEDIUM }
-            FilterPill("Низкий · ${list.count { it.level == RiskLevel.LOW }}", filter == RiskLevel.LOW, NS.safe) { filter = RiskLevel.LOW }
+            FilterPill(tr("Все · ${list.size}", "Барлығы · ${list.size}"), filter == null, NS.cyan) { filter = null }
+            FilterPill(tr("Высокий · ${list.count { it.level == RiskLevel.HIGH }}", "Жоғары · ${list.count { it.level == RiskLevel.HIGH }}"), filter == RiskLevel.HIGH, NS.threat) { filter = RiskLevel.HIGH }
+            FilterPill(tr("Средний · ${list.count { it.level == RiskLevel.MEDIUM }}", "Орташа · ${list.count { it.level == RiskLevel.MEDIUM }}"), filter == RiskLevel.MEDIUM, NS.warn) { filter = RiskLevel.MEDIUM }
+            FilterPill(tr("Низкий · ${list.count { it.level == RiskLevel.LOW }}", "Төмен · ${list.count { it.level == RiskLevel.LOW }}"), filter == RiskLevel.LOW, NS.safe) { filter = RiskLevel.LOW }
         }
-        if (shown.isEmpty()) EmptyState("Здесь пока пусто", "Подозрительные звонки и сообщения появятся в этом списке")
+        if (shown.isEmpty()) EmptyState(tr("Здесь пока пусто", "Әзірге бос"), tr("Подозрительные звонки и сообщения появятся в этом списке", "Күдікті қоңыраулар мен хабарламалар осы тізімде пайда болады"))
         shown.groupBy { dayLabel(it.ts) }.forEach { (day, group) ->
             SectionTitle(day)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { group.forEach { a -> ThreatRow(a) { sheet = a } } }
@@ -635,25 +635,25 @@ fun HistoryScreen(openId: Long? = null, onOpened: () -> Unit = {}) {
         }
     }
     if (confirm) AlertDialog(onDismissRequest = { confirm = false }, containerColor = NS.surface2,
-        confirmButton = { TextButton(onClick = { ctx.app.alerts.clear(); confirm = false }) { Text("Удалить всё", color = NS.threat) } },
-        dismissButton = { TextButton(onClick = { confirm = false }) { Text("Отмена", color = NS.text2) } },
-        title = { Text("Очистить историю?", color = NS.text) }, text = { Text("Все записи об угрозах будут удалены с телефона.", color = NS.text2) })
+        confirmButton = { TextButton(onClick = { ctx.app.alerts.clear(); confirm = false }) { Text(tr("Удалить всё", "Барлығын жою"), color = NS.threat) } },
+        dismissButton = { TextButton(onClick = { confirm = false }) { Text(tr("Отмена", "Болдырмау"), color = NS.text2) } },
+        title = { Text(tr("Очистить историю?", "Тарихты тазалау керек пе?"), color = NS.text) }, text = { Text(tr("Все записи об угрозах будут удалены с телефона.", "Қауіптер туралы барлық жазба телефоннан жойылады."), color = NS.text2) })
 }
 
 /** Share a plain-text report (e.g. to a relative or the bank's fraud department). No transcripts, no SMS bodies. */
 fun shareReport(ctx: Context, items: List<Alert>) {
     val f = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru"))
     val body = buildString {
-        appendLine("Saqtan — отчёт об угрозах (${items.size})")
+        appendLine(tr("Saqtan — отчёт об угрозах (${items.size})", "Saqtan — қауіптер туралы есептеме (${items.size})"))
         appendLine()
         items.take(100).forEach { a ->
             appendLine("${f.format(Date(a.ts))} · ${levelShort(a.level)} · ${a.sourceRu}")
-            appendLine("  ${a.title}" + (a.number?.let { " · $it" } ?: ""))
-            a.reasons.take(3).forEach { appendLine("  – $it") }
+            appendLine("  ${I18n.core(a.title)}" + (a.number?.let { " · $it" } ?: ""))
+            a.reasons.take(3).forEach { appendLine("  – " + I18n.core(it)) }
         }
     }
-    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Отчёт Saqtan").putExtra(Intent.EXTRA_TEXT, body)
-    ctx.startActivity(Intent.createChooser(send, "Поделиться отчётом").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, tr("Отчёт Saqtan", "Saqtan есептемесі")).putExtra(Intent.EXTRA_TEXT, body)
+    ctx.startActivity(Intent.createChooser(send, tr("Поделиться отчётом", "Есептемені бөлісу")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 @Composable
@@ -687,28 +687,28 @@ fun ThreatDetail(a: Alert, onClose: () -> Unit) {
             Spacer(Modifier.width(14.dp))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(levelShort(a.level).uppercase(), style = MaterialTheme.typography.labelSmall, color = c)
-                Text(a.title, style = MaterialTheme.typography.titleMedium, color = NS.text)
+                Text(I18n.core(a.title), style = MaterialTheme.typography.titleMedium, color = NS.text)
                 Text("${dayLabel(a.ts)}, ${timeFmt.format(Date(a.ts))} · ${a.sourceRu}", style = MaterialTheme.typography.bodySmall, color = NS.muted)
             }
         }
-        a.number?.let { ListRow(Icons.Filled.Public, it, "Номер / отправитель", tint = NS.text2) }
+        a.number?.let { ListRow(Icons.Filled.Public, it, tr("Номер / отправитель", "Нөмір / жіберуші"), tint = NS.text2) }
         if (a.reasons.isNotEmpty()) {
-            SectionTitle("Почему это подозрительно")
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { a.reasons.forEach { Bullet(it, NS.text) } }
+            SectionTitle(tr("Почему это подозрительно", "Неліктен бұл күдікті"))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { a.reasons.forEach { Bullet(I18n.core(it), NS.text) } }
         }
         a.excerpt?.let {
-            SectionTitle("Фрагмент")
+            SectionTitle(tr("Фрагмент", "Үзінді"))
             Text("«$it»", color = NS.text2, style = MaterialTheme.typography.bodySmall)
         }
         val num = a.number?.takeIf { n -> n.any { it.isDigit() } }
         if (num != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrimaryButton("Это мошенник", Modifier.weight(1f), color = NS.threat) { ctx.app.prefs.mark(num, scam = true); marked = "Номер отмечен как мошеннический" }
-                GhostButton("Не мошенник", Modifier.weight(1f)) { ctx.app.prefs.mark(num, scam = false); marked = "Номер отмечен как надёжный" }
+                PrimaryButton(tr("Это мошенник", "Алаяқ нөмірі"), Modifier.weight(1f), color = NS.threat) { ctx.app.prefs.mark(num, scam = true); marked = tr("Номер отмечен как мошеннический", "Нөмір алаяқтық деп белгіленді") }
+                GhostButton(tr("Не мошенник", "Сенімді нөмір"), Modifier.weight(1f)) { ctx.app.prefs.mark(num, scam = false); marked = tr("Номер отмечен как надёжный", "Нөмір сенімді деп белгіленді") }
             }
             marked?.let { Text(it, color = NS.safe, style = MaterialTheme.typography.bodySmall) }
         }
-        GhostButton("Удалить запись", Modifier.fillMaxWidth(), color = NS.text2) { ctx.app.alerts.delete(a.id); onClose() }
+        GhostButton(tr("Удалить запись", "Жазбаны жою"), Modifier.fillMaxWidth(), color = NS.text2) { ctx.app.alerts.delete(a.id); onClose() }
     }
 }
 
@@ -729,81 +729,103 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     var trustedNumber by remember { mutableStateOf(p.trustedNumber) }
     var bankNumber by remember { mutableStateOf(p.bankNumber) }
     var block by remember { mutableStateOf(p.blockMarked) }
-    Page("Настройки") {
-        SectionTitle("Звонки")
+    Page(tr("Настройки", "Баптаулар")) {
+        SectionTitle(tr("Язык интерфейса", "Интерфейс тілі"))
+        GlassCard {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("ru" to "Русский", "kk" to "Қазақша").forEach { (code, name) ->
+                    val sel = (code == "kk") == I18n.kk
+                    Box(Modifier.clip(RoundedCornerShape(12.dp)).background(if (sel) NS.cyan.copy(alpha = 0.16f) else NS.surface3)
+                        .border(1.dp, if (sel) NS.cyan.copy(alpha = 0.5f) else NS.border, RoundedCornerShape(12.dp))
+                        .clickable {
+                            if (!sel) {
+                                p.uiLang = code; I18n.kk = code == "kk"
+                                (ctx as? android.app.Activity)?.recreate()
+                            }
+                        }.padding(horizontal = 14.dp, vertical = 8.dp)) {
+                        Text(name, color = if (sel) NS.cyan else NS.text2, style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(tr("Язык речи для анализа звонка выбирается отдельно, на вкладке «Защита».",
+                    "Қоңырауды талдауға арналған сөйлеу тілі «Қорғаныс» бетінде бөлек таңдалады. Қазақша аударма алдын ала нұсқа: оны тіл иесі тексеруі керек."),
+                style = MaterialTheme.typography.bodySmall, color = NS.muted)
+        }
+        SectionTitle(tr("Звонки", "Қоңыраулар"))
         GlassCard(padding = 10.dp) {
-            ListRow(Icons.Filled.Public, "Код страны", "Звонки с других кодов считаются международными") {
+            ListRow(Icons.Filled.Public, tr("Код страны", "Ел коды"), tr("Звонки с других кодов считаются международными", "Басқа кодтардан келген қоңыраулар халықаралық деп саналады")) {
                 OutlinedTextField(value = code, onValueChange = { v -> code = v.filter { it.isDigit() || it == '+' }.take(5); if (code.startsWith("+")) p.homeCallingCode = code },
                     singleLine = true, modifier = Modifier.width(86.dp), shape = RoundedCornerShape(12.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NS.cyan, unfocusedBorderColor = NS.border))
             }
-            ListRow(Icons.Filled.Call, "Любой незнакомый номер", "Короткий совет при каждом таком звонке",
+            ListRow(Icons.Filled.Call, tr("Любой незнакомый номер", "Кез келген бейтаныс нөмір"), tr("Короткий совет при каждом таком звонке", "Әр осындай қоңырауда қысқа кеңес"),
                 onClick = { warnUnknown = !warnUnknown; p.warnUnknownCallers = warnUnknown }) { NeoSwitch(warnUnknown) { warnUnknown = it; p.warnUnknownCallers = it } }
-            ListRow(Icons.Filled.Mic, "Кнопка анализа речи", "Во время звонка с незнакомцем",
+            ListRow(Icons.Filled.Mic, tr("Кнопка анализа речи", "Сөйлеуді талдау түймесі"), tr("Во время звонка с незнакомцем", "Бейтаныс адаммен сөйлескенде"),
                 onClick = { offer = !offer; p.offerListening = offer }) { NeoSwitch(offer) { offer = it; p.offerListening = it } }
-            ListRow(Icons.Filled.GraphicEq, "Автоанализ речи", "Сам включается после ответа незнакомцу: нужны модель речи и громкая связь",
+            ListRow(Icons.Filled.GraphicEq, tr("Автоанализ речи", "Сөйлеуді автоталдау"), tr("Сам включается после ответа незнакомцу: нужны модель речи и громкая связь", "Бейтанысқа жауап бергеннен кейін өзі қосылады: сөйлеу моделі мен дауыс зорайтқыш қажет"),
                 onClick = { auto = !auto; p.autoListen = auto }) { NeoSwitch(auto) { auto = it; p.autoListen = it } }
-            ListRow(Icons.Filled.Block, "Блокировать отмеченных мошенников", if (Perms.screeningRole(ctx)) "Звонки с отмеченных номеров сбрасываются" else "Нужен модуль «Определитель номера»",
+            ListRow(Icons.Filled.Block, tr("Блокировать отмеченных мошенников", "Белгіленген алаяқ нөмірлерді бұғаттау"), if (Perms.screeningRole(ctx)) tr("Звонки с отмеченных номеров сбрасываются", "Белгіленген нөмірлерден келген қоңыраулар қабылданбайды") else tr("Нужен модуль «Определитель номера»", "«Нөмір анықтағыш» модулі қажет"),
                 tint = NS.threat, onClick = { block = !block; p.blockMarked = block }) { NeoSwitch(block) { block = it; p.blockMarked = it } }
         }
 
-        SectionTitle("Экстренная помощь")
+        SectionTitle(tr("Экстренная помощь", "Шұғыл көмек"))
         GlassCard(padding = 14.dp) {
-            Text("При высоком риске в окне угрозы появятся кнопки «Позвонить близкому» и «Позвонить в банк». Открывается набор номера — звонок не начинается сам.",
+            Text(tr("При высоком риске в окне угрозы появятся кнопки «Позвонить близкому» и «Позвонить в банк». Открывается набор номера — звонок не начинается сам.", "Қауіп жоғары болса, қауіп терезесінде «Жақын адамға қоңырау» және «Банкке қоңырау шалу» түймелері пайда болады. Нөмір теру ашылады — қоңырау өздігінен басталмайды."),
                 color = NS.muted, style = MaterialTheme.typography.bodySmall)
-            NeoField(trustedName, "Имя близкого (например, «Сын»)", KeyboardType.Text, Icons.Filled.FavoriteBorder) { trustedName = it.take(30); p.trustedName = trustedName }
-            NeoField(trustedNumber, "Телефон близкого", KeyboardType.Phone, Icons.Filled.Call) { trustedNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.trustedNumber = trustedNumber }
-            NeoField(bankNumber, "Номер вашего банка (с карты)", KeyboardType.Phone, Icons.Filled.AccountBalance) { bankNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.bankNumber = bankNumber }
+            NeoField(trustedName, tr("Имя близкого (например, «Сын»)", "Жақын адамның аты (мысалы, «Ұлым»)"), KeyboardType.Text, Icons.Filled.FavoriteBorder) { trustedName = it.take(30); p.trustedName = trustedName }
+            NeoField(trustedNumber, tr("Телефон близкого", "Жақын адамның телефоны"), KeyboardType.Phone, Icons.Filled.Call) { trustedNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.trustedNumber = trustedNumber }
+            NeoField(bankNumber, tr("Номер вашего банка (с карты)", "Банкіңіздің нөмірі (картадан)"), KeyboardType.Phone, Icons.Filled.AccountBalance) { bankNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.bankNumber = bankNumber }
         }
 
-        SectionTitle("Конфиденциальность")
+        SectionTitle(tr("Конфиденциальность", "Құпиялылық"))
         GlassCard(padding = 10.dp) {
-            ListRow(Icons.Filled.Lock, "Хранить фрагменты разговоров", "По умолчанию — только причины угрозы",
+            ListRow(Icons.Filled.Lock, tr("Хранить фрагменты разговоров", "Әңгіме үзінділерін сақтау"), tr("По умолчанию — только причины угрозы", "Әдепкі бойынша — тек қауіп себептері"),
                 onClick = { excerpts = !excerpts; p.storeExcerpts = excerpts }) { NeoSwitch(excerpts) { excerpts = it; p.storeExcerpts = it } }
-            ListRow(Icons.Filled.DeleteOutline, "Очистить историю угроз", if (cleared) "История удалена" else "Удалить все записи с телефона", tint = NS.threat,
+            ListRow(Icons.Filled.DeleteOutline, tr("Очистить историю угроз", "Қауіптер тарихын тазалау"), if (cleared) tr("История удалена", "Тарих жойылды") else tr("Удалить все записи с телефона", "Барлық жазбаны телефоннан жою"), tint = NS.threat,
                 onClick = { ctx.app.alerts.clear(); cleared = true })
         }
 
-        SectionTitle("Отмеченные номера")
+        SectionTitle(tr("Отмеченные номера", "Белгіленген нөмірлер"))
         GlassCard(padding = 10.dp) {
             val scam = remember(marks) { p.scamNumbers() }; val safe = remember(marks) { p.safeNumbers() }
-            if (scam.isEmpty() && safe.isEmpty()) Text("Нет отмеченных номеров. Отметить можно в карточке угрозы.", color = NS.muted,
+            if (scam.isEmpty() && safe.isEmpty()) Text(tr("Нет отмеченных номеров. Отметить можно в карточке угрозы.", "Белгіленген нөмір жоқ. Қауіп карточкасында белгілеуге болады."), color = NS.muted,
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(8.dp))
             (scam.map { it to true } + safe.map { it to false }).forEach { (n, isScam) ->
-                ListRow(if (isScam) Icons.Filled.Warning else Icons.Filled.GppGood, n, if (isScam) "Мошенник" else "Надёжный",
+                ListRow(if (isScam) Icons.Filled.Warning else Icons.Filled.GppGood, n, if (isScam) tr("Мошенник", "Алаяқ") else tr("Надёжный", "Сенімді"),
                     tint = if (isScam) NS.threat else NS.safe) {
-                    Text("Убрать", color = NS.text2, style = MaterialTheme.typography.labelLarge,
+                    Text(tr("Убрать", "Алып тастау"), color = NS.text2, style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { p.unmark(n); marks++ }.padding(8.dp))
                 }
             }
         }
 
-        SectionTitle("О защите")
+        SectionTitle(tr("О защите", "Қорғаныс туралы"))
         GlassCard(padding = 14.dp) {
             Row(Modifier.fillMaxWidth().clickable { about = !about }, verticalAlignment = Alignment.CenterVertically) {
                 IconBadge(Icons.Filled.Info, NS.cyan, 38.dp)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Как работает Saqtan", color = NS.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                    Text("Возможности и честные ограничения", color = NS.muted, style = MaterialTheme.typography.bodySmall)
+                    Text(tr("Как работает Saqtan", "Saqtan қалай жұмыс істейді"), color = NS.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(tr("Возможности и честные ограничения", "Мүмкіндіктер және шынайы шектеулер"), color = NS.muted, style = MaterialTheme.typography.bodySmall)
                 }
                 Icon(if (about) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, tint = NS.muted)
             }
             AnimatedVisibility(about, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-                    Bullet("До ответа оценивает номер: нет в контактах, скрытый, международный, частые звонки, ваши отметки.")
-                    Bullet("Код из SMS во время звонка с незнакомцем — сразу тревога.")
-                    Bullet("Мессенджеры: по уведомлению видит звонки и проверяет сообщения.")
-                    Bullet("Речь: офлайн-распознавание Vosk, только через громкую связь (ограничение Android).")
-                    Bullet("Видео: 30 секунд анализа лица на экране (ML Kit) и два случайных задания собеседнику — против фото и заранее записанного видео. Дипфейки не распознаются.")
-                    Bullet("Не распознаёт дипфейки и клонированный голос; по голосу человека мошенником не называет.")
-                    Text("Исследовательский прототип · не заменяет банк", color = NS.muted, style = MaterialTheme.typography.bodySmall)
+                    Bullet(tr("До ответа оценивает номер: нет в контактах, скрытый, международный, частые звонки, ваши отметки.", "Жауап бергенге дейін нөмірді бағалайды: контактілерде жоқ, жасырын, халықаралық, жиі қоңыраулар, сіздің белгілеріңіз."))
+                    Bullet(tr("Код из SMS во время звонка с незнакомцем — сразу тревога.", "Бейтаныс адаммен сөйлесіп тұрғанда SMS-код келсе — бірден дабыл."))
+                    Bullet(tr("Мессенджеры: по уведомлению видит звонки и проверяет сообщения.", "Мессенджерлер: хабарландыру арқылы қоңырауларды көреді және хабарламаларды тексереді."))
+                    Bullet(tr("Речь: офлайн-распознавание Vosk, только через громкую связь (ограничение Android).", "Сөйлеу: Vosk офлайн тануы, тек дауыс зорайтқыш арқылы (Android шектеуі)."))
+                    Bullet(tr("Видео: 30 секунд анализа лица на экране (ML Kit) и два случайных задания собеседнику — против фото и заранее записанного видео. Дипфейки не распознаются.", "Бейне: экрандағы бетті 30 секунд талдау (ML Kit) және әңгімелесушіге екі кездейсоқ тапсырма — фотоға және алдын ала жазылған бейнеге қарсы. Дипфейктер анықталмайды."))
+                    Bullet(tr("Не распознаёт дипфейки и клонированный голос; по голосу человека мошенником не называет.", "Дипфейктер мен клондалған дауысты танымайды; адамды дауысы бойынша алаяқ деп атамайды."))
+                    Text(tr("Исследовательский прототип · не заменяет банк", "Зерттеу прототипі · банкті алмастырмайды"), color = NS.muted, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
         GlassCard(padding = 10.dp) {
-            ListRow(Icons.Filled.Replay, "Показать знакомство снова", "Короткий рассказ о возможностях", onClick = onReplayOnboarding)
+            ListRow(Icons.Filled.Replay, tr("Показать знакомство снова", "Таныстыруды қайта көрсету"), tr("Короткий рассказ о возможностях", "Мүмкіндіктер туралы қысқаша"), onClick = onReplayOnboarding)
         }
     }
 }

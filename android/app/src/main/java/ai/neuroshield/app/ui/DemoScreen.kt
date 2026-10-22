@@ -171,47 +171,47 @@ fun DemoScreen(onBack: () -> Unit, openHistory: () -> Unit) {
         }
     }
 
-    Page("Демо-показ", "Сценарий звонка мошенника", onBack) {
+    Page(tr("Демо-показ", "Демо-көрсетілім"), tr("Сценарий звонка мошенника", "Алаяқ қоңырауының сценарийі"), onBack) {
         GlassCard(accent = NS.violet, padding = 16.dp) {
             Row(verticalAlignment = Alignment.Top) {
                 Icon(Icons.Filled.Info, null, tint = NS.violet, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("Номер, речь и сообщения в этом сценарии выдуманы. Оценки считаются по-настоящему — теми же правилами, " +
-                    "что при реальных звонках. Записи в истории помечаются «Демо».", style = MaterialTheme.typography.bodySmall, color = NS.text2)
+                Text(tr("Номер, речь и сообщения в этом сценарии выдуманы. Оценки считаются по-настоящему — теми же правилами, ", "Бұл сценарийдегі нөмір, сөз және хабарламалар ойдан алынған. Бағалар шын есептеледі — нақты қоңыраулардағы ") +
+                    tr("что при реальных звонках. Записи в истории помечаются «Демо».", "ережелермен. Тарихтағы жазбалар «Демо» деп белгіленеді."), style = MaterialTheme.typography.bodySmall, color = NS.text2)
             }
-            if (!overlay) Text("Окно поверх экрана не разрешено — предупреждения придут уведомлениями. Разрешение: «Защита» → «Окно поверх звонка».",
+            if (!overlay) Text(tr("Окно поверх экрана не разрешено — предупреждения придут уведомлениями. Разрешение: «Защита» → «Окно поверх звонка».", "Экран үстіндегі терезеге рұқсат жоқ — ескертулер хабарландыру ретінде келеді. Рұқсат: «Қорғаныс» → «Қоңырау үстіндегі терезе»."),
                 style = MaterialTheme.typography.bodySmall, color = NS.warn)
         }
 
-        if (running) GhostButton("■  Остановить", Modifier.fillMaxWidth(), color = NS.threat) { job?.cancel(); Warnings.hide() }
-        else PrimaryButton(if (active == 0) "▶  Запустить весь сценарий" else "▶  Показать заново", Modifier.fillMaxWidth(), color = NS.violet) { runAll() }
+        if (running) GhostButton(tr("■  Остановить", "■  Тоқтату"), Modifier.fillMaxWidth(), color = NS.threat) { job?.cancel(); Warnings.hide() }
+        else PrimaryButton(if (active == 0) tr("▶  Запустить весь сценарий", "▶  Бүкіл сценарийді іске қосу") else tr("▶  Показать заново", "▶  Қайта көрсету"), Modifier.fillMaxWidth(), color = NS.violet) { runAll() }
 
-        DemoStep(1, Icons.Filled.Call, "Звонок с незнакомого номера", "Оценка номера до ответа: ${DemoScenario.NUMBER}",
+        DemoStep(1, Icons.Filled.Call, tr("Звонок с незнакомого номера", "Бейтаныс нөмірден қоңырау"), tr("Оценка номера до ответа: ${DemoScenario.NUMBER}", "Жауап бергенге дейін нөмірді бағалау: ${DemoScenario.NUMBER}"),
             active, results.value[1], running) { runOne(1) }
-        DemoStep(2, Icons.Filled.GraphicEq, "Звонящий говорит", "Анализ речи по фразам: риск растёт с каждой репликой",
+        DemoStep(2, Icons.Filled.GraphicEq, tr("Звонящий говорит", "Қоңырау шалушы сөйлейді"), tr("Анализ речи по фразам: риск растёт с каждой репликой", "Сөйлеуді фразалар бойынша талдау: әр сөйлеммен қауіп өседі"),
             active, results.value[2], running, extra = { if (lines > 0) Transcript(lines, speechResult(lines)) }) { runOne(2) }
-        DemoStep(3, Icons.Filled.Sms, "Приходит SMS с кодом", "«${DemoScenario.SMS}»", active, results.value[3], running) { runOne(3) }
-        DemoStep(4, Icons.Filled.Forum, "Сообщение с поддельной ссылкой", "«${DemoScenario.PHISHING}»", active, results.value[4], running) { runOne(4) }
-        DemoStep(5, Icons.Filled.VerifiedUser, "Для сравнения: обычное сообщение", "«${DemoScenario.NORMAL}»", active, results.value[5], running) { runOne(5) }
+        DemoStep(3, Icons.Filled.Sms, tr("Приходит SMS с кодом", "Кодпен SMS келеді"), "«${DemoScenario.SMS}»", active, results.value[3], running) { runOne(3) }
+        DemoStep(4, Icons.Filled.Forum, tr("Сообщение с поддельной ссылкой", "Жалған сілтемесі бар хабарлама"), "«${DemoScenario.PHISHING}»", active, results.value[4], running) { runOne(4) }
+        DemoStep(5, Icons.Filled.VerifiedUser, tr("Для сравнения: обычное сообщение", "Салыстыру үшін: қарапайым хабарлама"), "«${DemoScenario.NORMAL}»", active, results.value[5], running) { runOne(5) }
 
         AnimatedVisibility(active == 6, enter = fadeIn() + expandVertically()) {
             GlassCard(accent = NS.safe) {
-                Text("Сценарий завершён", style = MaterialTheme.typography.titleMedium, color = NS.text)
-                Bullet("Звонок: предупреждение ещё до ответа")
-                Bullet("Разговор: тревога, как только звонящий попросил код и перевод")
-                Bullet("SMS с кодом во время звонка: высокий риск")
-                Bullet("Поддельный сайт банка: высокий риск")
-                Bullet("Обычное сообщение: без тревоги — ложной паники нет")
+                Text(tr("Сценарий завершён", "Сценарий аяқталды"), style = MaterialTheme.typography.titleMedium, color = NS.text)
+                Bullet(tr("Звонок: предупреждение ещё до ответа", "Қоңырау: жауап бергенге дейін ескерту"))
+                Bullet(tr("Разговор: тревога, как только звонящий попросил код и перевод", "Әңгіме: қоңырау шалушы код пен аударым сұраған бойда дабыл"))
+                Bullet(tr("SMS с кодом во время звонка: высокий риск", "Қоңырау кезінде кодты SMS: жоғары қауіп"))
+                Bullet(tr("Поддельный сайт банка: высокий риск", "Банктің жалған сайты: жоғары қауіп"))
+                Bullet(tr("Обычное сообщение: без тревоги — ложной паники нет", "Қарапайым хабарлама: дабылсыз — жалған үрей жоқ"))
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GhostButton("Открыть историю", Modifier.weight(1f)) { openHistory() }
-            GhostButton(if (demoCount > 0) "Удалить демо ($demoCount)" else "Демо-записей нет", Modifier.weight(1f), color = NS.muted) {
+            GhostButton(tr("Открыть историю", "Тарихты ашу"), Modifier.weight(1f)) { openHistory() }
+            GhostButton(if (demoCount > 0) tr("Удалить демо ($demoCount)", "Демоны жою ($demoCount)") else tr("Демо-записей нет", "Демо жазбалар жоқ"), Modifier.weight(1f), color = NS.muted) {
                 if (demoCount > 0) app.alerts.deleteSource("demo")
             }
         }
-        Text("Ограничение: в реальном звонке речь слышна только на громкой связи и не на всех телефонах; поддельный (сгенерированный) голос приложение не распознаёт.",
+        Text(tr("Ограничение: в реальном звонке речь слышна только на громкой связи и не на всех телефонах; поддельный (сгенерированный) голос приложение не распознаёт.", "Шектеу: нақты қоңырауда сөз тек дауыс зорайтқышта және барлық телефонда емес естіледі; жалған (генерацияланған) дауысты қосымша танымайды."),
             style = MaterialTheme.typography.bodySmall, color = NS.muted)
     }
 }
@@ -232,15 +232,15 @@ private fun DemoStep(n: Int, icon: ImageVector, title: String, sub: String, acti
             Icon(icon, null, tint = NS.text2, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text(title, style = MaterialTheme.typography.titleSmall, color = NS.text, modifier = Modifier.weight(1f))
-            if (!running) Text("Показать", color = NS.cyan, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+            if (!running) Text(tr("Показать", "Көрсету"), color = NS.cyan, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onShow).padding(horizontal = 8.dp, vertical = 6.dp))
         }
         Text(sub, style = MaterialTheme.typography.bodySmall, color = NS.text2, maxLines = 3)
         extra()
         if (result != null) {
             DangerMeter(result.level, result.score)
-            Text(result.headline, style = MaterialTheme.typography.bodyMedium, color = levelColor(result.level), fontWeight = FontWeight.SemiBold)
-            result.details.take(5).forEach { Bullet(it) }
+            Text(I18n.core(result.headline), style = MaterialTheme.typography.bodyMedium, color = levelColor(result.level), fontWeight = FontWeight.SemiBold)
+            result.details.take(5).forEach { Bullet(I18n.core(it)) }
         }
     }
 }

@@ -591,3 +591,64 @@ class VoiceRiskAnalyzerTest {
         assertEquals(RiskLevel.HIGH, VoiceRiskAnalyzer(classifier = always).analyze("что угодно").assessment.level)
     }
 }
+
+/** Kazakh interface: every line of a call report and every tactic is shown in Kazakh, Russian stays the default. */
+class I18nTest {
+    private val kazakhLetters = Regex("[әғқңөұүһіӘҒҚҢӨҰҮҺІ]")
+    private fun assertKazakh(ru: String) {
+        val kk = I18n.core(ru)
+        assertEquals("not translated: $ru -> $kk", true, kk != ru && kazakhLetters.containsMatchIn(kk))
+    }
+
+    private val allTactics = "служба безопасности банка, срочно продиктуйте код из смс, переведите все деньги на безопасный счет, " +
+        "установите приложение anydesk, никому не говорите, ваша карта заблокирована. мама, я в беде, сбил человека, " +
+        "кинь 30 тысяч на эту карту. пассивный доход 15% в неделю. вы выиграли приз, оплатите налог. kaspi-bonus.top/verify"
+
+    @Test fun russianIsDefaultAndUnchanged() {
+        I18n.kk = false
+        assertEquals("Возможное мошенничество", I18n.core("Возможное мошенничество"))
+        assertEquals("Да", tr("Да", "Иә"))
+    }
+
+    @Test fun reportsAndTacticsAreTranslated() {
+        I18n.kk = true
+        try {
+            assertEquals("Иә", tr("Да", "Иә"))
+            val r = ScamAnalyzer.analyze(allTactics)
+            assertEquals(13, r.tactics.size)
+            r.tactics.forEach { assertKazakh(it.title); assertKazakh(it.advice) }
+            assertKazakh(r.summary)
+            for (l in RiskLevel.values()) assertKazakh(l.ru)
+
+            fun pre(n: String?, messenger: String? = null) = CallRisk.assess(CallFacts(n, false, "+7", 4, false, false,
+                messenger = messenger, priorMessageLevel = RiskLevel.HIGH, priorTactics = listOf("Просят код, пароль или данные карты"), highReports = 2))
+            val sessions = listOf(
+                CallSession().apply {
+                    on(CallEvent.Ringing(0, "+447700900123", CallChannel.CELLULAR, null, pre("+447700900123")))
+                    on(CallEvent.Answered(5_000)); on(CallEvent.SpeechState(6_000, SpeechStatus.STARTED))
+                    on(CallEvent.Speech(30_000, ScamAnalyzer.analyze("служба безопасности банка, срочно продиктуйте код из смс")))
+                    on(CallEvent.SmsCodeArrived(40_000, "Kaspi.kz", "4••1")); on(CallEvent.Ended(125_000))
+                },
+                CallSession().apply { on(CallEvent.Ringing(0, null, CallChannel.CELLULAR, null, pre(null))); on(CallEvent.Ended(9_000)) },
+                CallSession().apply {
+                    on(CallEvent.Ringing(0, "+77015550123", CallChannel.MESSENGER, "WhatsApp", pre("+77015550123", "WhatsApp")))
+                    on(CallEvent.Answered(2_000)); on(CallEvent.Ended(60_000))
+                },
+                CallSession().apply {
+                    on(CallEvent.Ringing(0, "87015550123", CallChannel.CELLULAR, null, CallRisk.assess(CallFacts("87015550123", false, "+7", 1, false, false))))
+                    on(CallEvent.Answered(2_000)); on(CallEvent.SpeechState(3_000, SpeechStatus.SILENCE)); on(CallEvent.Ended(60_000))
+                },
+            )
+            for (s in sessions) {
+                val rep = s.report()!!
+                (listOf(rep.title) + rep.findings + rep.checks + rep.advice).forEach { assertKazakh(it) }
+            }
+            pre("+447700900123").let { (it.reasons.map { r -> r.text } + it.advice).forEach { assertKazakh(it) } }
+            pre("+77015550123", "WhatsApp").let { (it.reasons.map { r -> r.text } + it.advice).forEach { assertKazakh(it) } }
+        } finally { I18n.kk = false }
+    }
+
+    @Test fun dictionaryHasNoEmptyOrUntranslatedEntries() {
+        I18n.entries().forEach { (ru, kk) -> assertEquals(ru, true, kk.isNotBlank() && kk != ru) }
+    }
+}

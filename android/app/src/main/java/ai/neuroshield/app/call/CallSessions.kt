@@ -100,14 +100,14 @@ object CallSessions {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_ROUTE, "history"); putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val who = r.number ?: "скрытый номер"
-        val how = when { r.channel == CallChannel.MESSENGER -> "звонок в ${r.app ?: "мессенджере"}"; r.answered -> "звонок ${r.durationSec / 60} мин ${r.durationSec % 60} с"; else -> "пропущенный звонок" }
-        val body = (listOf("${r.level.ru} · $who · $how") + r.findings.take(4).map { "• $it" } + r.advice.take(2).map { "→ $it" }).joinToString("\n")
+        val who = r.number ?: tr("скрытый номер", "жасырын нөмір")
+        val how = when { r.channel == CallChannel.MESSENGER -> tr("звонок в ${r.app ?: "мессенджере"}", "${r.app ?: "мессенджер"} арқылы қоңырау"); r.answered -> tr("звонок ${r.durationSec / 60} мин ${r.durationSec % 60} с", "қоңырау ${r.durationSec / 60} мин ${r.durationSec % 60} с"); else -> tr("пропущенный звонок", "қабылданбаған қоңырау") }
+        val body = (listOf("${I18n.core(r.level.ru)} · $who · $how") + r.findings.take(4).map { "• " + I18n.core(it) } + r.advice.take(2).map { "→ " + I18n.core(it) }).joinToString("\n")
         val risky = r.level != RiskLevel.LOW
         val n = NotificationCompat.Builder(ctx, if (risky) NeuroShieldApp.CH_ALERTS else NeuroShieldApp.CH_CALL)
             .setSmallIcon(R.drawable.ic_shield)
-            .setContentTitle("Отчёт о звонке: " + r.title)
-            .setContentText("$who · ${r.level.ru}")
+            .setContentTitle(tr("Отчёт о звонке: ", "Қоңырау туралы есептеме: ") + I18n.core(r.title))
+            .setContentText("$who · ${I18n.core(r.level.ru)}")
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(if (risky) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW)
             .setContentIntent(open).setAutoCancel(true)

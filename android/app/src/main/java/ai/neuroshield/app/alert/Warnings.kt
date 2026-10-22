@@ -59,9 +59,9 @@ object Warnings {
     const val NOTIF_OFFER = 1002
 
     fun headline(level: RiskLevel) = when (level) {
-        RiskLevel.HIGH -> "⚠️ ВНИМАНИЕ! ВОЗМОЖНО, МОШЕННИК!"
-        RiskLevel.MEDIUM -> "⚠️ Осторожно: есть признаки обмана"
-        RiskLevel.LOW -> "Незнакомый номер"
+        RiskLevel.HIGH -> tr("⚠️ ВНИМАНИЕ! ВОЗМОЖНО, МОШЕННИК!", "⚠️ НАЗАР АУДАРЫҢЫЗ! АЛАЯҚ БОЛУЫ МҮМКІН!")
+        RiskLevel.MEDIUM -> tr("⚠️ Осторожно: есть признаки обмана", "⚠️ Абайлаңыз: алдау белгілері бар")
+        RiskLevel.LOW -> tr("Незнакомый номер", "Бейтаныс нөмір")
     }
 
     fun show(ctx: Context, w: Warning) {
@@ -69,9 +69,11 @@ object Warnings {
         val id = if (!w.isTest) app.alerts.add(w.source, w.number, w.level, w.score, w.title, w.reasons,
             if (app.prefs.storeExcerpts) w.excerpt?.take(600) else null) else -1L
         if (w.level != RiskLevel.LOW) vibrate(ctx, w.level)
+        // stored in Russian (history reads the same everywhere); shown in the interface language
+        val d = w.copy(title = I18n.core(w.title), reasons = w.reasons.map { I18n.core(it) }, advice = w.advice.map { I18n.core(it) })
         main.post {
-            if (Perms.overlay(ctx)) showOverlay(ctx.applicationContext, w, id) else notify(ctx, w, id)
-            if (w.level == RiskLevel.HIGH && Perms.overlay(ctx)) notify(ctx, w, id)   // also stays in the shade
+            if (Perms.overlay(ctx)) showOverlay(ctx.applicationContext, d, id) else notify(ctx, d, id)
+            if (d.level == RiskLevel.HIGH && Perms.overlay(ctx)) notify(ctx, d, id)   // also stays in the shade
         }
     }
 
@@ -143,9 +145,9 @@ object Warnings {
         iconBox.addView(disc, FrameLayout.LayoutParams(iconSize, iconSize))
         header.addView(iconBox, LinearLayout.LayoutParams(iconSize, iconSize))
         val titles = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(ctx, 14f), 0, 0, 0) }
-        val label = when (w.level) { RiskLevel.HIGH -> "⚠ ВНИМАНИЕ"; RiskLevel.MEDIUM -> "ОСТОРОЖНО"; RiskLevel.LOW -> "SAQTAN" }
-        titles.addView(tv(if (w.isTest) "$label · ТЕСТ" else if (w.demo) "$label · ДЕМО" else label, 11f, c, bold = true, lines = 1, spacing = 0.1f))
-        val headlineText = when (w.level) { RiskLevel.HIGH -> "Возможно, мошенник!"; RiskLevel.MEDIUM -> "Есть признаки обмана"; RiskLevel.LOW -> "Незнакомый номер" }
+        val label = when (w.level) { RiskLevel.HIGH -> tr("⚠ ВНИМАНИЕ", "⚠ НАЗАР АУДАРЫҢЫЗ"); RiskLevel.MEDIUM -> tr("ОСТОРОЖНО", "АБАЙЛАҢЫЗ"); RiskLevel.LOW -> "SAQTAN" }
+        titles.addView(tv(if (w.isTest) tr("$label · ТЕСТ", "$label · ТЕСТ") else if (w.demo) tr("$label · ДЕМО", "$label · ДЕМО") else label, 11f, c, bold = true, lines = 1, spacing = 0.1f))
+        val headlineText = when (w.level) { RiskLevel.HIGH -> tr("Возможно, мошенник!", "Алаяқ болуы мүмкін!"); RiskLevel.MEDIUM -> tr("Есть признаки обмана", "Алдау белгілері бар"); RiskLevel.LOW -> tr("Незнакомый номер", "Бейтаныс нөмір") }
         titles.addView(tv(headlineText, 21f, TEXT, bold = true, lines = 2).apply { setLineSpacing(0f, 0.95f) })
         header.addView(titles, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         card.addView(header)
@@ -159,7 +161,7 @@ object Warnings {
             }
         }
         segs.forEachIndexed { i, v -> meter.addView(v, LinearLayout.LayoutParams(0, dp(ctx, 6f), 1f).apply { if (i > 0) marginStart = dp(ctx, 5f) }) }
-        val levelName = when (w.level) { RiskLevel.HIGH -> "Высокий"; RiskLevel.MEDIUM -> "Средний"; RiskLevel.LOW -> "Низкий" }
+        val levelName = when (w.level) { RiskLevel.HIGH -> tr("Высокий", "Жоғары"); RiskLevel.MEDIUM -> tr("Средний", "Орташа"); RiskLevel.LOW -> tr("Низкий", "Төмен") }
         meter.addView(tv("  $levelName" + (if (w.score > 0) " · ${w.score.toInt()}" else ""), 12.5f, c, bold = true, lines = 1))
         card.addView(meter)
 
@@ -182,8 +184,8 @@ object Warnings {
         val pr = ctx.app.prefs
         if (w.level == RiskLevel.HIGH || w.isTest) {
             val help = mutableListOf<Pair<String, String>>()
-            if (pr.trustedNumber.isNotBlank()) help += ("Позвонить: " + pr.trustedName.ifBlank { "близкому" }) to pr.trustedNumber
-            if (pr.bankNumber.isNotBlank()) help += "Позвонить в банк" to pr.bankNumber
+            if (pr.trustedNumber.isNotBlank()) help += (tr("Позвонить: ", "Қоңырау шалу: ") + pr.trustedName.ifBlank { tr("близкому", "жақын адамға") }) to pr.trustedNumber
+            if (pr.bankNumber.isNotBlank()) help += tr("Позвонить в банк", "Банкке қоңырау шалу") to pr.bankNumber
             if (help.isNotEmpty()) {
                 val hr = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(ctx, 12f), 0, 0) }
                 help.forEachIndexed { i, (label, num) ->
@@ -218,7 +220,7 @@ object Warnings {
         }
         if (w.offerListening) {
             // full-width AI action above the main row so labels never get cut
-            val listen = button("◉  Слушать звонок через ИИ", false) { dismiss(view); view = null; openListen(ctx) }.apply {
+            val listen = button(tr("◉  Слушать звонок через ИИ", "◉  Қоңырауды ЖИ арқылы тыңдау"), false) { dismiss(view); view = null; openListen(ctx) }.apply {
                 setTextColor(CYAN)
                 background = GradientDrawable().apply { cornerRadius = dp(ctx, 14f).toFloat(); setColor(alpha(CYAN, 0.08f)); setStroke(dp(ctx, 1f), alpha(CYAN, 0.5f)) }
             }
@@ -226,8 +228,8 @@ object Warnings {
             row.setPadding(0, dp(ctx, 10f), 0, 0)
         }
         val buttons = mutableListOf<Button>()
-        buttons += button("Подробнее", false) { dismiss(view); view = null; openApp(ctx, "history", alertId) }
-        buttons += button("Понятно", true) { dismiss(view); view = null }
+        buttons += button(tr("Подробнее", "Толығырақ"), false) { dismiss(view); view = null; openApp(ctx, "history", alertId) }
+        buttons += button(tr("Понятно", "Түсінікті"), true) { dismiss(view); view = null }
         buttons.forEachIndexed { i, b -> row.addView(b, LinearLayout.LayoutParams(0, dp(ctx, 46f), 1f).apply { if (i > 0) marginStart = dp(ctx, 10f) }) }
         card.addView(row)
 
@@ -258,7 +260,7 @@ object Warnings {
         if (!Perms.overlay(ctx) || offerView != null) return@post
         val c = ctx.applicationContext
         val b = Button(c).apply {
-            text = "◉  Проверить звонок · Saqtan"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
+            text = tr("◉  Проверить звонок · Saqtan", "◉  Қоңырауды тексеру · Saqtan"); isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
             background = GradientDrawable().apply { setColor(0xF20F1115.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 1.5f), 0xFF22D3EE.toInt()) }
             setPadding(dp(c, 16f), 0, dp(c, 16f), 0)
             setOnClickListener { hideListenOffer(); openListen(c) }
@@ -306,7 +308,7 @@ object Warnings {
         if (!Perms.overlay(ctx) || videoOfferView != null) return@post
         val c = ctx.applicationContext
         val b = Button(c).apply {
-            text = "◉  Проверить видео · 30 с"; isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
+            text = tr("◉  Проверить видео · 30 с", "◉  Бейнені тексеру · 30 с"); isAllCaps = false; setTextColor(Color.WHITE); textSize = 14f
             background = GradientDrawable().apply { setColor(0xF20F1115.toInt()); cornerRadius = dp(c, 24f).toFloat(); setStroke(dp(c, 1.5f), 0xFF22D3EE.toInt()) }
             setPadding(dp(c, 16f), 0, dp(c, 16f), 0)
             setOnClickListener { hideVideoOffer(); openVideoCheck(c) }
@@ -354,7 +356,7 @@ object Warnings {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_ROUTE, "history")
             if (alertId > 0) putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val body = (listOf("${w.level.ru} · ${w.title}") + w.reasons.take(4).map { "• $it" } + w.advice.take(2).map { "→ $it" }).joinToString("\n")
+        val body = (listOf("${I18n.core(w.level.ru)} · ${w.title}") + w.reasons.take(4).map { "• $it" } + w.advice.take(2).map { "→ $it" }).joinToString("\n")
         val n = NotificationCompat.Builder(ctx, NeuroShieldApp.CH_ALERTS)
             .setSmallIcon(R.drawable.ic_shield)
             .setContentTitle(headline(w.level))
@@ -365,7 +367,7 @@ object Warnings {
             .setColor(if (w.level == RiskLevel.HIGH) 0xFFB3261E.toInt() else 0xFFB86E00.toInt())
             .setContentIntent(open)
             .setAutoCancel(true)
-            .apply { if (w.offerListening) addAction(0, "Слушать звонок", listenIntent(ctx)) }
+            .apply { if (w.offerListening) addAction(0, tr("Слушать звонок", "Қоңырауды тыңдау"), listenIntent(ctx)) }
             .build()
         ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_ALERT, n)
     }
@@ -374,10 +376,10 @@ object Warnings {
         if (!Perms.notifications(ctx)) return
         val n = NotificationCompat.Builder(ctx, NeuroShieldApp.CH_CALL)
             .setSmallIcon(R.drawable.ic_shield)
-            .setContentTitle("Звонок с незнакомого номера")
-            .setContentText("Включите громкую связь и нажмите «Слушать», чтобы проверить разговор")
+            .setContentTitle(tr("Звонок с незнакомого номера", "Бейтаныс нөмірден қоңырау"))
+            .setContentText(tr("Включите громкую связь и нажмите «Слушать», чтобы проверить разговор", "Әңгімені тексеру үшін дауыс зорайтқышты қосып, «Тыңдау» түймесін басыңыз"))
             .setOngoing(true)
-            .addAction(0, "Слушать звонок", listenIntent(ctx))
+            .addAction(0, tr("Слушать звонок", "Қоңырауды тыңдау"), listenIntent(ctx))
             .setContentIntent(listenIntent(ctx))
             .build()
         ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_OFFER, n)

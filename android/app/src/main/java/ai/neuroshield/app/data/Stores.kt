@@ -1,5 +1,6 @@
 package ai.neuroshield.app.data
 
+import ai.neuroshield.app.tr
 import android.content.ContentValues
 import android.content.Context
 import android.content.SharedPreferences
@@ -34,6 +35,10 @@ class Prefs(ctx: Context) {
     var speechLang: String
         get() = p.getString("speech_lang", "ru") ?: "ru"
         set(v) = p.edit().putString("speech_lang", v).apply()
+    /** Interface language: "ru" (default) or "kk". */
+    var uiLang: String
+        get() = p.getString("ui_lang", "ru") ?: "ru"
+        set(v) = p.edit().putString("ui_lang", v).apply()
     var trustedName: String
         get() = p.getString("trusted_name", "") ?: ""
         set(v) = p.edit().putString("trusted_name", v).apply()
@@ -139,10 +144,12 @@ data class Alert(
     val title: String, val reasons: List<String>, val excerpt: String?,
 ) {
     val sourceRu: String get() = when (source) {
-        "incoming_call" -> "Входящий звонок"; "sms_code" -> "SMS с кодом во время звонка"; "sms_text" -> "Подозрительное SMS"
-        "live_speech" -> "Речь во время звонка"; "manual_text" -> "Проверка текста"; "face" -> "Проверка лица"
-        "blocked_call" -> "Заблокированный звонок"; "messenger_call" -> "Звонок в мессенджере"; "video_call" -> "Проверка видеозвонка"; "messenger_text" -> "Сообщение в мессенджере"
-        "demo" -> "Демо-сценарий (учебные данные)"; "call_report" -> "Отчёт о звонке"; else -> source
+        "incoming_call" -> tr("Входящий звонок", "Кіріс қоңырау"); "sms_code" -> tr("SMS с кодом во время звонка", "Қоңырау кезіндегі кодты SMS")
+        "sms_text" -> tr("Подозрительное SMS", "Күдікті SMS"); "live_speech" -> tr("Речь во время звонка", "Қоңырау кезіндегі сөйлеу")
+        "manual_text" -> tr("Проверка текста", "Мәтінді тексеру"); "face" -> tr("Проверка лица", "Бетті тексеру")
+        "blocked_call" -> tr("Заблокированный звонок", "Бұғатталған қоңырау"); "messenger_call" -> tr("Звонок в мессенджере", "Мессенджердегі қоңырау")
+        "video_call" -> tr("Проверка видеозвонка", "Бейнеқоңырауды тексеру"); "messenger_text" -> tr("Сообщение в мессенджере", "Мессенджердегі хабарлама")
+        "demo" -> tr("Демо-сценарий (учебные данные)", "Демо-сценарий (оқу деректері)"); "call_report" -> tr("Отчёт о звонке", "Қоңырау туралы есептеме"); else -> source
     }
 }
 
