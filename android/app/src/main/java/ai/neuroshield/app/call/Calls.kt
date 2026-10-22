@@ -99,8 +99,9 @@ object CallTracker {
         p.callState = "RINGING"; p.callNumber = n; p.callIsContact = contact
         if (contact) return
         val prior = p.senderRisk(n)
+        val (high, medium) = app.alerts.reportCounts(n)
         val facts = CallFacts(n, contact, p.homeCallingCode, p.countRecentCall(n), n != null && n in p.scamNumbers(), n != null && n in p.safeNumbers(),
-            priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList())
+            priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList(), highReports = high, mediumReports = medium)
         if (facts.userMarkedSafe) return
         val r = withReputation(CallRisk.assess(facts), n)
         CallSessions.start(ctx, n, CallChannel.CELLULAR, null, r)

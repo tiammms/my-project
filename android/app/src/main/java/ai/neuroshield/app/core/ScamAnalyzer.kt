@@ -6,9 +6,9 @@ import kotlin.math.min
 
 enum class RiskLevel(val ru: String) { LOW("Низкий риск"), MEDIUM("Средний риск"), HIGH("Высокий риск") }
 
-fun levelOf(score: Double): RiskLevel = when {
-    score >= 70 -> RiskLevel.HIGH
-    score >= 30 -> RiskLevel.MEDIUM
+fun levelOf(score: Double, t: RiskThresholds = RiskEngine.thresholds): RiskLevel = when {
+    score >= t.high -> RiskLevel.HIGH
+    score >= t.medium -> RiskLevel.MEDIUM
     else -> RiskLevel.LOW
 }
 

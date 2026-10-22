@@ -429,3 +429,143 @@ class CallSessionTest {
         assertEquals(RiskLevel.HIGH, ScamTextClassifier.RuleBased.analyze("назовите код из смс, переведите деньги на безопасный счёт").level)
     }
 }
+
+class RiskEngineTest {
+    @Test fun combinesIndependentSignalsAndListsWhatWasNotChecked() {
+        val a = RiskEngine.combine(listOf(
+            RiskSignal("a", "Международный номер", 25), RiskSignal("b", "Нет в контактах", 10),
+            RiskSignal("c", "Внешняя база номеров", 0, available = false)))
+        assertTrue(kotlin.math.abs(a.score - 32.5) < 0.1)
+        assertEquals(RiskLevel.MEDIUM, a.level)
+        assertEquals(listOf("Международный номер", "Нет в контактах"), a.reasons)
+        assertEquals(listOf("Внешняя база номеров"), a.notChecked)
+        assertTrue(a.confidence < 1.0)
+    }
+    @Test fun confidenceLowersTheWeightOfUncertainEvidence() {
+        val sure = RiskEngine.combine(listOf(RiskSignal("x", "x", 60, 1.0))).score
+        val unsure = RiskEngine.combine(listOf(RiskSignal("x", "x", 60, 0.5))).score
+        assertTrue(unsure < sure); assertTrue(kotlin.math.abs(unsure - 30.0) < 0.01)
+    }
+    @Test fun noSignalsIsZero() = assertEquals(RiskLevel.LOW, RiskEngine.combine(emptyList()).level)
+    @Test fun thresholdsAreConfigurable() {
+        val s = listOf(RiskSignal("x", "x", 50))
+        assertEquals(RiskLevel.MEDIUM, RiskEngine.combine(s).level)
+        assertEquals(RiskLevel.HIGH, RiskEngine.combine(s, RiskThresholds(medium = 20.0, high = 50.0)).level)
+        assertEquals(RiskLevel.LOW, RiskEngine.combine(s, RiskThresholds(medium = 60.0, high = 90.0)).level)
+    }
+    @Test fun invalidThresholdsRejected() { assertTrue(runCatching { RiskThresholds(medium = 80.0, high = 50.0) }.exceptionOrNull() is IllegalArgumentException) }
+}
+
+/** Stage 7 scenarios for ordinary calls: known suspicious number, ordinary unknown, contact, no internet, local reputation. */
+class CallScenarioTest {
+    private fun facts(n: String?, contact: Boolean = false) = CallFacts(n, contact, "+7", 1, false, false)
+
+    @Test fun knownSuspiciousNumberMarkedByUser() =
+        assertEquals(RiskLevel.HIGH, CallRisk.assess(facts("+77015550000").copy(userMarkedScam = true)).level)
+
+    @Test fun numberWithEarlierHighReportIsRaised() {
+        val before = CallRisk.assess(facts("+77015550001"))
+        val after = CallRisk.assess(facts("+77015550001").copy(highReports = 1))
+        assertEquals(RiskLevel.LOW, before.level)
+        assertEquals(RiskLevel.MEDIUM, after.level)
+        assertTrue(after.reasons.any { it.text.startsWith("Прошлый звонок с этого номера был оценён как высокий риск") })
+    }
+
+    @Test fun localReputationNeverOverridesTheUsersSafeMark() {
+        val r = CallRisk.assess(facts("+77015550002").copy(highReports = 3, userMarkedSafe = true))
+        assertEquals(RiskLevel.LOW, r.level)
+        assertTrue(LocalReputation.signals(NumberHistory(userMarkedSafe = true, highReports = 3)).isEmpty())
+    }
+
+    @Test fun ordinaryUnknownLocalNumberIsLow() {
+        val r = CallRisk.assess(facts("+77015550003"))
+        assertEquals(RiskLevel.LOW, r.level)
+        assertTrue(r.score < RiskEngine.thresholds.medium)
+    }
+
+    @Test fun contactIsNotSuspicious() {
+        val r = CallRisk.assess(facts("+447911123456", contact = true))
+        assertTrue(r.reasons.none { it.text.contains("контактах") })
+        assertTrue(r.advice.isEmpty())
+    }
+
+    @Test fun noInternetOrBrokenOutsideSourceDoesNotBreakTheCheck() {
+        val broken = object : ReputationSource {
+            override val name = "Тестовый источник без сети"
+            override fun lookup(normalizedNumber: String): ReputationHit? = throw java.io.IOException("no network")
+        }
+        ReputationSources.remote += broken
+        try {
+            assertTrue(ReputationSources.lookup("+77015550004").isEmpty())   // the failure is swallowed, the call is not delayed
+            assertEquals(RiskLevel.LOW, CallRisk.assess(facts("+77015550004")).level)
+        } finally { ReputationSources.remote -= broken }
+        assertEquals(ReputationSources.NOT_CONNECTED, ReputationSources.status())
+    }
+
+    @Test fun missingMicrophonePermissionIsReportedNotHidden() {
+        val s = CallSession(); s.on(CallEvent.Ringing(0, "+77015550005", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550005"))))
+        s.on(CallEvent.Answered(1)); s.on(CallEvent.SpeechState(2, SpeechStatus.NO_PERMISSION)); s.on(CallEvent.Ended(3))
+        assertTrue(s.report()!!.checks.any { it.contains("нет разрешения на микрофон") })
+    }
+
+    @Test fun whatsappCallDetectedAndNotDetected() {
+        assertTrue(Messenger.parse("com.whatsapp", "+44 7911 123456", "Входящий голосовой звонок", true) is MessengerEvent.IncomingCall)
+        // a call whose notification says nothing about a call and is not in the call category is not seen as a call
+        assertFalse(Messenger.parse("com.whatsapp", "+44 7911 123456", "Привет", false) is MessengerEvent.IncomingCall)
+        // the number is hidden for contacts: the app does not pretend to know it
+        assertNull((Messenger.parse("com.whatsapp", "Мама", "Входящий голосовой звонок", true) as MessengerEvent.IncomingCall).number)
+    }
+}
+
+/** VoiceRiskAnalyzer on labelled transcripts (team-written, not real calls). */
+class VoiceRiskAnalyzerTest {
+    private val scam = listOf(
+        "здравствуйте вас беспокоит служба безопасности банка продиктуйте код из смс",
+        "переведите все деньги на безопасный счёт иначе их спишут",
+        "назовите номер карты и три цифры на обороте",
+        "this is the bank security team read me the verification code right now",
+        "банктің қауіпсіздік қызметі кодты айтыңыз",
+    )
+    private val safe = listOf(
+        "привет купи хлеба по дороге домой",
+        "здравствуйте это курьер буду у вас через час",
+        "перезвони срочно когда сможешь",
+        "see you at the library at five",
+        "сәлем кешке үйге келесің бе",
+    )
+
+    @Test fun labelledScamTranscriptsAreFlagged() {
+        val a = VoiceRiskAnalyzer()
+        scam.forEach { t -> assertEquals(t to true, t to (a.analyze(t).assessment.level != RiskLevel.LOW)) }
+    }
+
+    @Test fun labelledSafeTranscriptsStayLow() {
+        val a = VoiceRiskAnalyzer()
+        safe.forEach { t -> assertEquals(t to RiskLevel.LOW, t to a.analyze(t).assessment.level) }
+    }
+
+    @Test fun reasonsQuoteThePhraseHeard() {
+        val r = VoiceRiskAnalyzer().analyze("служба безопасности банка, продиктуйте код из смс")
+        assertTrue(r.assessment.reasons.any { "«" in it })
+        assertNull(r.syntheticProbability)
+        assertTrue(r.assessment.notChecked.any { it.contains("Синтетический голос") })
+    }
+
+    @Test fun experimentalSyntheticDetectorCanNeverRaiseToHighAlone() {
+        val fake = object : SyntheticVoiceDetector {
+            override val available = true
+            override fun score(pcm: ShortArray, size: Int) = 1.0
+        }
+        val a = VoiceRiskAnalyzer(synthetic = fake)
+        a.onAudio(ShortArray(16), 16)
+        val r = a.analyze("здравствуйте это курьер")
+        assertTrue(r.syntheticProbability == 1.0)
+        assertNotEquals(RiskLevel.HIGH, r.assessment.level)
+        assertTrue(r.assessment.reasons.any { it.startsWith("Возможен синтетический голос") })
+    }
+
+    @Test fun classifierIsReplaceable() {
+        val always = ScamTextClassifier { TextRisk(90.0, RiskLevel.HIGH, emptyList(), 1) }
+        assertEquals(RiskLevel.HIGH, VoiceRiskAnalyzer(classifier = always).analyze("что угодно").assessment.level)
+    }
+}

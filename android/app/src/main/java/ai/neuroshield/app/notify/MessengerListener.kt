@@ -81,7 +81,8 @@ class MessengerListener : NotificationListenerService() {
         warnedCalls[num] = now
         val prior = p.senderRisk(num)
         val facts = CallFacts(num, false, p.homeCallingCode, p.countRecentCall(num), num in p.scamNumbers(),
-            num in p.safeNumbers(), messenger = e.app, priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList())
+            num in p.safeNumbers(), messenger = e.app, priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList(),
+            highReports = app.alerts.reportCounts(num).first, mediumReports = app.alerts.reportCounts(num).second)
         if (facts.userMarkedSafe) return
         val r = CallTracker.withReputation(CallRisk.assess(facts), num)
         CallSessions.start(this, num, CallChannel.MESSENGER, e.app, r)

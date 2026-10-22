@@ -185,5 +185,14 @@ class AlertStore(ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 1) {
     fun delete(id: Long) { writableDatabase.delete("alerts", "id = ?", arrayOf(id.toString())); _version.value++ }
     fun clear() { writableDatabase.delete("alerts", null, null); _version.value++ }
     fun deleteSource(source: String): Int { val n = writableDatabase.delete("alerts", "source = ?", arrayOf(source)); _version.value++; return n }
+    /** Local reputation: how many earlier call reports for [number] ended HIGH and MEDIUM. */
+    fun reportCounts(number: String?): Pair<Int, Int> {
+        if (number.isNullOrBlank()) return 0 to 0
+        var high = 0; var medium = 0
+        readableDatabase.rawQuery("SELECT level, COUNT(*) FROM alerts WHERE source = 'call_report' AND number = ? GROUP BY level", arrayOf(number)).use { c ->
+            while (c.moveToNext()) when (c.getString(0)) { "HIGH" -> high = c.getInt(1); "MEDIUM" -> medium = c.getInt(1) }
+        }
+        return high to medium
+    }
     fun countSource(source: String): Int = readableDatabase.rawQuery("SELECT COUNT(*) FROM alerts WHERE source = ?", arrayOf(source)).use { c -> if (c.moveToFirst()) c.getInt(0) else 0 }
 }

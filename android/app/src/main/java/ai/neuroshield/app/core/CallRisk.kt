@@ -13,6 +13,8 @@ data class CallFacts(
     val messenger: String? = null,              // "WhatsApp", "Telegram"... for internet calls; null = cellular call
     val priorMessageLevel: RiskLevel? = null,   // the same number recently sent a message rated MEDIUM/HIGH
     val priorTactics: List<String> = emptyList(),
+    val highReports: Int = 0,                   // earlier calls from this number ended with a HIGH / MEDIUM report
+    val mediumReports: Int = 0,
 )
 
 data class Reason(val text: String, val points: Int)
@@ -53,7 +55,11 @@ object CallRisk {
                 (if (f.priorTactics.isNotEmpty()) ": " + f.priorTactics.first().lowercase() else ""), 35)
             else -> {}
         }
-        val score = if (reasons.isEmpty()) 0.0 else 100 * (1 - reasons.fold(1.0) { a, r -> a * (1 - r.points / 100.0) })
+        // earlier verdicts of this app about the same number (local reputation; the user's own mark is counted above)
+        val local = LocalReputation.signals(NumberHistory(highReports = f.highReports, mediumReports = f.mediumReports))
+        val signals = reasons.map { RiskSignal(it.text, it.text, it.points) } + local
+        reasons += local.map { Reason(it.title, (it.points * it.confidence).toInt()) }
+        val score = RiskEngine.combine(signals).score
         val s = if (f.userMarkedScam) max(score, 80.0) else score
         val advice = mutableListOf<String>()
         if (!f.inContacts) {
@@ -61,7 +67,8 @@ object CallRisk {
             advice += "Никому не называйте коды из SMS."
             if (f.messenger != null) advice += "Банки и госорганы не звонят через ${f.messenger}."
         }
-        return CallRiskResult(Math.round(s * 10) / 10.0, levelOf(s), reasons, advice)
+        val rounded = Math.round(s * 10) / 10.0
+        return CallRiskResult(rounded, levelOf(rounded), reasons, advice)
     }
 }
 
