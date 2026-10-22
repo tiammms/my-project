@@ -178,11 +178,14 @@ if grep -q "Шолу" shots/ui-kk.xml 2>/dev/null && grep -q "Қорғаныс" 
 adb shell am start -n $P/.MainActivity --es route protection; shot 31-kk-protection 4
 adb shell am start -n $P/.MainActivity --es route history; shot 32-kk-history 4
 adb shell am start -n $P/.MainActivity --es route settings; shot 33-kk-settings 4
-# privacy: "delete all data" really empties the history and resets settings (UI is in Kazakh at this point)
+# privacy: "delete all data" really empties the history and resets settings (UI is in Kazakh at this point).
+# Our warning window from the SMS test may still float over the screen and catch taps: restart the app first.
+adb shell am force-stop $P; sleep 2
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3
 for k in 1 2 3; do adb shell input swipe 540 1800 540 500 300; sleep 1; done
-tap_text "Барлық деректерді жою"; sleep 2; tap_text "Жою"; sleep 5
+tap_text "Барлық деректерді жою"; sleep 2; shot 34a-wipe-confirm 1; tap_text "Жою"; sleep 5
+adb logcat -d | grep -E "FATAL EXCEPTION" -A 15 > shots/crash-wipe.txt || true
 adb shell uiautomator dump /sdcard/w.xml >/dev/null 2>&1; adb pull /sdcard/w.xml shots/ui-wipe.xml >/dev/null 2>&1 || true
 onb=$(grep -c "Пропустить" shots/ui-wipe.xml 2>/dev/null)
 tap_text "Пропустить"; sleep 2
