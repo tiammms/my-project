@@ -1,5 +1,8 @@
 package ai.neuroshield.app.ui
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

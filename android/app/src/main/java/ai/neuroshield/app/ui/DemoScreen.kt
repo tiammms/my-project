@@ -1,5 +1,8 @@
 package ai.neuroshield.app.ui
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import ai.neuroshield.app.Perms
 import ai.neuroshield.app.alert.Warning
 import ai.neuroshield.app.alert.Warnings

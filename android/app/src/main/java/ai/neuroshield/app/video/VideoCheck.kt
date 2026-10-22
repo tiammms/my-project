@@ -1,5 +1,8 @@
 package ai.neuroshield.app.video
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import android.app.Activity
 import android.app.PendingIntent
 import android.app.Service

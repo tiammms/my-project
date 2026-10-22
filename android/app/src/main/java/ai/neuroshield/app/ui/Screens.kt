@@ -1,5 +1,8 @@
 package ai.neuroshield.app.ui
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import android.Manifest
 import android.app.role.RoleManager
 import android.content.Context

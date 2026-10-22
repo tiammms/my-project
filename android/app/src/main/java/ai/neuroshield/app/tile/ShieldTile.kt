@@ -1,5 +1,8 @@
 package ai.neuroshield.app.tile
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build

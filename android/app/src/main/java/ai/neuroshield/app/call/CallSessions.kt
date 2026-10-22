@@ -1,5 +1,8 @@
 package ai.neuroshield.app.call
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context

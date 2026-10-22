@@ -1,5 +1,8 @@
 package ai.neuroshield.app.ui
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode

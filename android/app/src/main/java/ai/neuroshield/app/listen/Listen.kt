@@ -1,5 +1,8 @@
 package ai.neuroshield.app.listen
 
+import ai.neuroshield.app.tr
+import ai.neuroshield.app.I18n
+
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
