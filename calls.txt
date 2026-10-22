@@ -1,0 +1,5 @@
+10-22 09:38:37.437  8734  8734 I SaqtanCall: incoming screened=true
+10-22 09:38:37.449  8734  8734 I SaqtanCall: start CELLULAR level=LOW
+10-22 09:38:37.525  8734  8734 I SaqtanCall: phone state RINGING number=false
+10-22 09:38:47.311  8734  8734 I SaqtanCall: phone state IDLE number=false
+10-22 09:38:47.318  8734  8734 I SaqtanCall: report level=LOW answered=false

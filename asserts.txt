@@ -1,0 +1,10 @@
+PASS report after scam call (code during call)
+PASS report after missed call
+PASS report notification has the mark-number button
+UNVERIFIED mark-number button: the automated test could not open the grouped notification
+PASS outside app cannot start the microphone
+PASS internal entry is not reachable from outside
+PASS interface switches to Kazakh
+PASS delete all data empties history and resets settings
+PASS app logs contain no phone numbers or codes
+PASS no crash with permissions revoked
