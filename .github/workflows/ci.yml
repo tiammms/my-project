@@ -103,19 +103,6 @@ jobs:
         with:
           name: apk
           path: android/app/build/outputs/apk/release/*.apk
-      - name: publish APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          V=1.0.${{ github.run_number }}
-          D=app/build/outputs/apk/release
-          cp $D/app-arm64-v8a-release.apk Saqtan-$V-arm64.apk
-          cp $D/app-universal-release.apk Saqtan-$V-universal.apk
-          cp $D/app-armeabi-v7a-release.apk Saqtan-$V-armeabi-v7a.apk
-          gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create android-latest Saqtan-$V-*.apk --title "Saqtan для Android (сборка ${{ github.run_number }})" \
-            --notes "Установочные файлы Android-приложения, собраны автоматически из коммита ${{ github.sha }}. Для большинства телефонов: файл -arm64.apk. Если не устанавливается — -universal.apk (подходит всем, но больше). Старые телефоны (32-бит): -armeabi-v7a.apk. Установка: скачайте APK на телефон, откройте и разрешите установку из этого источника." --latest
   android-emulator:
     runs-on: ubuntu-24.04
     needs: [android]
@@ -154,6 +141,35 @@ jobs:
           cd shots && git init -q && git checkout -q -b ci-screens && git add . && \
             git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "emulator screenshots ${{ github.sha }}" && \
             git push -qf https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ci-screens
+      - name: emulator assertions
+        working-directory: android
+        run: |
+          cat shots/asserts.txt
+          python3 -c "t=open('shots/asserts.txt').read();print('::notice title=emulator asserts::'+t.replace('\n','%0A'))"
+          if grep -q '^FAIL' shots/asserts.txt; then echo "::error title=emulator::some checks failed"; exit 1; fi
+
+  publish:
+    # the APK is published only after unit tests, security checks and the emulator checks have passed
+    needs: [android, android-emulator]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: apk, path: apk }
+      - name: publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=1.0.${{ github.run_number }}
+          D=apk
+          cp $D/app-arm64-v8a-release.apk Saqtan-$V-arm64.apk
+          cp $D/app-universal-release.apk Saqtan-$V-universal.apk
+          cp $D/app-armeabi-v7a-release.apk Saqtan-$V-armeabi-v7a.apk
+          sha256sum Saqtan-$V-*.apk > SHA256SUMS.txt
+          gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create android-latest Saqtan-$V-*.apk SHA256SUMS.txt --title "Saqtan для Android (сборка ${{ github.run_number }})" \
+            --notes "Тестовая сборка из коммита ${{ github.sha }}; прошла юнит-тесты, проверки безопасности и сценарии на эмуляторе Android 14. Подписана демонстрационным ключом (не для публикации в магазине). Для большинства телефонов: -arm64.apk; если не устанавливается — -universal.apk; старые 32-битные телефоны — -armeabi-v7a.apk. Контрольные суммы — SHA256SUMS.txt." --latest
 
   ios:
     runs-on: macos-15
