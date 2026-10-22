@@ -165,6 +165,26 @@ if grep -q "Шолу" shots/ui-kk.xml 2>/dev/null && grep -q "Қорғаныс" 
 adb shell am start -n $P/.MainActivity --es route protection; shot 31-kk-protection 4
 adb shell am start -n $P/.MainActivity --es route history; shot 32-kk-history 4
 adb shell am start -n $P/.MainActivity --es route settings; shot 33-kk-settings 4
+# privacy: "delete all data" really empties the history and resets settings (UI is in Kazakh at this point)
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3
+for k in 1 2 3; do adb shell input swipe 540 1800 540 500 300; sleep 1; done
+tap_text "Барлық деректерді жою"; sleep 2; tap_text "Жою"; sleep 5
+adb shell uiautomator dump /sdcard/w.xml >/dev/null 2>&1; adb pull /sdcard/w.xml shots/ui-wipe.xml >/dev/null 2>&1 || true
+onb=$(grep -c "Пропустить" shots/ui-wipe.xml 2>/dev/null)
+tap_text "Пропустить"; sleep 2
+adb shell am start -n $P/.MainActivity --es route history; sleep 4; shot 34-history-after-wipe 1
+adb shell uiautomator dump /sdcard/h.xml >/dev/null 2>&1; adb pull /sdcard/h.xml shots/ui-history-wipe.xml >/dev/null 2>&1 || true
+if [ "${onb:-0}" -gt 0 ] && grep -q "Здесь пока пусто" shots/ui-history-wipe.xml 2>/dev/null; then
+  echo "PASS delete all data empties history and resets settings" >> shots/asserts.txt; else echo "FAIL delete all data empties history and resets settings" >> shots/asserts.txt; fi
+# logs of the app must not contain the test phone numbers or SMS codes used above
+if adb logcat -d | grep -E "Saqtan" | grep -qE "8701555|87017770011|447911123456|482913|4821"; then
+  echo "FAIL app logs contain phone numbers or codes" >> shots/asserts.txt; else echo "PASS app logs contain no phone numbers or codes" >> shots/asserts.txt; fi
+# permissions taken away: calls and SMS must not crash the app
+adb logcat -c
+for perm in READ_CONTACTS RECORD_AUDIO RECEIVE_SMS READ_CALL_LOG; do adb shell pm revoke $P android.permission.$perm || true; done
+adb emu gsm call 87015550777; sleep 6; adb emu sms send 7700 "Kod 5531 nikomu"; sleep 4; adb emu gsm cancel 87015550777; sleep 8
+adb shell am start -n $P/.MainActivity --es route protection; shot 35-protection-permissions-revoked 4
+if adb logcat -d | grep -q "FATAL EXCEPTION"; then echo "FAIL no crash with permissions revoked" >> shots/asserts.txt; else echo "PASS no crash with permissions revoked" >> shots/asserts.txt; fi
 adb logcat -d > shots/logcat.txt
 grep "SaqtanCall" shots/logcat.txt > shots/calls.txt || true
 grep -E "FATAL EXCEPTION|AndroidRuntime: " -A 12 shots/logcat.txt > shots/crash.txt || true

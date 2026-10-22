@@ -255,7 +255,7 @@ class LinkCheckTest {
         assertTrue(r.tactics.any { it.id == "phishing_link" })
     }
     @Test fun forgedBankSiteAloneIsHigh() {
-        assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Kaspi: https://kaspi-bonus.top/login").level)
+        assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Kaspi: https://kaspi-bonus.example/login").level)
         assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Your Kaspi account is blocked. Verify now: https://kaspi-verify.top/login").level)
         assertNotEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Скидки тут https://bit.ly/abc").level)   // a short link alone is not a verdict
     }
@@ -602,7 +602,7 @@ class I18nTest {
 
     private val allTactics = "служба безопасности банка, срочно продиктуйте код из смс, переведите все деньги на безопасный счет, " +
         "установите приложение anydesk, никому не говорите, ваша карта заблокирована. мама, я в беде, сбил человека, " +
-        "кинь 30 тысяч на эту карту. пассивный доход 15% в неделю. вы выиграли приз, оплатите налог. kaspi-bonus.top/verify"
+        "кинь 30 тысяч на эту карту. пассивный доход 15% в неделю. вы выиграли приз, оплатите налог. kaspi-bonus.example/verify"
 
     @Test fun russianIsDefaultAndUnchanged() {
         I18n.kk = false

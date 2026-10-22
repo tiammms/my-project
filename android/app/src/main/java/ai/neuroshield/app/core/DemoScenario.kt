@@ -22,7 +22,7 @@ object DemoScenario {
     )
 
     const val SMS = "Kaspi.kz: код подтверждения 4821. Никому не сообщайте этот код."
-    const val PHISHING = "Kaspi: ваша карта заблокирована. Чтобы разблокировать, подтвердите данные: https://kaspi-bonus.top/verify"
+    const val PHISHING = "Kaspi: ваша карта заблокирована. Чтобы разблокировать, подтвердите данные: https://kaspi-bonus.example/verify"
     const val NORMAL = "Привет! Это Айгерим. Во сколько завтра встречаемся у университета? Я возьму конспекты."
 
     fun callerText(upTo: Int): String = CALL.take(upTo).filter { it.caller }.joinToString(" ") { it.text }

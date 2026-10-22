@@ -26,14 +26,22 @@ android {
         }
     }
 
+    // Release key: only from the environment (CI secrets), never from git.
+    val releaseStore = System.getenv("SAQTAN_KEYSTORE_FILE")?.takeIf { file(it).exists() }
     signingConfigs {
-        // A fixed demo key (standard debug-key passwords) so that every new APK installs over the previous one.
-        // It is NOT a production key: for Google Play create your own release key and keep it out of git.
+        // A fixed demo key (standard debug-key passwords, public in this repository) so that test APKs install over each other.
+        // It is NOT a production key: anyone can sign an APK with it. Builds made with it are test builds only.
         create("demo") {
             storeFile = file("neuroshield-debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+        }
+        if (releaseStore != null) create("release") {
+            storeFile = file(releaseStore)
+            storePassword = System.getenv("SAQTAN_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SAQTAN_KEY_ALIAS")
+            keyPassword = System.getenv("SAQTAN_KEY_PASSWORD")
         }
     }
 
@@ -46,7 +54,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("demo")
+            signingConfig = signingConfigs.getByName(if (releaseStore != null) "release" else "demo")
+            isDebuggable = false
         }
     }
 
@@ -60,6 +69,11 @@ android {
         resources { excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "META-INF/DEPENDENCIES") }
     }
     testOptions { unitTests.isReturnDefaultValues = true }
+    lint {
+        abortOnError = false          // findings are reported by ci/security_checks.py (security errors fail CI there)
+        xmlReport = true
+        htmlReport = true
+    }
 }
 
 dependencies {

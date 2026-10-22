@@ -92,7 +92,7 @@ object CallSessions {
     private fun finish(ctx: Context, s: CallSession) {
         save(ctx, null)
         val r = s.report() ?: return
-        Log.i(TAG, "report level=${r.level} answered=${r.answered} title=${r.title}")
+        Log.i(TAG, "report level=${r.level} answered=${r.answered}")
         val reasons = r.findings + r.checks.map { "Проверка — $it" } + r.advice.map { "Совет — $it" }
         val id = ctx.app.alerts.add("call_report", r.number ?: "скрытый номер", r.level, r.score, r.title, reasons, null)
         notifyReport(ctx, r, id)

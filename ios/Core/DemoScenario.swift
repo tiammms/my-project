@@ -19,7 +19,7 @@ public enum DemoScenario {
     ]
 
     public static let sms = "Kaspi.kz: код подтверждения 4821. Никому не сообщайте этот код."
-    public static let phishing = "Kaspi: ваша карта заблокирована. Чтобы разблокировать, подтвердите данные: https://kaspi-bonus.top/verify"
+    public static let phishing = "Kaspi: ваша карта заблокирована. Чтобы разблокировать, подтвердите данные: https://kaspi-bonus.example/verify"
     public static let normal = "Привет! Это Айгерим. Во сколько завтра встречаемся у университета? Я возьму конспекты."
 
     public static func callerText(_ upTo: Int) -> String {

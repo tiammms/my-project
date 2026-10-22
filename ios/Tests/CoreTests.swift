@@ -48,7 +48,7 @@ final class LinkCheckTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(LinkCheck.check("https://xn--80ak6aa92e.com").score, 45)
     }
     func testForgedSiteAloneIsHigh() {
-        XCTAssertEqual(ScamAnalyzer.analyze("Kaspi: https://kaspi-bonus.top/login").level, .high)
+        XCTAssertEqual(ScamAnalyzer.analyze("Kaspi: https://kaspi-bonus.example/login").level, .high)
         XCTAssertNotEqual(ScamAnalyzer.analyze("Скидки тут https://bit.ly/abc").level, .high)
         XCTAssertEqual(ScamAnalyzer.analyze("Смотри фото с дня рождения https://photos.google.com/share/abc").level, .low)
     }
