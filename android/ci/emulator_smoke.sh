@@ -23,6 +23,16 @@ PY
 )
   if [ -n "$xy" ]; then adb shell input tap $xy; echo "tapped $1 at $xy"; else echo "not found: $1"; fi
 }
+# brings the app to a usable state: closes "isn't responding" system dialogs, our warning overlay and the first-run intro
+ensure_ready() {
+  for k in 1 2 3; do
+    adb shell uiautomator dump /sdcard/r.xml >/dev/null 2>&1; adb pull /sdcard/r.xml /tmp/r.xml >/dev/null 2>&1
+    if grep -q "isn't responding" /tmp/r.xml; then tap_text "Wait"; sleep 2; continue; fi
+    if grep -q 'text="Понятно"' /tmp/r.xml || grep -q 'text="Түсінікті"' /tmp/r.xml; then tap_text "Понятно"; tap_text "Түсінікті"; sleep 2; continue; fi
+    if grep -q 'text="Пропустить"' /tmp/r.xml || grep -q 'text="Өткізіп жіберу"' /tmp/r.xml; then tap_text "Пропустить"; tap_text "Өткізіп жіберу"; sleep 2; continue; fi
+    break
+  done
+}
 adb install -r -g "$APK" || exit 1
 for perm in READ_PHONE_STATE READ_CALL_LOG READ_CONTACTS RECEIVE_SMS RECORD_AUDIO CAMERA POST_NOTIFICATIONS; do
   adb shell pm grant $P android.permission.$perm || true
@@ -32,7 +42,7 @@ adb shell cmd role add-role-holder android.app.role.CALL_SCREENING $P || true
 adb logcat -c
 adb shell am start -n $P/.MainActivity; shot 00-onboarding 8
 tap_text "Далее"; shot 00-onboarding-2 2
-tap_text "Пропустить"; sleep 2
+tap_text "Пропустить"; sleep 2; ensure_ready
 adb shell am start -n $P/.MainActivity --es route home; shot 01-home 4
 for r in protection history settings text face; do adb shell am start -n $P/.MainActivity --es route $r; shot "02-$r" 4; done
 adb shell am start -n $P/.MainActivity --es route home; sleep 2
@@ -159,6 +169,7 @@ adb shell am start -n $P/.MainActivity --es route history; sleep 5
 adb shell pkill -INT screenrecord; sleep 4
 adb pull /sdcard/walk.mp4 shots/walkthrough-raw.mp4 || true
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3
 tap_text "Қазақша"; sleep 4
 adb shell am start -n $P/.MainActivity --es route home; shot 30-kk-home 4
@@ -168,6 +179,7 @@ adb shell am start -n $P/.MainActivity --es route protection; shot 31-kk-protect
 adb shell am start -n $P/.MainActivity --es route history; shot 32-kk-history 4
 adb shell am start -n $P/.MainActivity --es route settings; shot 33-kk-settings 4
 # privacy: "delete all data" really empties the history and resets settings (UI is in Kazakh at this point)
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3
 for k in 1 2 3; do adb shell input swipe 540 1800 540 500 300; sleep 1; done
 tap_text "Барлық деректерді жою"; sleep 2; tap_text "Жою"; sleep 5
