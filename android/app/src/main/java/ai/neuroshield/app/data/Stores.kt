@@ -169,7 +169,8 @@ class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", 
 
     override fun onConfigure(db: SQLiteDatabase) {
         super.onConfigure(db)
-        db.execSQL("PRAGMA secure_delete = ON")
+        // a PRAGMA returns a row, so it must go through rawQuery (execSQL throws on Android)
+        runCatching { db.rawQuery("PRAGMA secure_delete = ON", null).use { it.moveToFirst() } }
     }
 
     /** Deletes records older than the retention period. Called on start and after each new record. */

@@ -140,7 +140,7 @@ else:
     issues = ET.parse(lint[0]).getroot().findall("issue")
     sec = [i for i in issues if i.get("category", "").startswith("Security")]
     errs = [i for i in sec if i.get("severity") in ("Error", "Fatal")]
-    summary = ", ".join(sorted({f"{i.get('id')}({i.get('severity')})" for i in sec})) or "none"
+    summary = "; ".join(sorted({f"{i.get('id')}({i.get('severity')}): {i.get('message')} [{(i.find('location').get('file') if i.find('location') is not None else '').split('/')[-1]}]" for i in sec})) or "none"
     (fail if errs else note)("lint security", f"{len(issues)} lint issues in total; security: {summary}")
 
 pathlib.Path(root / "security-report.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
