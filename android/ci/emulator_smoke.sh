@@ -51,8 +51,32 @@ check "report after missed call" "Отчёт о звонке: Пропущенн
 check "report notification has the mark-number button" "Отметить номер"
 # press the button in the notification shade (as a person would) and check that the number got marked
 adb shell cmd statusbar expand-notifications; sleep 3
-adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml shots/ui-shade.xml >/dev/null 2>&1 || true
-B=$(python3 -c "import re,sys;s=open('shots/ui-shade.xml',encoding='utf-8').read();m=re.search(r'text=\"(?:ОТМЕТИТЬ НОМЕР|Отметить номер)\"[^>]*bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]',s);print((int(m[1])+int(m[3]))//2,(int(m[2])+int(m[4]))//2) if m else print('')" 2>/dev/null)
+# Android groups several notifications of one app: open the Saqtan group and the report (as a person would), then find the button
+B=""
+for attempt in 1 2 3 4; do
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml shots/ui-shade.xml >/dev/null 2>&1 || true
+  R=$(python3 - <<'PY'
+import re
+s=open('shots/ui-shade.xml',encoding='utf-8').read()
+nodes=re.findall(r'<node [^>]*>',s)
+def b(n):
+    m=re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"',n); return [int(x) for x in m.groups()] if m else None
+for n in nodes:
+    if re.search(r'text="(Отметить номер|ОТМЕТИТЬ НОМЕР)"',n):
+        x=b(n); print("tap",(x[0]+x[2])//2,(x[1]+x[3])//2); raise SystemExit
+# expand button nearest below the "Saqtan" header or the report title
+anchors=[b(n)[1] for n in nodes if re.search(r'text="(Saqtan|Отчёт о звонке[^"]*)"',n)]
+exp=[b(n) for n in nodes if 'expand_button' in n]
+best=None
+for a in anchors:
+    for e in exp:
+        d=abs(e[1]-a)
+        if d<200 and (best is None or d<best[0]): best=(d,e)
+if best: e=best[1]; print("expand",(e[0]+e[2])//2,(e[1]+e[3])//2)
+PY
+)
+  case "$R" in tap*) B=${R#tap }; break;; expand*) adb shell input tap ${R#expand }; sleep 2;; *) break;; esac
+done
 shot 06c-report-buttons 1
 if [ -n "$B" ]; then adb shell input tap $B; sleep 3; fi
 adb shell cmd statusbar collapse
