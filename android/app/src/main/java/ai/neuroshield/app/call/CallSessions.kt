@@ -110,8 +110,9 @@ object CallSessions {
             .setContentText("$who · ${r.level.ru}")
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(if (risky) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW)
-            .setContentIntent(open).setAutoCancel(true).build()
-        ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_REPORT, n)
+            .setContentIntent(open).setAutoCancel(true)
+        ReportActionReceiver.addTo(n, ctx, r.number, risky, NOTIF_REPORT)
+        ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_REPORT, n.build())
     }
 
     // ---- JSON (results only: no audio, no SMS text; transcript fragments only as tactic evidence) ----

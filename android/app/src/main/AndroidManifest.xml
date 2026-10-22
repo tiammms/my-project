@@ -57,6 +57,9 @@
         </service>
 
         <receiver
+            android:name=".call.ReportActionReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".call.PhoneStateReceiver"
             android:exported="true">
             <intent-filter>

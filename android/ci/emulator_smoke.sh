@@ -48,6 +48,15 @@ shot 06a-report-notification 1
 adb shell cmd statusbar expand-notifications; shot 06b-report-in-shade 3; adb shell cmd statusbar collapse
 adb emu gsm call 87015550199; sleep 6; adb emu gsm cancel 87015550199; sleep 12
 check "report after missed call" "Отчёт о звонке: Пропущенный звонок с незнакомого номера"
+check "report notification has the mark-number button" "Отметить номер"
+# press the button in the notification shade (as a person would) and check that the number got marked
+adb shell cmd statusbar expand-notifications; sleep 3
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml shots/ui-shade.xml >/dev/null 2>&1 || true
+B=$(python3 -c "import re,sys;s=open('shots/ui-shade.xml',encoding='utf-8').read();m=re.search(r'text=\"(?:ОТМЕТИТЬ НОМЕР|Отметить номер)\"[^>]*bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]',s);print((int(m[1])+int(m[3]))//2,(int(m[2])+int(m[4]))//2) if m else print('')" 2>/dev/null)
+shot 06c-report-buttons 1
+if [ -n "$B" ]; then adb shell input tap $B; sleep 3; fi
+adb shell cmd statusbar collapse
+if adb logcat -d | grep -q "report action: marked scam"; then echo "PASS mark-number button marks the number" >> shots/asserts.txt; else echo "FAIL mark-number button marks the number (button at: ${B:-not found})" >> shots/asserts.txt; fi
 adb shell am start -n $P/.MainActivity --es route history; shot 06-history-after-call 5
 adb shell am start -n $P/.MainActivity --ez start_listen true; shot 07-listen-without-model 5
 # messenger protection: notifications posted from the shell stand in for WhatsApp (the app labels them as an ADB test)
