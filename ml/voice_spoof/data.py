@@ -71,6 +71,7 @@ def fetch(url: str, dst: pathlib.Path) -> pathlib.Path:
                 break
             f.write(b)
     tmp.rename(dst)
+    print(f"  {dst.stat().st_size / 1e6:.0f} MB", flush=True)
     return dst
 
 

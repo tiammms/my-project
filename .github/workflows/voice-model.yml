@@ -20,6 +20,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
+      - name: Free disk space (runner images ship ~30 GB of unused SDKs)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h / | tail -1; free -g | head -2
+          echo "::notice title=resources::$(df -h / | tail -1 | awk '{print $4}') free disk, $(free -g | awk '/Mem/{print $2}') GB RAM, $(nproc) CPU"
       - run: sudo apt-get update && sudo apt-get install -y espeak-ng
       - run: |
           pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
@@ -29,13 +34,31 @@ jobs:
           git clone https://github.com/clovaai/aasist /tmp/aasist
           git -C /tmp/aasist checkout a04c9863f63d44471dde8a6abcb3b082b07cd1d1
           echo "814331d088032bb4c3fa61cc014789eadeed464209dd094ab3a2dd6ffbdce27a  /tmp/aasist/models/weights/AASIST-L.pth" | sha256sum -c
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
           path: ml/voice_spoof/work/cache
           key: voice-data-${{ hashFiles('ml/voice_spoof/data.py') }}
           restore-keys: voice-data-
-      - run: python data.py --out work/data --cache work/cache
-      - run: python train_eval.py --aasist /tmp/aasist --data work/data --out work/out
+      - name: Build the data set
+        run: |
+          set +e
+          timeout 150m python -u data.py --out work/data --cache work/cache > data.log 2>&1; code=$?
+          tail -c 4000 data.log
+          python -c "import sys;t=open('data.log').read();print('::notice title=data::'+t[-3500:].replace('%','%25').replace('\r','').replace('\n','%0A'))"
+          echo "::notice title=disk::$(df -h / | tail -1) | $(du -sh work 2>/dev/null)"
+          exit $code
+      - if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ml/voice_spoof/work/cache
+          key: voice-data-${{ hashFiles('ml/voice_spoof/data.py') }}-${{ github.run_id }}
+      - name: Train, evaluate, export
+        run: |
+          set +e
+          timeout 190m python -u train_eval.py --aasist /tmp/aasist --data work/data --out work/out > train.log 2>&1; code=$?
+          tail -c 4000 train.log
+          python -c "import sys;t=open('train.log').read();print('::notice title=train::'+t[-3500:].replace('%','%25').replace('\r','').replace('\n','%0A'))"
+          exit $code
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -43,4 +66,6 @@ jobs:
           path: |
             ml/voice_spoof/work/out
             ml/voice_spoof/work/data/counts.json
+            ml/voice_spoof/data.log
+            ml/voice_spoof/train.log
           retention-days: 30
