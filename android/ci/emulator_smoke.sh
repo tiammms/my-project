@@ -168,6 +168,23 @@ swipe_up; sleep 4
 adb shell am start -n $P/.MainActivity --es route history; sleep 5
 adb shell pkill -INT screenrecord; sleep 4
 adb pull /sdcard/walk.mp4 shots/walkthrough-raw.mp4 || true
+# call recording (opt-in): turn it on in settings, answer a call from an unknown number, then play it from the report
+adb shell am force-stop $P; sleep 2
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3
+for k in 1 2 3; do adb shell input swipe 540 1800 540 500 300; sleep 1; done
+tap_text "Записывать звонки"; sleep 2; shot 29a-record-consent 1; tap_text "Включить запись"; sleep 2
+adb shell input keyevent KEYCODE_HOME; sleep 2
+adb emu gsm call 87015550888; sleep 6; adb emu gsm accept 87015550888; sleep 15; shot 29b-recording-in-call 1
+adb emu gsm cancel 87015550888; sleep 10
+adb shell am start -n $P/.MainActivity --es route history; sleep 4
+tap_text "Звонок с незнакомого номера: признаков мошенничества не найдено"; sleep 3; shot 29c-report-with-recording 1
+adb shell uiautomator dump /sdcard/rec.xml >/dev/null 2>&1; adb pull /sdcard/rec.xml shots/ui-recording.xml >/dev/null 2>&1 || true
+if grep -q "Прослушать запись" shots/ui-recording.xml 2>/dev/null; then echo "PASS call recording is attached to the call report" >> shots/asserts.txt
+  tap_text "Прослушать запись"; sleep 3; shot 29d-recording-playing 1
+  if adb logcat -d | grep -q "FATAL EXCEPTION"; then echo "FAIL recording playback" >> shots/asserts.txt; else echo "PASS recording playback starts without errors" >> shots/asserts.txt; fi
+else echo "FAIL call recording is attached to the call report" >> shots/asserts.txt; fi
+adb shell input keyevent KEYCODE_BACK; sleep 1
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3

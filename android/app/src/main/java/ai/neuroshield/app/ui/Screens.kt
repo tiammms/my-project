@@ -56,6 +56,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
@@ -699,6 +701,7 @@ fun ThreatDetail(a: Alert, onClose: () -> Unit) {
             SectionTitle(tr("Почему это подозрительно", "Неліктен бұл күдікті"))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { a.reasons.forEach { Bullet(I18n.core(it), NS.text) } }
         }
+        if (ai.neuroshield.app.data.CallRecordings.exists(ctx, a.audio)) RecordingPlayer(a)
         a.excerpt?.let {
             SectionTitle(tr("Фрагмент", "Үзінді"))
             Text("«$it»", color = NS.text2, style = MaterialTheme.typography.bodySmall)
@@ -711,8 +714,48 @@ fun ThreatDetail(a: Alert, onClose: () -> Unit) {
             }
             marked?.let { Text(it, color = NS.safe, style = MaterialTheme.typography.bodySmall) }
         }
-        GhostButton(tr("Удалить запись", "Жазбаны жою"), Modifier.fillMaxWidth(), color = NS.text2) { ctx.app.alerts.delete(a.id); onClose() }
+        GhostButton(tr("Удалить из истории", "Тарихтан жою"), Modifier.fillMaxWidth(), color = NS.text2) { ctx.app.alerts.delete(a.id); onClose() }
     }
+}
+
+/** Plays a call recording: decrypted into a temporary file only while it plays, deleted afterwards. */
+@Composable
+fun RecordingPlayer(a: Alert) {
+    val ctx = LocalContext.current
+    val id = a.audio ?: return
+    var playing by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var gone by remember { mutableStateOf(false) }
+    val player = remember { arrayOfNulls<android.media.MediaPlayer>(1) }
+    val temp = remember { arrayOfNulls<java.io.File>(1) }
+    fun stop() {
+        player[0]?.runCatching { stop(); release() }; player[0] = null
+        temp[0]?.delete(); temp[0] = null; playing = false
+    }
+    DisposableEffect(id) { onDispose { stop() } }
+    if (gone) return
+    SectionTitle(tr("Запись разговора", "Әңгіме жазбасы"))
+    GlassCard(padding = 10.dp) {
+        val secs = ai.neuroshield.app.data.CallRecordings.seconds(ctx, id)
+        ListRow(if (playing) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+            if (playing) tr("Остановить", "Тоқтату") else tr("Прослушать запись", "Жазбаны тыңдау"),
+            tr("${secs / 60} мин ${secs % 60} с · с микрофона телефона", "${secs / 60} мин ${secs % 60} с · телефон микрофонынан"), tint = NS.cyan,
+            onClick = {
+                if (playing) stop() else {
+                    val f = ai.neuroshield.app.data.CallRecordings.toWav(ctx, id)
+                    if (f == null) error = tr("Запись не удалось открыть", "Жазбаны ашу мүмкін болмады") else try {
+                        temp[0] = f
+                        player[0] = android.media.MediaPlayer().apply {
+                            setDataSource(f.absolutePath); prepare(); setOnCompletionListener { stop() }; start()
+                        }
+                        playing = true; error = null
+                    } catch (e: Exception) { stop(); error = tr("Запись не удалось воспроизвести", "Жазбаны ойнату мүмкін болмады") }
+                }
+            })
+        ListRow(Icons.Filled.DeleteOutline, tr("Удалить запись разговора", "Әңгіме жазбасын жою"), tr("Отчёт о звонке останется", "Қоңырау туралы есептеме қалады"), tint = NS.threat,
+            onClick = { stop(); ctx.app.alerts.deleteAudio(a.id, id); gone = true })
+    }
+    error?.let { Text(it, color = NS.threat, style = MaterialTheme.typography.bodySmall) }
 }
 
 // =========================================================================== SETTINGS
@@ -726,6 +769,9 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     var auto by remember { mutableStateOf(p.autoListen) }
     var autoAsk by remember { mutableStateOf(false) }
     var excerpts by remember { mutableStateOf(p.storeExcerpts) }
+    var record by remember { mutableStateOf(p.recordCalls) }
+    var recordAsk by remember { mutableStateOf(false) }
+    val micAsk = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     var marks by remember { mutableIntStateOf(0) }
     var about by remember { mutableStateOf(false) }
     var cleared by remember { mutableStateOf(false) }
@@ -795,6 +841,16 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
         GlassCard(padding = 10.dp) {
             ListRow(Icons.Filled.Lock, tr("Хранить фрагменты разговоров", "Әңгіме үзінділерін сақтау"), tr("По умолчанию — только причины угрозы", "Әдепкі бойынша — тек қауіп себептері"),
                 onClick = { excerpts = !excerpts; p.storeExcerpts = excerpts }) { NeoSwitch(excerpts) { excerpts = it; p.storeExcerpts = it } }
+            ListRow(Icons.Filled.Mic, tr("Записывать звонки", "Қоңырауларды жазу"),
+                tr("Незнакомые номера, через микрофон на громкой связи; хранится ${ai.neuroshield.app.data.CallRecordings.RETENTION_DAYS} дней", "Бейтаныс нөмірлер, дауыс зорайтқышта микрофон арқылы; ${ai.neuroshield.app.data.CallRecordings.RETENTION_DAYS} күн сақталады"),
+                onClick = { if (record) { record = false; p.recordCalls = false } else recordAsk = true }) {
+                NeoSwitch(record) { on -> if (on) recordAsk = true else { record = false; p.recordCalls = false } } }
+            if (recordAsk) AlertDialog(onDismissRequest = { recordAsk = false }, containerColor = NS.surface2,
+                confirmButton = { TextButton(onClick = { record = true; p.recordCalls = true; recordAsk = false; if (!ai.neuroshield.app.Perms.mic(ctx)) micAsk.launch(Manifest.permission.RECORD_AUDIO) }) { Text(tr("Включить запись", "Жазуды қосу"), color = NS.cyan) } },
+                dismissButton = { TextButton(onClick = { recordAsk = false }) { Text(tr("Отмена", "Болдырмау"), color = NS.text2) } },
+                title = { Text(tr("Запись звонков", "Қоңырауларды жазу"), color = NS.text) },
+                text = { Text(tr("После ответа на звонок с незнакомого номера Saqtan включит микрофон и будет записывать разговор, пока звонок не закончится. Android не даёт приложениям звук самого звонка, поэтому собеседника слышно только на громкой связи. Запись шифруется, хранится только на этом телефоне, не отправляется никуда и удаляется через ${ai.neuroshield.app.data.CallRecordings.RETENTION_DAYS} дней. Прослушать её можно в отчёте о звонке на вкладке «Угрозы». Пока идёт запись, в шторке видно уведомление. Предупреждайте собеседника о записи: правила записи разговоров зависят от закона.",
+                    "Бейтаныс нөмірден келген қоңырауға жауап бергеннен кейін Saqtan микрофонды қосып, қоңырау аяқталғанша әңгімені жазады. Android қосымшаларға қоңыраудың өз дыбысын бермейді, сондықтан әңгімелесуші тек дауыс зорайтқышта естіледі. Жазба шифрланады, тек осы телефонда сақталады, ешқайда жіберілмейді және ${ai.neuroshield.app.data.CallRecordings.RETENTION_DAYS} күннен кейін жойылады. Оны «Қауіптер» бетіндегі қоңырау есептемесінен тыңдауға болады. Жазу жүріп жатқанда хабарландыру көрінеді. Әңгімелесушіге жазба туралы ескертіңіз: әңгімені жазу ережелері заңға байланысты."), color = NS.text2) })
             ListRow(Icons.Filled.DeleteOutline, tr("Очистить историю угроз", "Қауіптер тарихын тазалау"), if (cleared) tr("История удалена", "Тарих жойылды") else tr("Удалить все записи с телефона", "Барлық жазбаны телефоннан жою"), tint = NS.threat,
                 onClick = { ctx.app.alerts.clear(); cleared = true })
             ListRow(Icons.Filled.DeleteOutline, tr("Удалить все данные", "Барлық деректерді жою"),

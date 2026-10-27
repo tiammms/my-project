@@ -128,9 +128,9 @@ object CallTracker {
         CallSessions.on(ctx, CallEvent.Answered(System.currentTimeMillis()))
         // automatic speech analysis: only when it can actually run, otherwise record why and offer the manual way
         val status = when {
-            !p.autoListen -> SpeechStatus.AUTO_OFF
+            !p.autoListen && !p.recordCalls -> SpeechStatus.AUTO_OFF
             !Perms.mic(ctx) -> SpeechStatus.NO_PERMISSION
-            SpeechModels.modelDir(ctx, p.speechLang) == null -> SpeechStatus.NO_MODEL
+            SpeechModels.modelDir(ctx, p.speechLang) == null && !p.recordCalls -> SpeechStatus.NO_MODEL
             !Perms.overlay(ctx) -> SpeechStatus.AUTO_OFF
             else -> null
         }

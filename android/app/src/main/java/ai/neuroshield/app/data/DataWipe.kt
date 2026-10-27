@@ -13,6 +13,7 @@ object DataWipe {
     fun all(ctx: Context) {
         val a = ctx.app
         a.alerts.wipe()
+        CallRecordings.deleteAll(ctx)
         a.prefs.wipe()
         ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).edit().clear().commit()
         LocalCrypto.deleteKey()

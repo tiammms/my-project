@@ -110,7 +110,7 @@ class MainActivity : ComponentActivity() {
         if (i.getBooleanExtra(EXTRA_START_LISTEN, false)) {
             route.value = "protection"
             startListening()
-            if (i.getBooleanExtra(EXTRA_AUTO, false) && SpeechModels.modelDir(this, app.prefs.speechLang) != null) moveTaskToBack(true)
+            if (i.getBooleanExtra(EXTRA_AUTO, false) && (SpeechModels.modelDir(this, app.prefs.speechLang) != null || recordingCall())) moveTaskToBack(true)
         }
         if (i.getBooleanExtra(EXTRA_START_VIDEO, false)) {
             ai.neuroshield.app.alert.Warnings.hide()       // our own warning must not cover the caller's face
@@ -119,12 +119,14 @@ class MainActivity : ComponentActivity() {
         i.removeExtra(EXTRA_START_LISTEN); i.removeExtra(EXTRA_ROUTE); i.removeExtra(EXTRA_START_VIDEO); i.removeExtra(EXTRA_AUTO)
     }
 
+    private fun recordingCall() = app.prefs.recordCalls && app.prefs.callState == "OFFHOOK"
+
     /** Started from the activity (app in the foreground), as Android requires for a microphone service. */
     fun startListening() {
         val lang = app.prefs.speechLang
         when {
             !Perms.mic(this) -> ListenState.ui.value = ListenState.ui.value.copy(message = tr("Разрешите доступ к микрофону в списке ниже", "Төмендегі тізімде микрофонға рұқсат беріңіз"))
-            SpeechModels.modelDir(this, lang) == null -> ListenState.ui.value = ListenState.ui.value.copy(message = tr("Скачайте модель распознавания речи ниже (один раз)", "Төменде сөйлеуді тану моделін жүктеңіз (бір рет)"))
+            SpeechModels.modelDir(this, lang) == null && !recordingCall() -> ListenState.ui.value = ListenState.ui.value.copy(message = tr("Скачайте модель распознавания речи ниже (один раз)", "Төменде сөйлеуді тану моделін жүктеңіз (бір рет)"))
             else -> ListenService.start(this)
         }
     }

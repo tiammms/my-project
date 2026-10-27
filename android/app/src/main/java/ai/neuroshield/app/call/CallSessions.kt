@@ -79,6 +79,16 @@ object CallSessions {
         save(ctx, s)
     }
 
+    /** Links a call recording (its id) to the current call: the report after the call gets a "listen" button. */
+    fun attachRecording(ctx: Context, id: String) {
+        ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).edit().putString("recording", id).commit()
+    }
+
+    private fun takeRecording(ctx: Context): String? {
+        val p = ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE)
+        return p.getString("recording", null).also { p.edit().remove("recording").commit() }
+    }
+
     fun active(ctx: Context): Boolean = load(ctx)?.let { it.isStarted && !it.isEnded } ?: false
 
     /** Ends the current call. [channel] = only if the current call came through that channel. */
@@ -94,7 +104,7 @@ object CallSessions {
         val r = s.report() ?: return
         Log.i(TAG, "report level=${r.level} answered=${r.answered}")
         val reasons = r.findings + r.checks.map { "Проверка — $it" } + r.advice.map { "Совет — $it" }
-        val id = ctx.app.alerts.add("call_report", r.number ?: "скрытый номер", r.level, r.score, r.title, reasons, null)
+        val id = ctx.app.alerts.add("call_report", r.number ?: "скрытый номер", r.level, r.score, r.title, reasons, null, takeRecording(ctx))
         notifyReport(ctx, r, id)
     }
 

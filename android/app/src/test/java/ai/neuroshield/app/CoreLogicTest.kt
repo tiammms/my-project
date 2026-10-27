@@ -652,3 +652,37 @@ class I18nTest {
         I18n.entries().forEach { (ru, kk) -> assertEquals(ru, true, kk.isNotBlank() && kk != ru) }
     }
 }
+
+/** Call recordings are stored encrypted in 64 KB chunks: round trip, and any change or cut is detected. */
+class ChunkedAeadTest {
+    private val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+
+    private fun seal(data: ByteArray): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        ChunkedAead.Writer(out, key).use { it.write(data) }
+        return out.toByteArray()
+    }
+    private fun open(sealed: ByteArray): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        ChunkedAead.decrypt(java.io.ByteArrayInputStream(sealed), key, out)
+        return out.toByteArray()
+    }
+    private fun fails(block: () -> Unit): Boolean = try { block(); false } catch (e: Exception) { true }
+
+    @Test fun roundTripOfSeveralChunksAndEmpty() {
+        val data = ByteArray(200_000) { (it * 7).toByte() }
+        assertEquals(true, open(seal(data)).contentEquals(data))
+        assertEquals(0, open(seal(ByteArray(0))).size)
+        assertEquals(true, open(seal(ByteArray(ChunkedAead.CHUNK) { 1 })).contentEquals(ByteArray(ChunkedAead.CHUNK) { 1 }))
+    }
+
+    @Test fun changedOrCutFileIsRejected() {
+        val sealed = seal(ByteArray(150_000) { it.toByte() })
+        assertEquals(true, fails { open(sealed.copyOf().also { it[100] = (it[100] + 1).toByte() }) })
+        assertEquals(true, fails { open(sealed.copyOf(sealed.size - 30)) })
+        val firstChunk = 4 + 12 + ChunkedAead.CHUNK + 16
+        assertEquals(true, fails { open(sealed.copyOf(firstChunk)) })      // file cut after a whole chunk
+        val other = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        assertEquals(true, fails { ChunkedAead.decrypt(java.io.ByteArrayInputStream(sealed), other, java.io.ByteArrayOutputStream()) })
+    }
+}

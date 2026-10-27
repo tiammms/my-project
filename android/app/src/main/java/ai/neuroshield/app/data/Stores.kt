@@ -26,6 +26,10 @@ class Prefs(ctx: Context) {
     var offerListening: Boolean
         get() = p.getBoolean("offer_listen", true)
         set(v) = p.edit().putBoolean("offer_listen", v).apply()
+    /** Record calls (microphone, while Saqtan listens to a call). Off by default; turned on only after the user agrees. */
+    var recordCalls: Boolean
+        get() = p.getBoolean("record_calls", false)
+        set(v) = p.edit().putBoolean("record_calls", v).apply()
     var autoListen: Boolean
         get() = p.getBoolean("auto_listen", false)   // opt-in: the microphone never starts by itself unless the user turned this on
         set(v) = p.edit().putBoolean("auto_listen", v).apply()
@@ -144,7 +148,7 @@ class Prefs(ctx: Context) {
 
 data class Alert(
     val id: Long, val ts: Long, val source: String, val number: String?, val level: RiskLevel, val score: Double,
-    val title: String, val reasons: List<String>, val excerpt: String?,
+    val title: String, val reasons: List<String>, val excerpt: String?, val audio: String? = null,
 ) {
     val sourceRu: String get() = when (source) {
         "incoming_call" -> tr("Входящий звонок", "Кіріс қоңырау"); "sms_code" -> tr("SMS с кодом во время звонка", "Қоңырау кезіндегі кодты SMS")
@@ -152,7 +156,7 @@ data class Alert(
         "manual_text" -> tr("Проверка текста", "Мәтінді тексеру"); "face" -> tr("Проверка лица", "Бетті тексеру")
         "blocked_call" -> tr("Заблокированный звонок", "Бұғатталған қоңырау"); "messenger_call" -> tr("Звонок в мессенджере", "Мессенджердегі қоңырау")
         "video_call" -> tr("Проверка видеозвонка", "Бейнеқоңырауды тексеру"); "messenger_text" -> tr("Сообщение в мессенджере", "Мессенджердегі хабарлама")
-        "demo" -> tr("Демо-сценарий (учебные данные)", "Демо-сценарий (оқу деректері)"); "call_report" -> tr("Отчёт о звонке", "Қоңырау туралы есептеме"); else -> source
+        "demo" -> tr("Демо-сценарий (учебные данные)", "Демо-сценарий (оқу деректері)"); "recording" -> tr("Запись разговора", "Әңгіме жазбасы"); "call_report" -> tr("Отчёт о звонке", "Қоңырау туралы есептеме"); else -> source
     }
 }
 
@@ -161,7 +165,7 @@ data class Alert(
  * Transcript excerpts only if the user enabled it, and then encrypted with a Keystore key ([LocalCrypto]).
  * Records older than [RETENTION_DAYS] are deleted automatically; deleted rows are overwritten (secure_delete).
  */
-class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 1) {
+class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", null, 2) {
     private val _version = MutableStateFlow(0)
     val version: StateFlow<Int> = _version
 
@@ -175,6 +179,7 @@ class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", 
 
     /** Deletes records older than the retention period. Called on start and after each new record. */
     fun purgeOld(now: Long = System.currentTimeMillis()): Int {
+        CallRecordings.purge(ctx, now)
         val n = writableDatabase.delete("alerts", "ts < ?", arrayOf((now - RETENTION_DAYS * 86_400_000L).toString()))
         if (n > 0) _version.value++
         return n
@@ -201,16 +206,18 @@ class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", 
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""CREATE TABLE alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, source TEXT NOT NULL,
-            number TEXT, level TEXT NOT NULL, score REAL NOT NULL, title TEXT NOT NULL, reasons TEXT NOT NULL, excerpt TEXT)""")
+            number TEXT, level TEXT NOT NULL, score REAL NOT NULL, title TEXT NOT NULL, reasons TEXT NOT NULL, excerpt TEXT, audio TEXT)""")
         db.execSQL("CREATE INDEX ix_alerts_ts ON alerts(ts)")
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 2) db.execSQL("ALTER TABLE alerts ADD COLUMN audio TEXT")   // id of a call recording, if any
+    }
 
-    fun add(source: String, number: String?, level: RiskLevel, score: Double, title: String, reasons: List<String>, excerpt: String?): Long {
+    fun add(source: String, number: String?, level: RiskLevel, score: Double, title: String, reasons: List<String>, excerpt: String?, audio: String? = null): Long {
         val v = ContentValues().apply {
             put("ts", System.currentTimeMillis()); put("source", source); put("number", number); put("level", level.name)
-            put("score", score); put("title", title); put("reasons", JSONArray(reasons).toString()); put("excerpt", LocalCrypto.encrypt(excerpt))
+            put("score", score); put("title", title); put("reasons", JSONArray(reasons).toString()); put("excerpt", LocalCrypto.encrypt(excerpt)); put("audio", audio)
         }
         val id = writableDatabase.insert("alerts", null, v)
         purgeOld()
@@ -220,19 +227,27 @@ class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", 
 
     fun list(limit: Int = 200): List<Alert> {
         val out = mutableListOf<Alert>()
-        readableDatabase.rawQuery("SELECT id, ts, source, number, level, score, title, reasons, excerpt FROM alerts ORDER BY ts DESC LIMIT ?",
+        readableDatabase.rawQuery("SELECT id, ts, source, number, level, score, title, reasons, excerpt, audio FROM alerts ORDER BY ts DESC LIMIT ?",
             arrayOf(limit.toString())).use { c ->
             while (c.moveToNext()) {
                 val arr = JSONArray(c.getString(7))
                 out += Alert(c.getLong(0), c.getLong(1), c.getString(2), c.getString(3), RiskLevel.valueOf(c.getString(4)), c.getDouble(5),
-                    c.getString(6), (0 until arr.length()).map { arr.getString(it) }, LocalCrypto.decrypt(c.getString(8)))
+                    c.getString(6), (0 until arr.length()).map { arr.getString(it) }, LocalCrypto.decrypt(c.getString(8)), c.getString(9))
             }
         }
         return out
     }
 
-    fun delete(id: Long) { writableDatabase.delete("alerts", "id = ?", arrayOf(id.toString())); _version.value++ }
-    fun clear() { writableDatabase.delete("alerts", null, null); _version.value++ }
+    fun delete(id: Long) {
+        readableDatabase.rawQuery("SELECT audio FROM alerts WHERE id = ?", arrayOf(id.toString())).use { c -> if (c.moveToFirst()) CallRecordings.delete(ctx, c.getString(0)) }
+        writableDatabase.delete("alerts", "id = ?", arrayOf(id.toString())); _version.value++
+    }
+    fun clear() { writableDatabase.delete("alerts", null, null); CallRecordings.deleteAll(ctx); _version.value++ }
+    /** Removes only the audio of a record (the report stays). */
+    fun deleteAudio(id: Long, audio: String?) {
+        CallRecordings.delete(ctx, audio)
+        writableDatabase.update("alerts", ContentValues().apply { putNull("audio") }, "id = ?", arrayOf(id.toString())); _version.value++
+    }
     fun deleteSource(source: String): Int { val n = writableDatabase.delete("alerts", "source = ?", arrayOf(source)); _version.value++; return n }
     /** Local reputation: how many earlier call reports for [number] ended HIGH and MEDIUM. */
     fun reportCounts(number: String?): Pair<Int, Int> {

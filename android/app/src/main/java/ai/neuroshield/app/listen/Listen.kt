@@ -24,6 +24,7 @@ import ai.neuroshield.app.alert.Warnings
 import ai.neuroshield.app.app
 import ai.neuroshield.app.core.LiveCallMonitor
 import ai.neuroshield.app.core.RiskLevel
+import ai.neuroshield.app.data.CallRecordings
 import ai.neuroshield.app.core.SilenceDetector
 import ai.neuroshield.app.core.TextRisk
 import androidx.core.app.NotificationCompat
@@ -223,23 +224,34 @@ class ListenService : Service() {
     private suspend fun run() {
         val lang = app.prefs.speechLang
         val dir = SpeechModels.modelDir(this, lang)
-        if (dir == null) { finish(tr("Сначала скачайте модель распознавания речи (${lang}) на вкладке «Защита»", "Алдымен «Қорғаныс» бетінде сөйлеуді тану моделін (${lang}) жүктеңіз")); return }
+        val record = app.prefs.recordCalls && app.prefs.callState == "OFFHOOK" && Perms.mic(this)
+        if (dir == null && !record) { finish(tr("Сначала скачайте модель распознавания речи (${lang}) на вкладке «Защита»", "Алдымен «Қорғаныс» бетінде сөйлеуді тану моделін (${lang}) жүктеңіз")); return }
         if (!Perms.mic(this)) { finish(tr("Нет разрешения на микрофон", "Микрофонға рұқсат жоқ")); return }
         val am = getSystemService(AudioManager::class.java)
         val inCall = app.prefs.callState == "OFFHOOK"
         ListenState.ui.value = ListenUi(running = true, inCall = inCall, speakerOn = isSpeakerOn(am),
             message = tr("Загружаю модель распознавания…", "Тану моделі жүктелуде…"))
         LibVosk.setLogLevel(LogLevel.WARNINGS)
-        val model = try { Model(dir.absolutePath) } catch (e: Exception) { finish(tr("Модель не загрузилась: ${e.message}", "Модель жүктелмеді: ${e.message}")); return }
-        val rec = Recognizer(model, SAMPLE_RATE.toFloat())
+        val model = if (dir == null) null else try { Model(dir.absolutePath) } catch (e: Exception) {
+            if (!record) { finish(tr("Модель не загрузилась", "Модель жүктелмеді")); return } else null
+        }
+        val rec = model?.let { Recognizer(it, SAMPLE_RATE.toFloat()) }
         val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val audio = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuf, SAMPLE_RATE))
-        if (audio.state != AudioRecord.STATE_INITIALIZED) { rec.close(); model.close(); finish(tr("Микрофон занят или недоступен", "Микрофон бос емес немесе қолжетімсіз")); return }
+        if (audio.state != AudioRecord.STATE_INITIALIZED) { rec?.close(); model?.close(); finish(tr("Микрофон занят или недоступен", "Микрофон бос емес немесе қолжетімсіз")); return }
         val monitor = LiveCallMonitor()
         val silence = SilenceDetector(SAMPLE_RATE)
         val buf = ShortArray(SAMPLE_RATE / 5)
         val started = System.currentTimeMillis()
+        // call recording (only if the user turned it on): encrypted, stored on the phone only
+        val recording = if (record) CallRecordings.start(this) else null
+        var attached = false
+        if (recording != null) {
+            if (ai.neuroshield.app.call.CallSessions.active(this)) { ai.neuroshield.app.call.CallSessions.attachRecording(this, recording.id); attached = true }
+            getSystemService(android.app.NotificationManager::class.java).notify(NOTIF_ID, notification(
+                tr("Идёт запись разговора. Она зашифрована и хранится только на телефоне", "Әңгіме жазылып жатыр. Жазба шифрланған және тек телефонда сақталады")))
+        }
         audio.startRecording()
         ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.SpeechState(System.currentTimeMillis(), ai.neuroshield.app.core.SpeechStatus.STARTED))
         var silenceRecorded = false
@@ -248,6 +260,7 @@ class ListenService : Service() {
             while (scope.isActive && job?.isActive == true) {
                 val n = audio.read(buf, 0, buf.size)
                 if (n <= 0) continue
+                recording?.write(buf, n)
                 if (silence.onBuffer(buf, n)) {
                     if (!silenceRecorded) {
                         silenceRecorded = true
@@ -257,17 +270,24 @@ class ListenService : Service() {
                         message = tr("Телефон отдаёт приложению тишину: на этом устройстве Android не разрешает слушать звонок. ", "Телефон қосымшаға тек тыныштық береді: бұл құрылғыда Android қоңырауды тыңдауға рұқсат бермейді. ") +
                             tr("Используйте проверку текста или SMS-защиту.", "Мәтінді тексеруді немесе SMS-қорғанысты пайдаланыңыз."))
                 }
-                val escalation = if (rec.acceptWaveForm(buf, n)) monitor.onFinal(JSONObject(rec.result).optString("text"))
-                else monitor.onPartial(JSONObject(rec.partialResult).optString("partial"))
+                val escalation = if (rec == null) null
+                    else if (rec.acceptWaveForm(buf, n)) monitor.onFinal(JSONObject(rec.result).optString("text"))
+                    else monitor.onPartial(JSONObject(rec.partialResult).optString("partial"))
                 ListenState.ui.value = ListenState.ui.value.copy(transcript = monitor.transcript.takeLast(1500), risk = monitor.lastResult,
                     micLevel = silence.level, speakerOn = isSpeakerOn(am), inCall = app.prefs.callState == "OFFHOOK")
                 if (escalation != null) warn(escalation.risk, escalation.transcript)
                 if (System.currentTimeMillis() - started > MAX_MS) break
             }
-            monitor.onFinal(JSONObject(rec.finalResult).optString("text"))?.let { warn(it.risk, it.transcript) }
+            rec?.let { r -> monitor.onFinal(JSONObject(r.finalResult).optString("text"))?.let { warn(it.risk, it.transcript) } }
         } finally {
             try { audio.stop() } catch (_: Exception) {}
-            audio.release(); rec.close(); model.close()
+            audio.release(); rec?.close(); model?.close()
+            if (recording != null) {
+                runCatching { recording.close() }
+                // a recording made outside a call report (e.g. a call with a saved contact) gets its own history record
+                if (!attached) app.alerts.add("recording", app.prefs.callNumber, RiskLevel.LOW, 0.0, "Запись разговора",
+                    listOf("Длительность: ${recording.samples / SAMPLE_RATE} с"), null, recording.id)
+            }
         }
         finish(null)
     }
