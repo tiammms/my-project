@@ -4,8 +4,10 @@ Real speech: FLEURS (Google, CC BY 4.0) in Russian, Kazakh, English — people r
 Synthetic speech: the SAME sentences spoken by speech synthesizers:
   * Piper (neural TTS, several voices per language)         — some voices for training, OTHER voices only for testing
   * eSpeak NG ("robot" formant voice)                       — some variants for training, other variants for testing
-  * MMS-TTS (Meta, VITS) and Silero TTS                     — never used for training: a test of engines the model never saw
-    (both are licensed for non-commercial use; here they only generate test audio, nothing of them is shipped)
+  * MMS-TTS (Meta, VITS)                                     — training sentences and other test sentences
+  * Silero TTS                                               — never used for training: a test of an engine the model never saw
+    (MMS-TTS and Silero are licensed for non-commercial use only; this is a non-commercial student project,
+     no audio of theirs is shipped, and the trained detector inherits the non-commercial restriction)
 
 Training text = FLEURS "dev" sentences, test text = FLEURS "test" sentences, real test audio = FLEURS "test" recordings.
 
@@ -46,6 +48,7 @@ PIPER_VOICES = [
     ("kk", "kk/kk_KZ/raya/x_low/kk_KZ-raya-x_low", "test"),
     ("en", "en/en_US/lessac/medium/en_US-lessac-medium", "train"),
     ("en", "en/en_US/amy/medium/en_US-amy-medium", "train"),
+    ("en", "en/en_US/libritts_r/medium/en_US-libritts_r-medium", "train"),     # 904 speakers: random one per sentence
     ("en", "en/en_US/ryan/high/en_US-ryan-high", "test"),
     ("en", "en/en_GB/alan/medium/en_GB-alan-medium", "test"),
 ]
@@ -117,7 +120,7 @@ def fleurs(cache: pathlib.Path, lang: str, split: str, limit: int, rng: random.R
     return rows[:limit], tar
 
 
-def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_src_test: int, skip_eval_engines: bool):
+def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_src_test: int, skip_eval_engines: bool, n_mms_train: int = 120):
     rng = random.Random(1234)
     manifest = []
 
@@ -156,8 +159,9 @@ def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_s
         sel = pool[: k] if split == "test" else rng.sample(pool, min(k, len(pool)))
         for i, text in enumerate(sel):
             tmp = out / "tmp.wav"
+            n_spk = getattr(voice.config, "num_speakers", 1) or 1
             with wave.open(str(tmp), "wb") as wf:
-                voice.synthesize(text, wf)
+                voice.synthesize(text, wf, speaker_id=rng.randrange(n_spk) if n_spk > 1 else None)
             x, sr = sf.read(tmp, dtype="float32")
             add(save(out, f"fake/piper/{name}/{i:04d}.wav", x, sr), "spoof", split, lang, f"piper:{name}", "piper")
         print("piper", name, split, len(sel), flush=True)
@@ -183,18 +187,19 @@ def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_s
 
     if not skip_eval_engines:
         import torch
-        # ---- MMS-TTS (test only: an engine the model never saw)
+        # ---- MMS-TTS: some sentences for training (dev texts), others for testing (test texts)
         from transformers import AutoTokenizer, VitsModel
         for lang, mid in MMS.items():
             tok = AutoTokenizer.from_pretrained(mid)
             model = VitsModel.from_pretrained(mid).eval()
-            for i, text in enumerate(texts[(lang, "test")][:n_src_test]):
-                inp = tok(text, return_tensors="pt")
-                if inp["input_ids"].shape[1] == 0:
-                    continue
-                with torch.no_grad():
-                    w = model(**inp).waveform[0].numpy()
-                add(save(out, f"fake/mms/{lang}/{i:04d}.wav", w, model.config.sampling_rate), "spoof", "test", lang, f"mms:{lang}", "mms")
+            for split, pool in (("train", texts[(lang, "dev")][:n_mms_train]), ("test", texts[(lang, "test")][:n_src_test])):
+                for i, text in enumerate(pool):
+                    inp = tok(text, return_tensors="pt")
+                    if inp["input_ids"].shape[1] == 0:
+                        continue
+                    with torch.no_grad():
+                        w = model(**inp).waveform[0].numpy()
+                    add(save(out, f"fake/mms/{lang}/{split}/{i:04d}.wav", w, model.config.sampling_rate), "spoof", split, lang, f"mms:{lang}", "mms")
             print("mms", lang, flush=True)
         notice("MMS done")
         # ---- Silero TTS (test only)
