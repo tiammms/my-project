@@ -202,6 +202,9 @@ t = open('shots/ui-voice-examples.xml', encoding='utf-8').read() if __import__('
 res = re.findall(r'text="(Модель: [^"]+)"', t)
 print(("PASS" if len(res) == 2 else "FAIL") + " voice model runs on both demo examples")
 for r in res: print("INFO demo voice example: " + r)
+# expected from ml/voice_spoof/results/metrics.json: real 2 %, synthetic 99 % (same file, same model on the phone)
+ok = len(res) == 2 and res[0].startswith("Модель: не похож") and res[1].startswith("Модель: похож")
+print(("PASS" if ok else "FAIL") + " phone gives the same verdicts on the demo examples as the training run")
 PY
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready

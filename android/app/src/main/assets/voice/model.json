@@ -1,0 +1,33 @@
+{
+ "model": "Saqtan voice v1 (ml/voice_spoof, CI run 40589116688)",
+ "sha256": "d1be78783a9c686967b97d4f037b501d7ac712854702aaddb890651ece2a47d2",
+ "threshold": 0.6174,
+ "experimental": true,
+ "metrics_per_4s_piece": {
+  "clean": {
+   "false_alarms_real_speech": 0.0038,
+   "detected_espeak_robot": 1.0,
+   "detected_piper_unseen_voices": 0.8278,
+   "detected_silero_unseen_engine": 0.9722
+  },
+  "phone": {
+   "false_alarms_real_speech": 0.0385,
+   "detected_espeak_robot": 0.7742,
+   "detected_piper_unseen_voices": 0.4333,
+   "detected_silero_unseen_engine": 0.15
+  }
+ },
+ "examples": {
+  "real": {
+   "source": "wav/real/ru/test/10000611681338527501.wav",
+   "p_synthetic": 0.0239,
+   "flagged": false
+  },
+  "synthetic": {
+   "source": "wav/fake/espeak/ru/m7/0000.wav",
+   "p_synthetic": 0.9854,
+   "flagged": true
+  }
+ },
+ "licence_note": "Trained partly on audio generated with MMS-TTS (CC BY-NC 4.0): non-commercial use only."
+}

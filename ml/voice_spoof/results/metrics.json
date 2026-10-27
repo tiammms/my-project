@@ -1,0 +1,235 @@
+{
+ "model": "SpoofNet (ml/voice_spoof/model.py): log-STFT + 4 conv blocks, trained from scratch",
+ "parameters": 62450,
+ "input": "16 kHz mono, 64600 samples (4.04 s), float = int16 / 32768",
+ "output": "P(synthetic) 0..1",
+ "train_engines": [
+  "espeak",
+  "mms",
+  "piper"
+ ],
+ "best_val_eer": 0.0836,
+ "train_minutes": 0.8,
+ "threshold": 0.6174,
+ "threshold_rule": "2% false alarms on validation real speech, phone channel",
+ "test": {
+  "clean": {
+   "MMS-TTS, engine used in training, other sentences": {
+    "n": 270,
+    "detected": 0.9963,
+    "eer": 0.0037
+   },
+   "MMS-TTS, engine used in training, other sentences / en": {
+    "n": 90,
+    "detected": 0.9889,
+    "eer": 0.0077
+   },
+   "MMS-TTS, engine used in training, other sentences / kk": {
+    "n": 90,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "MMS-TTS, engine used in training, other sentences / ru": {
+    "n": 90,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "Piper, voices not used in training": {
+    "n": 540,
+    "detected": 0.8278,
+    "eer": 0.1241
+   },
+   "Piper, voices not used in training / en": {
+    "n": 180,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "Piper, voices not used in training / kk": {
+    "n": 180,
+    "detected": 0.4833,
+    "eer": 0.2615
+   },
+   "Piper, voices not used in training / ru": {
+    "n": 180,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "Silero, engine NOT used in training": {
+    "n": 180,
+    "detected": 0.9722,
+    "eer": 0.0111
+   },
+   "Silero, engine NOT used in training / en": {
+    "n": 90,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "Silero, engine NOT used in training / ru": {
+    "n": 90,
+    "detected": 0.9444,
+    "eer": 0.0077
+   },
+   "eSpeak, variants not used in training": {
+    "n": 279,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "eSpeak, variants not used in training / en": {
+    "n": 93,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "eSpeak, variants not used in training / kk": {
+    "n": 93,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "eSpeak, variants not used in training / ru": {
+    "n": 93,
+    "detected": 1.0,
+    "eer": 0.0
+   },
+   "real speech (other people)": {
+    "n": 780,
+    "false_alarm_rate": 0.0038
+   },
+   "real speech (other people) / en": {
+    "n": 260,
+    "false_alarm_rate": 0.0038
+   },
+   "real speech (other people) / kk": {
+    "n": 260,
+    "false_alarm_rate": 0.0077
+   },
+   "real speech (other people) / ru": {
+    "n": 260,
+    "false_alarm_rate": 0.0
+   }
+  },
+  "phone": {
+   "MMS-TTS, engine used in training, other sentences": {
+    "n": 270,
+    "detected": 0.4444,
+    "eer": 0.2051
+   },
+   "MMS-TTS, engine used in training, other sentences / en": {
+    "n": 90,
+    "detected": 0.3444,
+    "eer": 0.2346
+   },
+   "MMS-TTS, engine used in training, other sentences / kk": {
+    "n": 90,
+    "detected": 0.2889,
+    "eer": 0.3308
+   },
+   "MMS-TTS, engine used in training, other sentences / ru": {
+    "n": 90,
+    "detected": 0.7,
+    "eer": 0.0615
+   },
+   "Piper, voices not used in training": {
+    "n": 540,
+    "detected": 0.4333,
+    "eer": 0.209
+   },
+   "Piper, voices not used in training / en": {
+    "n": 180,
+    "detected": 0.5556,
+    "eer": 0.1778
+   },
+   "Piper, voices not used in training / kk": {
+    "n": 180,
+    "detected": 0.35,
+    "eer": 0.3154
+   },
+   "Piper, voices not used in training / ru": {
+    "n": 180,
+    "detected": 0.3944,
+    "eer": 0.1667
+   },
+   "Silero, engine NOT used in training": {
+    "n": 180,
+    "detected": 0.15,
+    "eer": 0.3389
+   },
+   "Silero, engine NOT used in training / en": {
+    "n": 90,
+    "detected": 0.2222,
+    "eer": 0.2654
+   },
+   "Silero, engine NOT used in training / ru": {
+    "n": 90,
+    "detected": 0.0778,
+    "eer": 0.3556
+   },
+   "eSpeak, variants not used in training": {
+    "n": 279,
+    "detected": 0.7742,
+    "eer": 0.1538
+   },
+   "eSpeak, variants not used in training / en": {
+    "n": 93,
+    "detected": 0.8495,
+    "eer": 0.1183
+   },
+   "eSpeak, variants not used in training / kk": {
+    "n": 93,
+    "detected": 0.7634,
+    "eer": 0.1935
+   },
+   "eSpeak, variants not used in training / ru": {
+    "n": 93,
+    "detected": 0.7097,
+    "eer": 0.1462
+   },
+   "real speech (other people)": {
+    "n": 780,
+    "false_alarm_rate": 0.0385
+   },
+   "real speech (other people) / en": {
+    "n": 260,
+    "false_alarm_rate": 0.0192
+   },
+   "real speech (other people) / kk": {
+    "n": 260,
+    "false_alarm_rate": 0.0923
+   },
+   "real speech (other people) / ru": {
+    "n": 260,
+    "false_alarm_rate": 0.0038
+   }
+  }
+ },
+ "onnx": {
+  "file": "saqtan_voice.onnx",
+  "sha256": "d1be78783a9c686967b97d4f037b501d7ac712854702aaddb890651ece2a47d2",
+  "bytes": 1309426
+ },
+ "examples": {
+  "real": {
+   "source": "wav/real/ru/test/10000611681338527501.wav",
+   "p_synthetic": 0.0239,
+   "flagged": false
+  },
+  "synthetic": {
+   "source": "wav/fake/espeak/ru/m7/0000.wav",
+   "p_synthetic": 0.9854,
+   "flagged": true
+  }
+ },
+ "counts": {
+  "test/bonafide/human": 780,
+  "test/spoof/espeak": 279,
+  "test/spoof/mms": 270,
+  "test/spoof/piper": 540,
+  "test/spoof/silero": 180,
+  "train/bonafide/human": 933,
+  "train/spoof/espeak": 469,
+  "train/spoof/mms": 310,
+  "train/spoof/piper": 469,
+  "val/bonafide/human": 172,
+  "val/spoof/espeak": 80,
+  "val/spoof/mms": 50,
+  "val/spoof/piper": 82
+ }
+}
