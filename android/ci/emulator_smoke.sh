@@ -192,7 +192,21 @@ if grep -q "Прослушать запись" shots/ui-recording.xml 2>/dev/nul
 else echo "FAIL call recording is attached to the call report" >> shots/asserts.txt; fi
 adb shell input keyevent KEYCODE_BACK; sleep 1
 # demo: the voice model on the two bundled example clips (a person / a speech synthesizer)
-adb shell am start -n $P/.MainActivity --es route demo; sleep 3; tap_text "Понятно"
+# control: the same navigation WITHOUT running the model (tells whether a failure below comes from the model)
+nav_ok() {   # $1 = label
+  adb shell am start -n $P/.MainActivity --es route history; sleep 4
+  adb shell uiautomator dump /sdcard/nv.xml >/dev/null 2>&1; adb pull /sdcard/nv.xml /tmp/nv.xml >/dev/null 2>&1
+  if grep -q 'История хранится только на телефоне' /tmp/nv.xml 2>/dev/null; then echo "INFO navigation works: $1" >> shots/asserts.txt; else echo "INFO navigation STUCK: $1" >> shots/asserts.txt; fi
+}
+nav_ok "right after the recording check (before the demo)"
+adb shell am start -n $P/.MainActivity --es route demo; sleep 3
+nav_ok "demo opened, nothing tapped"
+adb shell am start -n $P/.MainActivity --es route demo; sleep 3
+for k in 1 2 3 4; do adb shell input swipe 540 1800 540 400 300; sleep 1; done
+nav_ok "demo scrolled to the end, nothing tapped"
+adb shell am force-stop $P; sleep 2
+adb shell am start -n $P/.MainActivity --es route demo; sleep 4; ensure_ready
+adb shell am start -n $P/.MainActivity --es route demo; sleep 3
 for k in 1 2 3 4; do adb shell input swipe 540 1800 540 400 300; sleep 1; done
 tap_text "Пример 1: голос человека"; sleep 12; tap_text "Пример 2: синтезатор речи (eSpeak)"; sleep 12; shot 29f-demo-voice-examples 1
 adb shell uiautomator dump /sdcard/vx.xml >/dev/null 2>&1; adb pull /sdcard/vx.xml shots/ui-voice-examples.xml >/dev/null 2>&1 || true
