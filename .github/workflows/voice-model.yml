@@ -1,18 +1,19 @@
-# Builds the real-vs-synthetic speech set, fine-tunes AASIST-L, evaluates it and exports the ONNX model for the app.
-# Runs only when the training code changes (or by hand). The result (model, metrics, log) is an artifact;
-# the model the app uses is copied into the repository by hand together with its metrics, so every APK build
-# is reproducible and does not depend on this job.
+# Builds the real-vs-synthetic speech set, trains the small on-phone model, evaluates it and exports ONNX.
+# Runs only when the training code changes (or by hand). Results (model, metrics, logs, example clips) are pushed
+# to the branch "voice-model-results"; the model the app ships is then copied into the app together with its
+# metrics, so every APK build is reproducible and does not depend on this job.
 name: voice-model
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths: ["ml/voice_spoof/**", ".github/workflows/voice-model.yml"]
 permissions:
-  contents: read
+  contents: write
 jobs:
   train:
     runs-on: ubuntu-latest
-    timeout-minutes: 345
+    timeout-minutes: 340
     defaults:
       run:
         working-directory: ml/voice_spoof
@@ -20,52 +21,51 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - name: Free disk space (runner images ship ~30 GB of unused SDKs)
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          df -h / | tail -1; free -g | head -2
-          echo "::notice title=resources::$(df -h / | tail -1 | awk '{print $4}') free disk, $(free -g | awk '/Mem/{print $2}') GB RAM, $(nproc) CPU"
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
       - run: sudo apt-get update && sudo apt-get install -y espeak-ng
       - run: |
           pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
-      - name: AASIST code and original weights (pinned commit and SHA-256)
-        run: |
-          git clone https://github.com/clovaai/aasist /tmp/aasist
-          git -C /tmp/aasist checkout a04c9863f63d44471dde8a6abcb3b082b07cd1d1
-          echo "814331d088032bb4c3fa61cc014789eadeed464209dd094ab3a2dd6ffbdce27a  /tmp/aasist/models/weights/AASIST-L.pth" | sha256sum -c
+      # downloads (FLEURS, Piper voices) and, separately, the generated data set: regenerated only when data.py changes
       - uses: actions/cache/restore@v4
         with:
           path: ml/voice_spoof/work/cache
           key: voice-data-${{ hashFiles('ml/voice_spoof/data.py') }}
           restore-keys: voice-data-
+      - id: dataset
+        uses: actions/cache/restore@v4
+        with:
+          path: ml/voice_spoof/work/data
+          key: voice-dataset-${{ hashFiles('ml/voice_spoof/data.py', 'ml/voice_spoof/channel.py') }}
       - name: Build the data set
+        if: steps.dataset.outputs.cache-hit != 'true'
         run: |
           set +e
-          timeout 150m python -u data.py --out work/data --cache work/cache 2>&1 | tee data.log | grep --line-buffered '::notice'; code=${PIPESTATUS[0]}
-          tail -c 4000 data.log
-          python -c "import sys;t=open('data.log').read();print('::notice title=data::'+t[-3500:].replace('%','%25').replace('\r','').replace('\n','%0A'))"
-          echo "::notice title=disk::$(df -h / | tail -1) | $(du -sh work 2>/dev/null)"
+          timeout 200m python -u data.py --out work/data --cache work/cache 2>&1 | tee data.log | grep --line-buffered '::notice'; code=${PIPESTATUS[0]}
+          tail -c 3000 data.log
           exit $code
-      - if: always()
+      - if: always() && steps.dataset.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ml/voice_spoof/work/cache
           key: voice-data-${{ hashFiles('ml/voice_spoof/data.py') }}-${{ github.run_id }}
+      - if: success() && steps.dataset.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ml/voice_spoof/work/data
+          key: voice-dataset-${{ hashFiles('ml/voice_spoof/data.py', 'ml/voice_spoof/channel.py') }}
       - name: Train, evaluate, export
         run: |
           set +e
-          timeout 190m python -u train_eval.py --aasist /tmp/aasist --data work/data --out work/out 2>&1 | tee train.log | grep --line-buffered '::notice'; code=${PIPESTATUS[0]}
-          tail -c 4000 train.log
-          python -c "import sys;t=open('train.log').read();print('::notice title=train::'+t[-3500:].replace('%','%25').replace('\r','').replace('\n','%0A'))"
+          timeout 120m python -u train_eval.py --data work/data --out work/out 2>&1 | tee train.log | grep --line-buffered '::notice'; code=${PIPESTATUS[0]}
+          tail -c 3000 train.log
           exit $code
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: voice-model
-          path: |
-            ml/voice_spoof/work/out
-            ml/voice_spoof/work/data/counts.json
-            ml/voice_spoof/data.log
-            ml/voice_spoof/train.log
-          retention-days: 30
+      - name: Publish results to the branch voice-model-results
+        if: always()
+        run: |
+          mkdir -p /tmp/res && cp -r work/out/. /tmp/res/ 2>/dev/null; cp work/data/counts.json data.log train.log /tmp/res/ 2>/dev/null; true
+          cd /tmp/res && git init -q && git checkout -q -b voice-model-results
+          git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "voice model results, run ${{ github.run_id }} (${{ github.sha }})"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" voice-model-results
