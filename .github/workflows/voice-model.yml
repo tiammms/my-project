@@ -1,0 +1,46 @@
+# Builds the real-vs-synthetic speech set, fine-tunes AASIST-L, evaluates it and exports the ONNX model for the app.
+# Runs only when the training code changes (or by hand). The result (model, metrics, log) is an artifact;
+# the model the app uses is copied into the repository by hand together with its metrics, so every APK build
+# is reproducible and does not depend on this job.
+name: voice-model
+on:
+  workflow_dispatch:
+  push:
+    paths: ["ml/voice_spoof/**", ".github/workflows/voice-model.yml"]
+permissions:
+  contents: read
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    defaults:
+      run:
+        working-directory: ml/voice_spoof
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: sudo apt-get update && sudo apt-get install -y espeak-ng
+      - run: |
+          pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: AASIST code and original weights (pinned commit and SHA-256)
+        run: |
+          git clone https://github.com/clovaai/aasist /tmp/aasist
+          git -C /tmp/aasist checkout a04c9863f63d44471dde8a6abcb3b082b07cd1d1
+          echo "814331d088032bb4c3fa61cc014789eadeed464209dd094ab3a2dd6ffbdce27a  /tmp/aasist/models/weights/AASIST-L.pth" | sha256sum -c
+      - uses: actions/cache@v4
+        with:
+          path: ml/voice_spoof/work/cache
+          key: voice-data-${{ hashFiles('ml/voice_spoof/data.py') }}
+          restore-keys: voice-data-
+      - run: python data.py --out work/data --cache work/cache
+      - run: python train_eval.py --aasist /tmp/aasist --data work/data --out work/out
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-model
+          path: |
+            ml/voice_spoof/work/out
+            ml/voice_spoof/work/data/counts.json
+          retention-days: 30

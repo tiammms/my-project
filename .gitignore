@@ -14,3 +14,4 @@ ml/data/generated/
 
 # biometric model weights (downloaded by scripts/download_models.py)
 ml/biometric_models/
+ml/voice_spoof/work/

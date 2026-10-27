@@ -1,0 +1,9 @@
+# torch==2.4.1 (CPU build) is installed separately from download.pytorch.org
+numpy==1.26.4
+scipy==1.13.1
+soundfile==0.12.1
+piper-tts==1.2.0
+onnx==1.16.2
+onnxruntime==1.19.2
+transformers==4.44.2
+omegaconf==2.3.0
