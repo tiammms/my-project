@@ -44,7 +44,7 @@ object CallSessions {
         val raw = ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).getString(KEY, null) ?: return null
         return try {
             val arr = JSONArray(raw)
-            val s = CallSession(ReputationSources.status())
+            val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx))
             for (i in 0 until arr.length()) s.on(decode(arr.getJSONObject(i)))
             s
         } catch (_: Exception) { null }
@@ -64,7 +64,7 @@ object CallSessions {
             if (r.number == number && System.currentTimeMillis() - r.tMs < 120_000) return
             finish(ctx, prev)
         }
-        val s = CallSession(ReputationSources.status())
+        val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx))
         s.on(CallEvent.Ringing(System.currentTimeMillis(), number, channel, app, pre))
         save(ctx, s)
         Log.i(TAG, "start $channel level=${pre.level}")
@@ -143,6 +143,8 @@ object CallSessions {
                 .put("tac", JSONArray(e.risk.tactics.map { t -> JSONObject().put("id", t.id).put("ti", t.title).put("ad", t.advice)
                     .put("we", t.weight).put("ev", t.evidence.firstOrNull()?.match ?: "") }))
             is CallEvent.SpeechState -> put("k", "ss").put("s", e.status.name)
+            is CallEvent.Voice -> put("k", "vo").put("w", e.check.windows).put("syn", e.check.synthetic)
+                .put("max", e.check.maxP).put("thr", e.check.threshold)
             is CallEvent.Ended -> put("k", "end")
         }
     }
@@ -168,6 +170,7 @@ object CallSessions {
                             ai.neuroshield.app.core.ScamAnalyzer.isWeak(x.getString("id"))) }, o.getInt("w")))
             }
             "ss" -> CallEvent.SpeechState(t, SpeechStatus.valueOf(o.getString("s")))
+            "vo" -> CallEvent.Voice(t, ai.neuroshield.app.core.VoiceCheck(o.getInt("w"), o.getInt("syn"), o.getDouble("max"), o.getDouble("thr")))
             else -> CallEvent.Ended(t)
         }
     }

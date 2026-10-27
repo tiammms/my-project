@@ -4,6 +4,8 @@
 -keep class org.vosk.** { *; }
 -dontwarn java.awt.**
 -dontwarn com.sun.jna.**
+# ONNX Runtime: Java classes are created from native code
+-keep class ai.onnxruntime.** { *; }
 # Our own classes are small; keep names readable in crash reports
 -keepattributes SourceFile,LineNumberTable
 # Release builds: drop verbose/debug logging entirely (info/warning logs contain no numbers, SMS text or audio).

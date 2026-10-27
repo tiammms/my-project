@@ -454,6 +454,11 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
                 }
                 if (ui.transcript.isNotBlank())
                     Text("«…${ui.transcript.takeLast(180)}»", color = NS.text2, fontFamily = FontFamily.Monospace, fontSize = 12.5.sp)
+                ui.voice?.let { v ->
+                    Text(tr("Проверка голоса (экспериментально): ", "Дауысты тексеру (тәжірибелік): ") +
+                        if (v.windows == 0) tr("жду речь", "сөйлеуді күтудемін") else voiceCheckText(v),
+                        color = if (v.flagged) NS.threat else NS.text2, style = MaterialTheme.typography.bodySmall)
+                }
                 r?.tactics?.takeIf { it.isNotEmpty() }?.let { t ->
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         t.forEach { Pill(I18n.core(it.title), levelColor(r.level)) }
@@ -752,6 +757,7 @@ fun RecordingPlayer(a: Alert) {
                     } catch (e: Exception) { stop(); error = tr("Запись не удалось воспроизвести", "Жазбаны ойнату мүмкін болмады") }
                 }
             })
+        RecordingVoiceCheck(id)
         ListRow(Icons.Filled.DeleteOutline, tr("Удалить запись разговора", "Әңгіме жазбасын жою"), tr("Отчёт о звонке останется", "Қоңырау туралы есептеме қалады"), tint = NS.threat,
             onClick = { stop(); ctx.app.alerts.deleteAudio(a.id, id); gone = true })
     }

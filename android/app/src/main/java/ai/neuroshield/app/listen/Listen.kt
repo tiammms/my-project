@@ -179,6 +179,8 @@ data class ListenUi(
     val speakerOn: Boolean = false,
     val inCall: Boolean = false,
     val message: String? = null,
+    /** Experimental synthetic-voice check: null = the model is not in this build or could not be loaded. */
+    val voice: ai.neuroshield.app.core.VoiceCheck? = null,
 )
 
 object ListenState {
@@ -241,6 +243,13 @@ class ListenService : Service() {
             AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuf, SAMPLE_RATE))
         if (audio.state != AudioRecord.STATE_INITIALIZED) { rec?.close(); model?.close(); finish(tr("Микрофон занят или недоступен", "Микрофон бос емес немесе қолжетімсіз")); return }
         val monitor = LiveCallMonitor()
+        // experimental synthetic-voice check (4-second pieces scored on a separate thread; pieces are dropped while busy)
+        val voiceModel = VoiceModel.get(this)
+        val voice = voiceModel?.let { ai.neuroshield.app.core.SyntheticVoiceMonitor(it.threshold) }
+        val voiceExec = java.util.concurrent.Executors.newSingleThreadExecutor()
+        val voiceBusy = java.util.concurrent.atomic.AtomicBoolean(false)
+        val voiceWarned = java.util.concurrent.atomic.AtomicBoolean(false)
+        if (voice != null) ListenState.ui.value = ListenState.ui.value.copy(voice = voice.result)
         val silence = SilenceDetector(SAMPLE_RATE)
         val buf = ShortArray(SAMPLE_RATE / 5)
         val started = System.currentTimeMillis()
@@ -261,6 +270,16 @@ class ListenService : Service() {
                 val n = audio.read(buf, 0, buf.size)
                 if (n <= 0) continue
                 recording?.write(buf, n)
+                if (voice != null && voiceModel != null) for (w in voice.onAudio(buf, n)) {
+                    if (!voiceBusy.compareAndSet(false, true)) continue
+                    voiceExec.execute {
+                        try {
+                            voice.onScore(voiceModel.score(w))
+                            onVoice(voice.result, monitor.lastResult, voiceWarned)
+                        } catch (_: Exception) {
+                        } finally { voiceBusy.set(false) }
+                    }
+                }
                 if (silence.onBuffer(buf, n)) {
                     if (!silenceRecorded) {
                         silenceRecorded = true
@@ -280,6 +299,8 @@ class ListenService : Service() {
             }
             rec?.let { r -> monitor.onFinal(JSONObject(r.finalResult).optString("text"))?.let { warn(it.risk, it.transcript) } }
         } finally {
+            voiceExec.shutdown()
+            runCatching { voiceExec.awaitTermination(3, java.util.concurrent.TimeUnit.SECONDS) }
             try { audio.stop() } catch (_: Exception) {}
             audio.release(); rec?.close(); model?.close()
             if (recording != null) {
@@ -297,13 +318,34 @@ class ListenService : Service() {
         else @Suppress("DEPRECATION") am.isSpeakerphoneOn
     } catch (_: Exception) { false }
 
+    /** A new 4-second piece was scored: update the screen, the call report and (once) warn. */
+    private fun onVoice(v: ai.neuroshield.app.core.VoiceCheck, speech: TextRisk, warned: java.util.concurrent.atomic.AtomicBoolean) {
+        ListenState.ui.value = ListenState.ui.value.copy(voice = v)
+        ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.Voice(System.currentTimeMillis(), v))
+        if (!v.flagged || !warned.compareAndSet(false, true)) return
+        val withScam = speech.level != RiskLevel.LOW
+        Warnings.show(this, Warning(
+            level = if (withScam) RiskLevel.HIGH else RiskLevel.MEDIUM, score = if (withScam) maxOf(75.0, speech.score) else 40.0,
+            source = "synthetic_voice", number = app.prefs.callNumber,
+            title = "Голос похож на синтезированный (робот или ИИ)",
+            reasons = listOf("Голос в разговоре " + v.summaryRu + " (экспериментальная проверка, может ошибаться)") +
+                speech.tactics.filter { !it.weak }.map { t -> t.title + (t.evidence.firstOrNull()?.let { " («${it.match}»)" } ?: "") },
+            advice = listOf("Если звонил «близкий человек» или «банк» — положите трубку и перезвоните сами по номеру, который знаете",
+                "Не называйте коды и не переводите деньги, пока не убедитесь, кто звонит"),
+        ))
+    }
+
     private fun warn(r: TextRisk, transcript: String) {
         if (r.level == RiskLevel.LOW) return
         ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.Speech(System.currentTimeMillis(), r))
+        // scam phrases together with a voice that looks synthesized: HIGH
+        val vf = ListenState.ui.value.voice?.takeIf { it.flagged }
         Warnings.show(this, Warning(
-            level = r.level, score = r.score, source = "live_speech", number = app.prefs.callNumber,
+            level = if (vf != null) RiskLevel.HIGH else r.level, score = if (vf != null) maxOf(75.0, r.score) else r.score,
+            source = "live_speech", number = app.prefs.callNumber,
             title = "В разговоре звучат фразы мошенников",
-            reasons = r.tactics.map { t -> t.title + (t.evidence.firstOrNull()?.let { " («${it.match}»)" } ?: "") },
+            reasons = r.tactics.map { t -> t.title + (t.evidence.firstOrNull()?.let { " («${it.match}»)" } ?: "") } +
+                (vf?.let { listOf("Голос в разговоре " + it.summaryRu + " (экспериментальная проверка, может ошибаться)") } ?: emptyList()),
             advice = r.tactics.sortedByDescending { it.weight }.take(2).map { it.advice },
             excerpt = transcript.takeLast(600),
         ))

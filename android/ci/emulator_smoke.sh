@@ -183,8 +183,26 @@ adb shell uiautomator dump /sdcard/rec.xml >/dev/null 2>&1; adb pull /sdcard/rec
 if grep -q "Прослушать запись" shots/ui-recording.xml 2>/dev/null; then echo "PASS call recording is attached to the call report" >> shots/asserts.txt
   tap_text "Прослушать запись"; sleep 3; shot 29d-recording-playing 1
   if adb logcat -d | grep -q "FATAL EXCEPTION"; then echo "FAIL recording playback" >> shots/asserts.txt; else echo "PASS recording playback starts without errors" >> shots/asserts.txt; fi
+  # experimental synthetic-voice check on the saved recording (the emulator microphone is silent: "too little speech")
+  tap_text "Проверить, не синтезирован ли голос"; sleep 20; shot 29e-recording-voice-check 1
+  adb shell uiautomator dump /sdcard/vc.xml >/dev/null 2>&1; adb pull /sdcard/vc.xml shots/ui-voice-check.xml >/dev/null 2>&1 || true
+  if grep -q -e "Речи для проверки мало" -e "синтезированного голоса не найдено" -e "Голос похож на синтезированный" shots/ui-voice-check.xml 2>/dev/null; then
+    echo "PASS voice model loads and checks a recording" >> shots/asserts.txt
+  else echo "FAIL voice model loads and checks a recording" >> shots/asserts.txt; fi
 else echo "FAIL call recording is attached to the call report" >> shots/asserts.txt; fi
 adb shell input keyevent KEYCODE_BACK; sleep 1
+# demo: the voice model on the two bundled example clips (a person / a speech synthesizer)
+adb shell am start -n $P/.MainActivity --es route demo; sleep 3; tap_text "Понятно"
+for k in 1 2 3 4; do adb shell input swipe 540 1800 540 400 300; sleep 1; done
+tap_text "Пример 1: голос человека"; sleep 12; tap_text "Пример 2: синтезатор речи (eSpeak)"; sleep 12; shot 29f-demo-voice-examples 1
+adb shell uiautomator dump /sdcard/vx.xml >/dev/null 2>&1; adb pull /sdcard/vx.xml shots/ui-voice-examples.xml >/dev/null 2>&1 || true
+python3 - <<'PY' >> shots/asserts.txt
+import re
+t = open('shots/ui-voice-examples.xml', encoding='utf-8').read() if __import__('os').path.exists('shots/ui-voice-examples.xml') else ''
+res = re.findall(r'text="(Модель: [^"]+)"', t)
+print(("PASS" if len(res) == 2 else "FAIL") + " voice model runs on both demo examples")
+for r in res: print("INFO demo voice example: " + r)
+PY
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3

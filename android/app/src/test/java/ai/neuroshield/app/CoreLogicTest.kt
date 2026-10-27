@@ -631,7 +631,8 @@ class I18nTest {
 
     private val allTactics = "служба безопасности банка, срочно продиктуйте код из смс, переведите все деньги на безопасный счет, " +
         "установите приложение anydesk, никому не говорите, ваша карта заблокирована. мама, я в беде, сбил человека, " +
-        "кинь 30 тысяч на эту карту. пассивный доход 15% в неделю. вы выиграли приз, оплатите налог. https://kaspi-bonus.example/verify"
+        "кинь 30 тысяч на эту карту. пассивный доход 15% в неделю. вы выиграли приз, оплатите налог. https://kaspi-bonus.example/verify " +
+        "отмените заявку на кредит. ваш номер будет отключен. обновите эцп. вам положена компенсация."
 
     @Test fun russianIsDefaultAndUnchanged() {
         I18n.kk = false
@@ -644,7 +645,7 @@ class I18nTest {
         try {
             assertEquals("Иә", tr("Да", "Иә"))
             val r = ScamAnalyzer.analyze(allTactics)
-            assertEquals(13, r.tactics.size)
+            assertEquals(18, r.tactics.size)
             r.tactics.forEach { assertKazakh(it.title); assertKazakh(it.advice) }
             assertKazakh(r.summary)
             for (l in RiskLevel.values()) assertKazakh(l.ru)
@@ -713,5 +714,79 @@ class ChunkedAeadTest {
         assertEquals(true, fails { open(sealed.copyOf(firstChunk)) })      // file cut after a whole chunk
         val other = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
         assertEquals(true, fails { ChunkedAead.decrypt(java.io.ByteArrayInputStream(sealed), other, java.io.ByteArrayOutputStream()) })
+    }
+}
+
+/** Experimental synthetic-voice check: how 4-second pieces are cut and how the cautious verdict is made. */
+class SyntheticVoiceTest {
+    private fun tone(n: Int, amp: Double) = ShortArray(n) { (amp * 32767 * kotlin.math.sin(it * 0.05)).toInt().toShort() }
+
+    @Test fun piecesAreFourSecondsAndSilenceIsSkipped() {
+        val loud = tone(3200, 0.3); val quiet = ShortArray(3200)
+        val m = SyntheticVoiceMonitor(0.5)
+        var pieces = 0
+        repeat(VoiceCheck.WINDOW / 3200) { pieces += m.onAudio(loud, loud.size).size }
+        assertEquals("not yet 4 seconds", 0, pieces)
+        pieces += m.onAudio(loud, loud.size).size
+        assertEquals(1, pieces)
+        val q = SyntheticVoiceMonitor(0.5)
+        var silent = 0
+        repeat(2 * VoiceCheck.WINDOW / 3200 + 2) { silent += q.onAudio(quiet, quiet.size).size }
+        assertEquals("silent pieces are not scored", 0, silent)
+    }
+
+    @Test fun oneSyntheticLookingPieceIsNotEnough() {
+        val m = SyntheticVoiceMonitor(0.7)
+        m.onScore(0.99); m.onScore(0.1); m.onScore(0.2)
+        assertFalse(m.result.flagged)
+        m.onScore(0.95)
+        assertTrue(m.result.flagged)                       // 2 of 4 pieces ≥ 30 %
+        val many = SyntheticVoiceMonitor(0.7).apply { repeat(2) { onScore(0.9) }; repeat(8) { onScore(0.1) } }
+        assertFalse("2 of 10 is below the 30 % share", many.result.flagged)
+    }
+
+    @Test fun recordingCheckSamplesEvenly() {
+        val pcm = tone(VoiceCheck.WINDOW * 100, 0.3)
+        var calls = 0
+        val v = SyntheticVoiceMonitor.check(pcm, 0.5, maxWindows = 10) { calls++; 0.9 }
+        assertTrue(calls in 9..10)
+        assertTrue(v.flagged)
+        assertEquals(0, SyntheticVoiceMonitor.check(ShortArray(100), 0.5) { 1.0 }.windows)
+    }
+
+    @Test fun reportShowsTheVoiceCheck() {
+        fun session(v: VoiceCheck?, speech: String? = null) = CallSession(voiceModel = true).apply {
+            on(CallEvent.Ringing(0, "+77015550009", CallChannel.CELLULAR, null, CallRisk.assess(CallFacts("+77015550009", false, "+7", 1, false, false))))
+            on(CallEvent.Answered(1_000)); on(CallEvent.SpeechState(2_000, SpeechStatus.STARTED))
+            if (speech != null) on(CallEvent.Speech(5_000, ScamAnalyzer.analyze(speech)))
+            if (v != null) on(CallEvent.Voice(20_000, v))
+            on(CallEvent.Ended(60_000))
+        }.report()!!
+        val clean = session(VoiceCheck(6, 0, 0.2, 0.7))
+        assertEquals(RiskLevel.LOW, clean.level)
+        assertTrue(clean.checks.any { it.startsWith("Синтетический голос") && it.contains("не найдено") })
+        val robot = session(VoiceCheck(6, 4, 0.98, 0.7))
+        assertEquals(RiskLevel.MEDIUM, robot.level)
+        assertEquals("Голос в звонке похож на синтезированный", robot.title)
+        val robotScam = session(VoiceCheck(6, 4, 0.98, 0.7), "служба безопасности банка срочно")
+        assertEquals(RiskLevel.HIGH, robotScam.level)
+        val notRun = CallSession(voiceModel = true).apply {
+            on(CallEvent.Ringing(0, "+77015550009", CallChannel.CELLULAR, null, CallRisk.assess(CallFacts("+77015550009", false, "+7", 1, false, false))))
+            on(CallEvent.Answered(1_000)); on(CallEvent.Ended(60_000))
+        }.report()!!
+        assertTrue(notRun.checks.any { it.contains("звук разговора не анализировался") })
+    }
+
+    @Test fun voiceReportIsTranslated() {
+        I18n.kk = true
+        try {
+            for (s in listOf("Голос в разговоре " + VoiceCheck(5, 3, 0.9, 0.7).summaryRu + " (экспериментальная проверка, может ошибаться)",
+                    "Синтетический голос (робот, ИИ): " + VoiceCheck(5, 0, 0.1, 0.7).summaryRu + " — экспериментальная модель",
+                    "Синтетический голос (робот, ИИ): " + VoiceCheck(5, 1, 0.8, 0.7).summaryRu + " — экспериментальная модель",
+                    "Голос в звонке похож на синтезированный")) {
+                val kk = I18n.core(s)
+                assertTrue("not translated: $s -> $kk", kk != s && Regex("[әғқңөұүһі]").containsMatchIn(kk) && "синтезированный" !in kk)
+            }
+        } finally { I18n.kk = false }
     }
 }
