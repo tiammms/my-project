@@ -134,10 +134,13 @@ def train(model, rows, audio, epochs, budget_min, log):
 
 
 def export(model, out: pathlib.Path, log):
-    model.eval()
+    # the wrapper itself must be in eval mode: torch.onnx.export restores the wrapper's mode on ALL submodules
+    # afterwards, and a wrapper left in training mode would switch the model back to training (dropout, batch stats)
+    wrapped = Exported(model).eval()
     path = out / "saqtan_voice.onnx"
-    torch.onnx.export(Exported(model), torch.zeros(1, N), str(path), input_names=["audio"],
+    torch.onnx.export(wrapped, torch.zeros(1, N), str(path), input_names=["audio"],
                       output_names=["p_synthetic"], opset_version=17)
+    model.eval()
     import onnxruntime as ort
     sess = ort.InferenceSession(str(path))
     rng = np.random.default_rng(3)
@@ -145,7 +148,7 @@ def export(model, out: pathlib.Path, log):
     for _ in range(5):
         a = (rng.standard_normal((1, N)) * 0.1).astype(np.float32)
         with torch.no_grad():
-            ref = float(Exported(model)(torch.from_numpy(a))[0, 0])
+            ref = float(wrapped(torch.from_numpy(a))[0, 0])
         diff = max(diff, abs(ref - float(sess.run(None, {"audio": a})[0][0, 0])))
     log(f"onnx parity max |diff| = {diff:.2e}")
     assert diff < 1e-3
@@ -164,7 +167,7 @@ def examples(model, rows, audio, out: pathlib.Path, thr: float):
         sf.write(out / f"example_{name}.wav", pcm, 16000, subtype="PCM_16")
         x16 = pcm.astype(np.float32) / 32768.0                    # exactly what the app feeds the model
         with torch.no_grad():
-            p = float(Exported(model.eval())(torch.from_numpy(x16[None]))[0, 0])
+            p = float(Exported(model).eval()(torch.from_numpy(x16[None]))[0, 0])
         res[name] = {"source": r["path"], "p_synthetic": round(p, 4), "flagged": p >= thr}
     return res
 
@@ -175,6 +178,8 @@ def main():
     ap.add_argument("--out", default="work/out")
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--budget-min", type=float, default=100)
+    ap.add_argument("--load", default="weights/saqtan_voice.pth",
+                    help="skip training and evaluate these weights (delete the file to train again)")
     a = ap.parse_args()
     torch.manual_seed(0); np.random.seed(0)
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
@@ -188,7 +193,15 @@ def main():
     model = SpoofNet()
     log(f"parameters: {sum(p.numel() for p in model.parameters())}")
     t0 = time.time()
-    best = train(model, rows, audio, a.epochs, a.budget_min, log)
+    if a.load and pathlib.Path(a.load).exists():
+        # weights trained by this script in an earlier CI run (log: weights/train_run_*.log); only evaluated here
+        model.load_state_dict(torch.load(a.load, map_location="cpu"))
+        vr0 = [r for r in rows if r["split"] == "val" and r["label"] == "bonafide"]
+        vf0 = [r for r in rows if r["split"] == "val" and r["label"] == "spoof"]
+        best = float(np.mean([eer(scores(model, vr0, audio, c), scores(model, vf0, audio, c)) for c in ("clean", "phone")]))
+        log(f"loaded {a.load}; val EER {best:.4f}")
+    else:
+        best = train(model, rows, audio, a.epochs, a.budget_min, log)
     print(f"::notice title=train progress::trained, best val EER {best:.4f}, {(time.time() - t0) / 60:.0f} min", flush=True)
     vr = [r for r in rows if r["split"] == "val" and r["label"] == "bonafide"]
     thr = float(np.quantile(scores(model, vr, audio, "phone"), 1 - TARGET_FPR))
