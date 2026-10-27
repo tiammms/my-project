@@ -64,7 +64,7 @@ jobs:
       - name: Publish results to the branch voice-model-results
         if: always()
         run: |
-          mkdir -p /tmp/res && cp -r work/out/. /tmp/res/ 2>/dev/null; cp work/data/counts.json data.log train.log /tmp/res/ 2>/dev/null; true
+          mkdir -p /tmp/res; cp -r work/out/. /tmp/res/ || true; for f in work/data/counts.json data.log train.log; do [ -f "$f" ] && cp "$f" /tmp/res/; done; true
           cd /tmp/res && git init -q && git checkout -q -b voice-model-results
           git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
           git add -A && git commit -qm "voice model results, run ${{ github.run_id }} (${{ github.sha }})"
