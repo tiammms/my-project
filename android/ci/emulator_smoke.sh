@@ -206,6 +206,12 @@ for r in res: print("INFO demo voice example: " + r)
 ok = len(res) == 2 and res[0].startswith("Модель: не похож") and res[1].startswith("Модель: похож")
 print(("PASS" if ok else "FAIL") + " phone gives the same verdicts on the demo examples as the training run")
 PY
+# the app must stay responsive after the model ran: navigate away and look at the screen
+adb shell am start -n $P/.MainActivity --es route history; sleep 4
+adb shell uiautomator dump /sdcard/nav.xml >/dev/null 2>&1; adb pull /sdcard/nav.xml shots/ui-after-voice-demo.xml >/dev/null 2>&1 || true
+if grep -q 'text="Угрозы"' shots/ui-after-voice-demo.xml 2>/dev/null && ! grep -q "Проверка голоса: робот или человек" shots/ui-after-voice-demo.xml; then
+  echo "PASS app responds after the voice demo" >> shots/asserts.txt; else echo "FAIL app responds after the voice demo" >> shots/asserts.txt; shot 29g-after-voice-demo 1; fi
+adb shell am force-stop $P; sleep 2
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3
