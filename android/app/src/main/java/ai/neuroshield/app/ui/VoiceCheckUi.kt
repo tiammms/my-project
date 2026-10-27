@@ -83,26 +83,16 @@ fun VoiceExamples() {
     }
     GlassCard(accent = NS.violet, padding = 12.dp) {
         Text(tr("Проверка голоса: робот или человек", "Дауысты тексеру: робот па, адам ба"), style = MaterialTheme.typography.titleMedium, color = NS.text)
-        Text(tr("Два коротких примера, как они звучат через телефон. Нажмите ▶, чтобы прослушать, и «Проверить», чтобы модель оценила звук. ",
-            "Телефон арқылы естілетін екі қысқа мысал. Тыңдау үшін ▶, модель бағалауы үшін «Тексеру» түймесін басыңыз. ") +
+        Text(tr("Два коротких примера, как они звучат через телефон. Нажмите на пример, чтобы модель оценила звук, или ▶, чтобы прослушать. ",
+            "Телефон арқылы естілетін екі қысқа мысал. Модель бағалауы үшін мысалды, тыңдау үшін ▶ түймесін басыңыз. ") +
             tr("Модель экспериментальная и может ошибаться.", "Модель тәжірибелік, қателесуі мүмкін."),
             style = MaterialTheme.typography.bodySmall, color = NS.text2)
         for ((name, title) in listOf("real" to tr("Пример 1: голос человека", "1-мысал: адам дауысы"),
                 "synthetic" to tr("Пример 2: синтезатор речи (eSpeak)", "2-мысал: сөйлеу синтезаторы (eSpeak)"))) {
-            ListRow(if (playing == name) Icons.Filled.Stop else Icons.Filled.PlayArrow, title,
-                results.value[name] ?: tr("Проверить", "Тексеру"), tint = NS.violet,
+            // the row runs the model; the button on the right plays the clip (two separate actions)
+            ListRow(Icons.Filled.GraphicEq, title, results.value[name] ?: tr("Нажмите, чтобы проверить", "Тексеру үшін басыңыз"),
+                tint = NS.violet,
                 onClick = {
-                    if (playing == name) { stop(); return@ListRow }
-                    stop()
-                    runCatching {
-                        val mp = android.media.MediaPlayer()
-                        player[0] = mp
-                        mp.setDataSource(file(name).absolutePath)
-                        mp.setOnPreparedListener { it.start() }
-                        mp.setOnCompletionListener { if (player[0] === it) stop() }
-                        mp.prepareAsync()
-                        playing = name
-                    }
                     scope.launch {
                         val text = withContext(Dispatchers.Default) {
                             val m = VoiceModel.get(ctx) ?: return@withContext tr("Модель не загрузилась", "Модель жүктелмеді")
@@ -113,7 +103,24 @@ fun VoiceExamples() {
                         }
                         results.value = results.value + (name to text)
                     }
-                })
+                }) {
+                androidx.compose.material3.IconButton(onClick = {
+                    if (playing == name) { stop(); return@IconButton }
+                    stop()
+                    runCatching {
+                        val mp = android.media.MediaPlayer()
+                        player[0] = mp
+                        mp.setDataSource(file(name).absolutePath)
+                        mp.setOnPreparedListener { it.start() }
+                        mp.setOnCompletionListener { if (player[0] === it) stop() }
+                        mp.prepareAsync()
+                        playing = name
+                    }
+                }) {
+                    androidx.compose.material3.Icon(if (playing == name) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                        contentDescription = tr("Прослушать", "Тыңдау"), tint = NS.violet)
+                }
+            }
         }
     }
 }
