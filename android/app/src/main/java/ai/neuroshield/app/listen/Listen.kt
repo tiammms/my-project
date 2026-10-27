@@ -345,7 +345,7 @@ class ListenService : Service() {
             source = "live_speech", number = app.prefs.callNumber,
             title = "В разговоре звучат фразы мошенников",
             reasons = r.tactics.map { t -> t.title + (t.evidence.firstOrNull()?.let { " («${it.match}»)" } ?: "") } +
-                (vf?.let { listOf("Голос в разговоре " + it.summaryRu + " (экспериментальная проверка, может ошибаться)") } ?: emptyList()),
+                (vf?.let { listOf("Голос в разговоре " + it.summaryRu + " (экспериментальная проверка, может ошибаться)") } ?: emptyList<String>()),
             advice = r.tactics.sortedByDescending { it.weight }.take(2).map { it.advice },
             excerpt = transcript.takeLast(600),
         ))

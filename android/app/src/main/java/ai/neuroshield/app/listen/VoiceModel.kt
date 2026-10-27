@@ -36,7 +36,7 @@ class VoiceModel private constructor(private val session: OrtSession, val thresh
     fun checkWav(f: File): VoiceCheck = java.io.RandomAccessFile(f, "r").use { raf ->
         val samples = ((raf.length() - 44) / 2).coerceAtLeast(0)
         val bytes = ByteArray(VoiceCheck.WINDOW * 2)
-        SyntheticVoiceMonitor.check((samples / VoiceCheck.WINDOW).toInt(), threshold, 40, { w ->
+        SyntheticVoiceMonitor.checkPieces((samples / VoiceCheck.WINDOW).toInt(), threshold, 40, { w ->
             raf.seek(44L + w.toLong() * bytes.size); raf.readFully(bytes)
             FloatArray(VoiceCheck.WINDOW) { i -> ((bytes[2 * i].toInt() and 0xff) or (bytes[2 * i + 1].toInt() shl 8)).toShort() / 32768f }
         }) { score(it) }
