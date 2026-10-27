@@ -12,7 +12,7 @@ import java.nio.FloatBuffer
 import java.security.MessageDigest
 
 /**
- * The EXPERIMENTAL synthetic-voice model shipped inside the app (assets/voice): AASIST-L fine-tuned on real vs
+ * The EXPERIMENTAL synthetic-voice model shipped inside the app (assets/voice): a small spectrogram CNN trained on real vs
  * synthesized speech (ml/voice_spoof, metrics in assets/voice/model.json and docs). Runs only on the phone.
  *
  * The model file is checked against the SHA-256 written next to it before it is loaded.
@@ -51,7 +51,7 @@ class VoiceModel private constructor(private val session: OrtSession, val thresh
 
     companion object {
         private const val DIR = "voice"
-        private const val FILE = "saqtan_voice_aasist_l.onnx"
+        private const val FILE = "saqtan_voice.onnx"
         @Volatile private var cached: VoiceModel? = null
         @Volatile private var failed = false
 

@@ -3,7 +3,7 @@ package ai.neuroshield.app.core
 import kotlin.math.sqrt
 
 /**
- * Result of the EXPERIMENTAL synthetic-voice check (AASIST-L, see ml/voice_spoof) over a call or a recording.
+ * Result of the EXPERIMENTAL synthetic-voice check (small spectrogram CNN, see ml/voice_spoof) over a call or a recording.
  * Sound is cut into 4-second pieces; each piece with speech gets P(synthetic) from the model.
  *
  * The verdict is deliberately cautious: at least [MIN_HITS] pieces must look synthetic, and they must be at least

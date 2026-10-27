@@ -105,7 +105,7 @@ dependencies {
     implementation("com.alphacephei:vosk-android:0.3.47@aar")
     implementation("net.java.dev.jna:jna:5.13.0@aar")
 
-    // Experimental synthetic-voice check: AASIST-L (fine-tuned, see ml/voice_spoof) run on the phone by ONNX Runtime
+    // Experimental synthetic-voice check: small spectrogram CNN (ml/voice_spoof) run on the phone by ONNX Runtime
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
