@@ -67,7 +67,13 @@ class VoiceModel private constructor(private val session: OrtSession, val thresh
                 val bytes = ctx.assets.open("$DIR/$FILE").use { it.readBytes() }
                 val sha = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
                 check(sha.equals(info.getString("sha256"), ignoreCase = true)) { "model file does not match its SHA-256" }
-                val opts = OrtSession.SessionOptions().apply { setIntraOpNumThreads(2) }
+                // one thread, no busy-waiting between runs: the check runs every 4 s in the background and must not
+                // compete with the call, the UI or the speech recogniser for the CPU
+                val opts = OrtSession.SessionOptions().apply {
+                    setIntraOpNumThreads(1); setInterOpNumThreads(1)
+                    addConfigEntry("session.intra_op.allow_spinning", "0")
+                    addConfigEntry("session.inter_op.allow_spinning", "0")
+                }
                 val s = OrtEnvironment.getEnvironment().createSession(bytes, opts)
                 VoiceModel(s, info.getDouble("threshold"), info).also { cached = it }
             } catch (e: Exception) {

@@ -214,7 +214,14 @@ adb shell dumpsys window | grep -i -E "anr|not responding|mCurrentFocus" >> shot
 adb logcat -d | grep -E "neuroshield|MediaPlayer|AudioTrack|ANR|Choreographer|onnx" | tail -150 >> shots/after-voice-demo.txt 2>&1
 adb shell uiautomator dump /sdcard/nav.xml >/dev/null 2>&1; adb pull /sdcard/nav.xml shots/ui-after-voice-demo.xml >/dev/null 2>&1 || true
 if grep -q 'История хранится только на телефоне' shots/ui-after-voice-demo.xml 2>/dev/null; then
-  echo "PASS app responds after the voice demo" >> shots/asserts.txt; else echo "FAIL app responds after the voice demo" >> shots/asserts.txt; fi
+  echo "PASS app responds after the voice demo" >> shots/asserts.txt
+else
+  echo "FAIL app responds after the voice demo" >> shots/asserts.txt
+  # thread dump of the stuck app (the emulator image allows adb root)
+  adb root >/dev/null 2>&1; sleep 3; adb wait-for-device
+  pid=$(adb shell pidof $P | tr -d '\r'); adb shell debuggerd -j $pid > shots/stack-after-voice-demo.txt 2>&1 || true
+  top -b -n 1 > /dev/null 2>&1; adb shell top -b -n 1 -H -p $pid | head -30 >> shots/stack-after-voice-demo.txt 2>&1 || true
+fi
 adb shell am force-stop $P; sleep 2
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
