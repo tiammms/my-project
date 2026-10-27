@@ -207,10 +207,14 @@ ok = len(res) == 2 and res[0].startswith("Модель: не похож") and re
 print(("PASS" if ok else "FAIL") + " phone gives the same verdicts on the demo examples as the training run")
 PY
 # the app must stay responsive after the model ran: navigate away and look at the screen
-adb shell am start -n $P/.MainActivity --es route history; sleep 4
+sleep 6   # let the example clip finish
+adb shell am start -n $P/.MainActivity --es route history; sleep 4; shot 29g-after-voice-demo 1
+adb shell dumpsys activity activities | grep -i -E "mResumed|ResumedActivity" > shots/after-voice-demo.txt 2>&1
+adb shell dumpsys window | grep -i -E "anr|not responding|mCurrentFocus" >> shots/after-voice-demo.txt 2>&1
+adb logcat -d | grep -E "neuroshield|MediaPlayer|AudioTrack|ANR|Choreographer|onnx" | tail -150 >> shots/after-voice-demo.txt 2>&1
 adb shell uiautomator dump /sdcard/nav.xml >/dev/null 2>&1; adb pull /sdcard/nav.xml shots/ui-after-voice-demo.xml >/dev/null 2>&1 || true
-if grep -q 'text="Угрозы"' shots/ui-after-voice-demo.xml 2>/dev/null && ! grep -q "Проверка голоса: робот или человек" shots/ui-after-voice-demo.xml; then
-  echo "PASS app responds after the voice demo" >> shots/asserts.txt; else echo "FAIL app responds after the voice demo" >> shots/asserts.txt; shot 29g-after-voice-demo 1; fi
+if grep -q 'История хранится только на телефоне' shots/ui-after-voice-demo.xml 2>/dev/null; then
+  echo "PASS app responds after the voice demo" >> shots/asserts.txt; else echo "FAIL app responds after the voice demo" >> shots/asserts.txt; fi
 adb shell am force-stop $P; sleep 2
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready

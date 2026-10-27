@@ -72,7 +72,11 @@ fun VoiceExamples() {
     val player = remember { arrayOfNulls<android.media.MediaPlayer>(1) }
     var playing by remember { mutableStateOf<String?>(null) }
     val results = remember { mutableStateOf(mapOf<String, String>()) }
-    fun stop() { player[0]?.runCatching { stop(); release() }; player[0] = null; playing = null }
+    // stopping/releasing a MediaPlayer can wait for the audio output: never do it on the main thread
+    fun stop() {
+        val p = player[0]; player[0] = null; playing = null
+        if (p != null) Thread { runCatching { p.stop() }; runCatching { p.release() } }.start()
+    }
     DisposableEffect(Unit) { onDispose { stop() } }
     fun file(name: String): File = File(ctx.cacheDir, "example_$name.wav").also { f ->
         if (!f.exists()) ctx.assets.open("voice/example_$name.wav").use { i -> f.outputStream().use { i.copyTo(it) } }
@@ -91,9 +95,12 @@ fun VoiceExamples() {
                     if (playing == name) { stop(); return@ListRow }
                     stop()
                     runCatching {
-                        player[0] = android.media.MediaPlayer().apply {
-                            setDataSource(file(name).absolutePath); prepare(); setOnCompletionListener { stop() }; start()
-                        }
+                        val mp = android.media.MediaPlayer()
+                        player[0] = mp
+                        mp.setDataSource(file(name).absolutePath)
+                        mp.setOnPreparedListener { it.start() }
+                        mp.setOnCompletionListener { if (player[0] === it) stop() }
+                        mp.prepareAsync()
                         playing = name
                     }
                     scope.launch {
