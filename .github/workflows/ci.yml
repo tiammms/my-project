@@ -12,6 +12,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r requirements.txt -r requirements-voice.txt
+      # the scam-phrase rules of the server, Android and iOS are generated from shared/scam_rules.json
+      - run: python scripts/gen_scam_rules.py --check
+      - run: python -m experiments.text_eval_v3.run_eval > /dev/null
       # real face models (SHA-256 verified) + public test media: a face photo from the OpenCV samples
       # and the JFK speech sample from the faster-whisper repository
       - run: python -m scripts.download_models

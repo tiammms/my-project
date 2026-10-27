@@ -13,10 +13,10 @@ fun levelOf(score: Double, t: RiskThresholds = RiskEngine.thresholds): RiskLevel
 }
 
 data class Evidence(val match: String, val context: String)
-data class Tactic(val id: String, val title: String, val advice: String, val weight: Int, val evidence: List<Evidence>)
+data class Tactic(val id: String, val title: String, val advice: String, val weight: Int, val evidence: List<Evidence>, val weak: Boolean = false)
 data class TextRisk(val score: Double, val level: RiskLevel, val tactics: List<Tactic>, val words: Int) {
     val summary: String
-        get() = if (tactics.isEmpty()) "Признаков мошеннического сценария не найдено" else "Найдено признаков обмана: ${tactics.size}"
+        get() = tactics.count { !it.weak }.let { n -> if (n == 0) "Признаков мошеннического сценария не найдено" else "Найдено признаков обмана: $n" }
 }
 
 /**
@@ -26,110 +26,8 @@ data class TextRisk(val score: Double, val level: RiskLevel, val tactics: List<T
  * Same rules as the NeuroShield server (backend/app/biometrics/scam_text.py), adapted for speech recognition output.
  */
 object ScamAnalyzer {
-    private class Category(val id: String, val title: String, val advice: String, val weight: Int, val patterns: List<String>)
-
-    private val CATEGORIES = listOf(
-        Category("credentials_request", "Просят код, пароль или данные карты",
-            "Никому не сообщайте коды из SMS, пароли, PIN и CVV. Банк никогда их не спрашивает.", 45, listOf(
-                """код\w*\s+(из|с|в)\s+(смс|sms|эсэмэс|сообщени)""",
-                """(продиктуй|назови|скажи|сообщи|скинь|отправь|подтверди|прочитай|зачитай)\w*\s+(мне\s+)?(пожалуйста\s+)?(этот\s+|ваш\s+|свой\s+)?код""",
-                """код\w*\s+подтвержд""", """\bcvv\b|\bcvc\b|\bсвв\b|три\s+цифры\s+на\s+обороте|три\s+цифры\s+сзади""",
-                """пин[\s-]?код|\bpin\b""", """(ваш|свой|назовите)\s+пароль|пароль\s+от""", """срок\s+действия\s+карты""",
-                """номер\s+(вашей\s+)?карты""", """кодты?\s+(айт|жібер)""", """құпия\s+сөз""",
-                """(tell|give|read|send)\s+(me\s+)?(the\s+|your\s+)?(code|password|pin)""", """verification\s+code|one[\s-]time\s+(code|password)""",
-                """подтвердите\s+(ваши\s+|свои\s+)?(данные|личност)""",
-            )),
-        Category("safe_account_transfer", "Просят перевести деньги на «безопасный» или чужой счёт",
-            "«Безопасных» и «резервных» счетов не существует. Не переводите деньги по просьбе звонящего.", 40, listOf(
-                """(безопасн|резервн|защищенн|специальн|страхов)\w*\s+(сч[её]т|ячейк)""",
-                """(перевед|переведит|перечисл|отправ)\w*\s+(все\s+|ваши\s+)?(деньги|средства|сбережения|сумм)""",
-                """(снимит|снять|обналичь)\w*\s+(все\s+)?(деньги|наличн|средства)""", """через\s+банкомат\s+(на|внес)""", """задеклариру""",
-                """қауіпсіз\s+шот""", """ақша\w*\s+аудар""",
-                """safe\s+account|secure\s+account|transfer\s+(all\s+)?(your\s+)?(money|funds|savings)""",
-            )),
-        Category("urgency_pressure", "Давят срочностью",
-            "Срочность — главный инструмент мошенников. Сделайте паузу: настоящий банк подождёт.", 20, listOf(
-                """\bсрочно\b""", """немедленно""", """прямо\s+сейчас""", """в\s+течени[ие]\s+(\d+|пят\w*|десят\w*|пятнадцат\w*)\s+минут""",
-                """(у\s+вас\s+)?(нет|мало)\s+времени""", """иначе\s+(вы\s+)?(потеря|лишит|деньги|сч[её]т|будет)""", """пока\s+не\s+поздно""",
-                """последн\w+\s+(шанс|возможност)""", """не\s+кладите\s+трубку""", """жедел|дереу|қазір\s+бірден""",
-                """\burgent\b|immediately|right\s+now|within\s+\d+\s+minutes|before\s+it'?s\s+too\s+late""",
-                """оставайтесь\s+на\s+линии|не\s+(прерывайте|отключайтесь|отключайте)""",
-                """stay\s+on\s+the\s+line|do\s+not\s+hang\s+up|don'?t\s+hang\s+up""",
-            )),
-        Category("authority_impersonation", "Представляются банком, полицией или госорганом",
-            "Положите трубку и сами перезвоните в банк по номеру на обратной стороне карты.", 25, listOf(
-                """служб\w+\s+безопасности(\s+банка)?""", """(сотрудник|специалист|оператор)\w*\s+(банка|службы)""", """\bполици\w*""", """следовател""",
-                """(национальн|центральн)\w*\s+банк|\bнацбанк|\bцб\s+рф|\bафм\b|\bкнб\b|\bфсб\b|прокуратур|\bмвд\b""",
-                """банктің\s+қауіпсіздік|полиция\s+қызметкері""",
-                """(bank'?s?\s+)?security\s+(department|team|service)|\bpolice\b|fraud\s+department""",
-                """служб\w+\s+поддержки|(сотрудник|служб\w*|специалист)\w*\s+(kaspi|каспи|halyk|халык)""",
-                """банк\s+қызметкер""",
-            )),
-        Category("secrecy_isolation", "Просят держать разговор в тайне",
-            "Требование никому не говорить — тревожный признак. Обсудите ситуацию с близкими.", 20, listOf(
-                """никому\s+не\s+(говорите|рассказывайте|сообщайте)""", """(тайн\w+|секрет\w*)\s+следстви""",
-                """не\s+(говорите|сообщайте)\s+(родственникам|близким|сотрудникам\s+банка)""", """это\s+конфиденциальн""", """ешкімге\s+айтпаңыз""",
-                """don'?t\s+tell\s+(anyone|your\s+family|the\s+bank)|keep\s+(this|it)\s+(secret|confidential)""",
-                """не\s+говори\s+(маме|папе|никому)|никому\s+не\s+говори""",
-                """don'?t\s+tell\s+(mom|dad|your\s+parents)""",
-            )),
-        Category("remote_access", "Просят установить программу или показать экран",
-            "Не устанавливайте программы удалённого доступа по просьбе звонящего.", 35, listOf(
-                """anydesk|эни\s?деск|teamviewer|тимвьюер|rustdesk|rust\s+desk|quick\s?support""",
-                """(установит|скачайт|скачать|установить)\w*\s+(приложени|программ)""",
-                """демонстраци\w+\s+экрана|покажите\s+(ваш\s+)?экран""", """screen\s+shar|install\s+(the\s+)?(app|application)|remote\s+access""",
-            )),
-        Category("threat_fear", "Пугают: блокировка, кредит на ваше имя, уголовное дело",
-            "Не принимайте решения в панике. Проверьте информацию сами в приложении банка.", 15, listOf(
-                """(ваш\w*\s+)?(сч[её]т|карт\w+)\s+(заблокир|будет\s+заблокир)""", """(оформ|взял|взят)\w*\s+кредит\s+на\s+(ваше|вас)""",
-                """подозрительн\w+\s+(операци|перевод)""", """уголовн|\bарест|соучастни""", """мошенники\s+пытаются""",
-                """your\s+(\w+\s+)?(account|card)\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised|suspended)|arrest|loan\s+in\s+your\s+name""",
-                """(аккаунт|профил|учетн\w+\s+запис)\w*\s+(\w+\s+)?(будет\s+)?заблокир""",
-                """заявк\w+\s+на\s+кредит|кредит\w*\s+(будет\s+)?одобрен""",
-                """шот\w*\s+бұғат""",
-                """your\s+(\w+\s+)?(account|card)\s+is\s+being\s+(compromised|blocked|hacked)""",
-            )),
-        Category("family_emergency", "Рассказывают, что близкий человек в беде",
-            "Положите трубку и сами перезвоните родственнику по его старому номеру. Задайте вопрос, ответ на который знает только он.", 35, listOf(
-                """это\s+я[\s,]+(тво[йя]|ваш[аи]?)\s+(сын|дочь|внук|внучка|племянни\w*)""",
-                """(сын|дочь|дочка|внук|внучка|муж|жена|брат|сестра|ребен)\w*\s+(\w+\s+)?(в\s+больниц|в\s+реанимац|в\s+полици|задержа|попал|сбил|разбил)""",
-                """(сбил|сбила)\s+(человека|пешехода)|попал\w*\s+в\s+(авари|дтп|беду)|после\s+авари""",
-                """\bя\s+в\s+беде|на\s+операци\w*\s+(нужн|надо)|(у\s+меня|это\s+мой)\s+новый\s+номер|телефон\s+(украли|разбил|сломал)""",
-                """бұл\s+мен[\s,]+(балаң|немерең|ұлың|қызың)|жол\s+апат|апатқа\s+түст""",
-                """it'?s\s+me[\s,]+(your\s+)?(grandson|granddaughter|son|daughter)|grandma[\s,]+it'?s\s+me|i'?m\s+in\s+(jail|trouble|the\s+hospital)|bail\s+money|had\s+an\s+accident""",
-            )),
-        Category("money_request", "Просят срочно прислать деньги",
-            "Прежде чем переводить, перезвоните человеку сами по номеру, который вы знаете.", 20, listOf(
-                """(кинь|скинь|переведи|перекинь|одолжи|займи|пришли)\w*[\s,]+(мне[\s,]+)?(пожалуйста[\s,]+)?(\d+|деньги|денег)""",
-                """на\s+(эту|мою|этот|другую|новую)\s+(карт|номер)""",
-                """передать\s+деньги|нужн\w*\s+\d+\s*(тысяч|тыс|тенге|₸)""",
-                """ақша\s+жібер""",
-                """send\s+(me\s+)?(the\s+|some\s+)?money|send\s+it\s+now|wire\s+(me\s+)?(the\s+)?money""",
-            )),
-        Category("investment_promise", "Обещают гарантированный или очень высокий доход",
-            "Гарантированного высокого дохода не бывает. Проверьте компанию в реестре АРРФР и не вносите деньги по звонку или рекламе.", 35, listOf(
-                """гарантирован\w*\s+(доход|прибыл|выплат)|пассивн\w+\s+доход""",
-                """\d+\s*%\s+(в|за)\s+(день|сутки|неделю|месяц)|в\s+(два|три|пять|\d+)\s+раза\s+больше""",
-                """инвестиционн\w+\s+(программ|проект|платформ)|ежемесячн\w+\s+выплат|(вложите|вложить|внесите|инвестируйте)\s+(от\s+)?\d+""",
-                """(выгодн|перспективн)\w*\s+криптовалют""",
-                """\d+\s+пайыз\s+табыс|ақша\s+салыңыз""",
-                """guaranteed\s+(return|profit|income)s?|\d+\s*%\s+(per|a)\s+(day|week|month)|invest\s+(today|now)""",
-            )),
-        Category("prize_delivery", "Сообщают о выигрыше или проблеме с посылкой",
-            "Проверьте посылку по трек-номеру на официальном сайте службы доставки. Если вы ни в чём не участвовали, выигрыша нет.", 20, listOf(
-                """вы\s+выиграли|ваш\s+номер\s+выиграл|(получить|забрать)\s+приз|розыгрыш|выигрыш""",
-                """посылк\w*\s+(\w+\s+)?задержан|задержан\w*\s+на\s+таможн|адрес\w*\s+доставки\s+указан\s+неверно|не\s+удалось\s+доставить""",
-                """ұтыс|сыйлық""",
-                """you\s+(have\s+)?won|claim\s+your\s+prize|could\s+not\s+be\s+delivered|delivery\s+failed""",
-            )),
-        Category("fee_request", "Просят оплатить «налог», пошлину или доставку, чтобы что-то получить",
-            "Настоящий выигрыш или посылка не требуют оплаты по ссылке из сообщения или по звонку.", 35, listOf(
-                """(оплатит|оплатить|заплатит|заплатить)\w*\s+(налог|пошлин|комисси|сбор|доставк)""",
-                """налог\w*\s+(на\s+выигрыш|\d+)""",
-                """салық\w*\s+төле""",
-                """pay\s+(a\s+|the\s+)?(small\s+)?(processing\s+|redelivery\s+|delivery\s+|customs\s+)?fee""",
-            )),
-    )
+    // The phrase rules live in shared/scam_rules.json (one source for Android, iOS and the server);
+    // ScamRules.kt is generated from it by scripts/gen_scam_rules.py.
 
     // Java regex \w and \b are ASCII-only on the JVM; make them Unicode-aware the same way on JVM and Android.
     private const val W = """[\p{L}\p{N}_]"""
@@ -137,11 +35,14 @@ object ScamAnalyzer {
         .replace("""\b""", """(?:(?<!$W)(?=$W)|(?<=$W)(?!$W))""")
         .replace("""\w""", W)
 
-    private val compiled: List<Pair<Category, List<Pattern>>> = CATEGORIES.map { c ->
+    private val compiled: List<Pair<ScamRule, List<Pattern>>> = ScamRules.CATEGORIES.map { c ->
         c to c.patterns.map { Pattern.compile(portable(it), Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE) }
     }
 
     const val MAX_TEXT = 20_000
+
+    private val weakIds = ScamRules.CATEGORIES.filter { it.weak }.map { it.id }.toSet()
+    fun isWeak(id: String): Boolean = id in weakIds
 
     fun normalize(t: String): String = t.lowercase().replace('ё', 'е').replace(Regex("\\s+"), " ").trim()
 
@@ -162,7 +63,7 @@ object ScamAnalyzer {
                     if (hits.size >= 3) break@loop
                 }
             }
-            if (hits.isNotEmpty()) found += Tactic(c.id, c.title, c.advice, c.weight, hits)
+            if (hits.isNotEmpty()) found += Tactic(c.id, c.title, c.advice, c.weight, hits, c.weak)
         }
         // links: checked by LinkCheck (look-alike brands, shorteners, IP hosts, punycode, throw-away domains)
         val links = LinkCheck.scan(text.take(MAX_TEXT)).filter { it.score >= 30 }
@@ -172,16 +73,16 @@ object ScamAnalyzer {
                 "Не открывайте ссылку и не вводите на ней данные. Зайдите в приложение банка или на сайт сами.",
                 worst.score.coerceIn(30, 60), links.take(3).map { Evidence(it.host, it.reasons.joinToString("; ")) })
         }
-        val ids = found.map { it.id }.toSet()
+        // "weak" categories (only mentioning a bank, a card, a code) add a little to the score but are never
+        // counted as a separate tactic: they cannot turn one tactic into HIGH or raise a warning on their own
+        val ids = found.map { it.id }.filter { !isWeak(it) }.toSet()
         var score = if (found.isEmpty()) 0.0 else 100 * (1 - found.fold(1.0) { acc, f -> acc * (1 - f.weight / 100.0) })
         // A single tactic alone never yields HIGH (same safeguard as the NeuroShield risk engine).
         // A fake bank/government site is strong evidence on its own (brand in the address but not the official domain + risky signs).
         val forgedSite = links.any { it.score >= 70 }
         if (ids.size <= 1 && !forgedSite) score = min(score, 45.0)
         if (forgedSite) score = max(score, 75.0)
-        val critical = "credentials_request" in ids || "safe_account_transfer" in ids || "remote_access" in ids ||
-            "family_emergency" in ids || "fee_request" in ids ||
-            (links.any { it.score >= 50 })
+        val critical = ids.any { it in ScamRules.CRITICAL } || links.any { it.score >= 50 }
         if (critical && ids.size >= 2) score = max(score, 75.0)
         val words = if (t.isBlank()) 0 else t.split(" ").size
         return TextRisk(Math.round(score * 10) / 10.0, levelOf(score), found, words)

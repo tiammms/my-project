@@ -164,7 +164,8 @@ object CallSessions {
                 CallEvent.Speech(t, TextRisk(o.getDouble("score"), RiskLevel.valueOf(o.getString("level")),
                     (0 until ta.length()).map { val x = ta.getJSONObject(it)
                         Tactic(x.getString("id"), x.getString("ti"), x.getString("ad"), x.getInt("we"),
-                            x.getString("ev").let { m -> if (m.isEmpty()) emptyList() else listOf(Evidence(m, m)) }) }, o.getInt("w")))
+                            x.getString("ev").let { m -> if (m.isEmpty()) emptyList() else listOf(Evidence(m, m)) },
+                            ai.neuroshield.app.core.ScamAnalyzer.isWeak(x.getString("id"))) }, o.getInt("w")))
             }
             "ss" -> CallEvent.SpeechState(t, SpeechStatus.valueOf(o.getString("s")))
             else -> CallEvent.Ended(t)

@@ -62,6 +62,35 @@ class ScamAnalyzerTest {
         }
     }
 
+    @Test fun bankSmsCodeSchemes() {
+        val cases = listOf(
+            Triple("здравствуйте вам сейчас придет смс с кодом продиктуйте пожалуйста цифры", RiskLevel.MEDIUM, "credentials_request"),
+            Triple("на ваше имя оформлена заявка на кредит чтобы ее отменить нужно подтвердить код", RiskLevel.HIGH, "loan_cancel"),
+            Triple("ваш номер будет отключен через два часа нужно продлить договор с оператором", RiskLevel.MEDIUM, "operator_sim"),
+            Triple("обновите электронную цифровую подпись продиктуйте код который пришел от егов", RiskLevel.HIGH, "egov_ecp"),
+            Triple("налоговый комитет вам начислена переплата для возврата средств сообщите данные карты", RiskLevel.HIGH, "compensation_refund"),
+            Triple("сәлеметсіз бе банктен хабарласып тұрмын сізге смс келді ме кодты айтыңызшы", RiskLevel.HIGH, "credentials_request"),
+            Triple("мен ұялы байланыс операторынанмын нөміріңіз өшіріледі кодты айтыңыз", RiskLevel.HIGH, "operator_sim"),
+            Triple("i am calling from the tax office you owe money pay now in bitcoin", RiskLevel.HIGH, "safe_account_transfer"),
+        )
+        for ((text, level, id) in cases) {
+            val r = ScamAnalyzer.analyze(text)
+            assertEquals(text, level, r.level)
+            assertTrue(text, r.tactics.any { it.id == id })
+        }
+    }
+
+    @Test fun bankWordsAloneNeverWarn() {
+        for (t in listOf("мне пришло смс от банка что зарплата поступила", "код от домофона двадцать пять",
+                "оплатил счет за свет через каспи", "забыл пароль от вайфая напомни", "апама ақша аударып жібердім",
+                "смс келді жалақы түсті", "the bank sent me a text saying my salary arrived",
+                "Kaspi.kz: код подтверждения 4821. Никому не сообщайте этот код.")) {
+            val r = ScamAnalyzer.analyze(t)
+            assertEquals(t, RiskLevel.LOW, r.level)
+            assertEquals(t, "Признаков мошеннического сценария не найдено", r.summary)
+        }
+    }
+
     @Test fun evidenceIsReported() {
         val t = ScamAnalyzer.analyze("продиктуйте код из смс").tactics.first { it.id == "credentials_request" }
         assertTrue(t.evidence.isNotEmpty())

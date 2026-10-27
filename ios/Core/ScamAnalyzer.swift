@@ -34,150 +34,28 @@ public struct Tactic: Codable, Hashable, Identifiable {
 }
 public struct TextRisk: Codable {
     public let score: Double; public let level: RiskLevel; public let tactics: [Tactic]; public let words: Int
-    public var summary: String { tactics.isEmpty ? "Признаков мошеннического сценария не найдено" : "Найдено признаков обмана: \(tactics.count)" }
+    public var summary: String {
+        let n = tactics.filter { !ScamAnalyzer.isWeak($0.id) }.count
+        return n == 0 ? "Признаков мошеннического сценария не найдено" : "Найдено признаков обмана: \(n)"
+    }
 }
 
 /// Rule-based detector of social-engineering tactics in what is SAID or WRITTEN (Russian, Kazakh, English).
 /// Transparent on purpose: every warning shows the phrase that triggered it. It judges the content, never the person.
 /// Same rules as the Android app (core/ScamAnalyzer.kt) and the server (backend/app/biometrics/scam_text.py).
 public enum ScamAnalyzer {
-    struct Category { let id: String; let title: String; let advice: String; let weight: Int; let patterns: [String] }
-
-    static let categories: [Category] = [
-        Category(id: "credentials_request", title: "Просят код, пароль или данные карты",
-                 advice: "Никому не сообщайте коды из SMS, пароли, PIN и CVV. Банк никогда их не спрашивает.", weight: 45, patterns: [
-            #"код\w*\s+(из|с|в)\s+(смс|sms|эсэмэс|сообщени)"#,
-            #"(продиктуй|назови|скажи|сообщи|скинь|отправь|подтверди|прочитай|зачитай)\w*\s+(мне\s+)?(пожалуйста\s+)?(этот\s+|ваш\s+|свой\s+)?код"#,
-            #"код\w*\s+подтвержд"#,
-            #"\bcvv\b|\bcvc\b|\bсвв\b|три\s+цифры\s+на\s+обороте|три\s+цифры\s+сзади"#,
-            #"пин[\s-]?код|\bpin\b"#,
-            #"(ваш|свой|назовите)\s+пароль|пароль\s+от"#,
-            #"срок\s+действия\s+карты"#,
-            #"номер\s+(вашей\s+)?карты"#,
-            #"кодты?\s+(айт|жібер)"#,
-            #"құпия\s+сөз"#,
-            #"(tell|give|read|send)\s+(me\s+)?(the\s+|your\s+)?(code|password|pin)"#,
-            #"verification\s+code|one[\s-]time\s+(code|password)"#,
-            #"подтвердите\s+(ваши\s+|свои\s+)?(данные|личност)"#,
-        ]),
-        Category(id: "safe_account_transfer", title: "Просят перевести деньги на «безопасный» или чужой счёт",
-                 advice: "«Безопасных» и «резервных» счетов не существует. Не переводите деньги по просьбе звонящего.", weight: 40, patterns: [
-            #"(безопасн|резервн|защищенн|специальн|страхов)\w*\s+(сч[её]т|ячейк)"#,
-            #"(перевед|переведит|перечисл|отправ)\w*\s+(все\s+|ваши\s+)?(деньги|средства|сбережения|сумм)"#,
-            #"(снимит|снять|обналичь)\w*\s+(все\s+)?(деньги|наличн|средства)"#,
-            #"через\s+банкомат\s+(на|внес)"#,
-            #"задеклариру"#,
-            #"қауіпсіз\s+шот"#,
-            #"ақша\w*\s+аудар"#,
-            #"safe\s+account|secure\s+account|transfer\s+(all\s+)?(your\s+)?(money|funds|savings)"#,
-        ]),
-        Category(id: "urgency_pressure", title: "Давят срочностью",
-                 advice: "Срочность — главный инструмент мошенников. Сделайте паузу: настоящий банк подождёт.", weight: 20, patterns: [
-            #"\bсрочно\b"#,
-            #"немедленно"#,
-            #"прямо\s+сейчас"#,
-            #"в\s+течени[ие]\s+(\d+|пят\w*|десят\w*|пятнадцат\w*)\s+минут"#,
-            #"(у\s+вас\s+)?(нет|мало)\s+времени"#,
-            #"иначе\s+(вы\s+)?(потеря|лишит|деньги|сч[её]т|будет)"#,
-            #"пока\s+не\s+поздно"#,
-            #"последн\w+\s+(шанс|возможност)"#,
-            #"не\s+кладите\s+трубку"#,
-            #"жедел|дереу|қазір\s+бірден"#,
-            #"\burgent\b|immediately|right\s+now|within\s+\d+\s+minutes|before\s+it'?s\s+too\s+late"#,
-            #"оставайтесь\s+на\s+линии|не\s+(прерывайте|отключайтесь|отключайте)"#,
-            #"stay\s+on\s+the\s+line|do\s+not\s+hang\s+up|don'?t\s+hang\s+up"#,
-        ]),
-        Category(id: "authority_impersonation", title: "Представляются банком, полицией или госорганом",
-                 advice: "Положите трубку и сами перезвоните в банк по номеру на обратной стороне карты.", weight: 25, patterns: [
-            #"служб\w+\s+безопасности(\s+банка)?"#,
-            #"(сотрудник|специалист|оператор)\w*\s+(банка|службы)"#,
-            #"\bполици\w*"#,
-            #"следовател"#,
-            #"(национальн|центральн)\w*\s+банк|\bнацбанк|\bцб\s+рф|\bафм\b|\bкнб\b|\bфсб\b|прокуратур|\bмвд\b"#,
-            #"банктің\s+қауіпсіздік|полиция\s+қызметкері"#,
-            #"(bank'?s?\s+)?security\s+(department|team|service)|\bpolice\b|fraud\s+department"#,
-            #"служб\w+\s+поддержки|(сотрудник|служб\w*|специалист)\w*\s+(kaspi|каспи|halyk|халык)"#,
-            #"банк\s+қызметкер"#,
-        ]),
-        Category(id: "secrecy_isolation", title: "Просят держать разговор в тайне",
-                 advice: "Требование никому не говорить — тревожный признак. Обсудите ситуацию с близкими.", weight: 20, patterns: [
-            #"никому\s+не\s+(говорите|рассказывайте|сообщайте)"#,
-            #"(тайн\w+|секрет\w*)\s+следстви"#,
-            #"не\s+(говорите|сообщайте)\s+(родственникам|близким|сотрудникам\s+банка)"#,
-            #"это\s+конфиденциальн"#,
-            #"ешкімге\s+айтпаңыз"#,
-            #"don'?t\s+tell\s+(anyone|your\s+family|the\s+bank)|keep\s+(this|it)\s+(secret|confidential)"#,
-            #"не\s+говори\s+(маме|папе|никому)|никому\s+не\s+говори"#,
-            #"don'?t\s+tell\s+(mom|dad|your\s+parents)"#,
-        ]),
-        Category(id: "remote_access", title: "Просят установить программу или показать экран",
-                 advice: "Не устанавливайте программы удалённого доступа по просьбе звонящего.", weight: 35, patterns: [
-            #"anydesk|эни\s?деск|teamviewer|тимвьюер|rustdesk|rust\s+desk|quick\s?support"#,
-            #"(установит|скачайт|скачать|установить)\w*\s+(приложени|программ)"#,
-            #"демонстраци\w+\s+экрана|покажите\s+(ваш\s+)?экран"#,
-            #"screen\s+shar|install\s+(the\s+)?(app|application)|remote\s+access"#,
-        ]),
-        Category(id: "threat_fear", title: "Пугают: блокировка, кредит на ваше имя, уголовное дело",
-                 advice: "Не принимайте решения в панике. Проверьте информацию сами в приложении банка.", weight: 15, patterns: [
-            #"(ваш\w*\s+)?(сч[её]т|карт\w+)\s+(заблокир|будет\s+заблокир)"#,
-            #"(оформ|взял|взят)\w*\s+кредит\s+на\s+(ваше|вас)"#,
-            #"подозрительн\w+\s+(операци|перевод)"#,
-            #"уголовн|\bарест|соучастни"#,
-            #"мошенники\s+пытаются"#,
-            #"your\s+(\w+\s+)?(account|card)\s+(is|has\s+been|will\s+be)\s+(blocked|frozen|compromised|suspended)|arrest|loan\s+in\s+your\s+name"#,
-            #"(аккаунт|профил|учетн\w+\s+запис)\w*\s+(\w+\s+)?(будет\s+)?заблокир"#,
-            #"заявк\w+\s+на\s+кредит|кредит\w*\s+(будет\s+)?одобрен"#,
-            #"шот\w*\s+бұғат"#,
-            #"your\s+(\w+\s+)?(account|card)\s+is\s+being\s+(compromised|blocked|hacked)"#,
-        ]),
-        Category(id: "family_emergency", title: "Рассказывают, что близкий человек в беде",
-                 advice: "Положите трубку и сами перезвоните родственнику по его старому номеру. Задайте вопрос, ответ на который знает только он.", weight: 35, patterns: [
-            #"это\s+я[\s,]+(тво[йя]|ваш[аи]?)\s+(сын|дочь|внук|внучка|племянни\w*)"#,
-            #"(сын|дочь|дочка|внук|внучка|муж|жена|брат|сестра|ребен)\w*\s+(\w+\s+)?(в\s+больниц|в\s+реанимац|в\s+полици|задержа|попал|сбил|разбил)"#,
-            #"(сбил|сбила)\s+(человека|пешехода)|попал\w*\s+в\s+(авари|дтп|беду)|после\s+авари"#,
-            #"\bя\s+в\s+беде|на\s+операци\w*\s+(нужн|надо)|(у\s+меня|это\s+мой)\s+новый\s+номер|телефон\s+(украли|разбил|сломал)"#,
-            #"бұл\s+мен[\s,]+(балаң|немерең|ұлың|қызың)|жол\s+апат|апатқа\s+түст"#,
-            #"it'?s\s+me[\s,]+(your\s+)?(grandson|granddaughter|son|daughter)|grandma[\s,]+it'?s\s+me|i'?m\s+in\s+(jail|trouble|the\s+hospital)|bail\s+money|had\s+an\s+accident"#,
-        ]),
-        Category(id: "money_request", title: "Просят срочно прислать деньги",
-                 advice: "Прежде чем переводить, перезвоните человеку сами по номеру, который вы знаете.", weight: 20, patterns: [
-            #"(кинь|скинь|переведи|перекинь|одолжи|займи|пришли)\w*[\s,]+(мне[\s,]+)?(пожалуйста[\s,]+)?(\d+|деньги|денег)"#,
-            #"на\s+(эту|мою|этот|другую|новую)\s+(карт|номер)"#,
-            #"передать\s+деньги|нужн\w*\s+\d+\s*(тысяч|тыс|тенге|₸)"#,
-            #"ақша\s+жібер"#,
-            #"send\s+(me\s+)?(the\s+|some\s+)?money|send\s+it\s+now|wire\s+(me\s+)?(the\s+)?money"#,
-        ]),
-        Category(id: "investment_promise", title: "Обещают гарантированный или очень высокий доход",
-                 advice: "Гарантированного высокого дохода не бывает. Проверьте компанию в реестре АРРФР и не вносите деньги по звонку или рекламе.", weight: 35, patterns: [
-            #"гарантирован\w*\s+(доход|прибыл|выплат)|пассивн\w+\s+доход"#,
-            #"\d+\s*%\s+(в|за)\s+(день|сутки|неделю|месяц)|в\s+(два|три|пять|\d+)\s+раза\s+больше"#,
-            #"инвестиционн\w+\s+(программ|проект|платформ)|ежемесячн\w+\s+выплат|(вложите|вложить|внесите|инвестируйте)\s+(от\s+)?\d+"#,
-            #"(выгодн|перспективн)\w*\s+криптовалют"#,
-            #"\d+\s+пайыз\s+табыс|ақша\s+салыңыз"#,
-            #"guaranteed\s+(return|profit|income)s?|\d+\s*%\s+(per|a)\s+(day|week|month)|invest\s+(today|now)"#,
-        ]),
-        Category(id: "prize_delivery", title: "Сообщают о выигрыше или проблеме с посылкой",
-                 advice: "Проверьте посылку по трек-номеру на официальном сайте службы доставки. Если вы ни в чём не участвовали, выигрыша нет.", weight: 20, patterns: [
-            #"вы\s+выиграли|ваш\s+номер\s+выиграл|(получить|забрать)\s+приз|розыгрыш|выигрыш"#,
-            #"посылк\w*\s+(\w+\s+)?задержан|задержан\w*\s+на\s+таможн|адрес\w*\s+доставки\s+указан\s+неверно|не\s+удалось\s+доставить"#,
-            #"ұтыс|сыйлық"#,
-            #"you\s+(have\s+)?won|claim\s+your\s+prize|could\s+not\s+be\s+delivered|delivery\s+failed"#,
-        ]),
-        Category(id: "fee_request", title: "Просят оплатить «налог», пошлину или доставку, чтобы что-то получить",
-                 advice: "Настоящий выигрыш или посылка не требуют оплаты по ссылке из сообщения или по звонку.", weight: 35, patterns: [
-            #"(оплатит|оплатить|заплатит|заплатить)\w*\s+(налог|пошлин|комисси|сбор|доставк)"#,
-            #"налог\w*\s+(на\s+выигрыш|\d+)"#,
-            #"салық\w*\s+төле"#,
-            #"pay\s+(a\s+|the\s+)?(small\s+)?(processing\s+|redelivery\s+|delivery\s+|customs\s+)?fee"#,
-        ]),
-    ]
+    // The phrase rules live in shared/scam_rules.json (one source for iOS, Android and the server);
+    // ScamRules.swift is generated from it by scripts/gen_scam_rules.py.
 
     // ICU regex: \w and \b are Unicode-aware, so Cyrillic and Kazakh letters work as in the other versions.
-    static let compiled: [(Category, [NSRegularExpression])] = categories.map { c in
+    static let compiled: [(ScamRule, [NSRegularExpression])] = ScamRules.categories.map { c in
         (c, c.patterns.compactMap { try? NSRegularExpression(pattern: $0, options: [.caseInsensitive]) })
     }
 
     public static let maxText = 20_000
+
+    static let weakIds = Set(ScamRules.categories.filter(\.weak).map(\.id))
+    public static func isWeak(_ id: String) -> Bool { weakIds.contains(id) }
 
     public static func normalize(_ t: String) -> String {
         t.lowercased().replacingOccurrences(of: "ё", with: "е")
@@ -214,15 +92,15 @@ public enum ScamAnalyzer {
                                 weight: min(60, max(30, worst.score)),
                                 evidence: links.prefix(3).map { Evidence(match: $0.host, context: $0.reasons.joined(separator: "; ")) }))
         }
-        let ids = Set(found.map(\.id))
+        // "weak" categories (only mentioning a bank, a card, a code) add a little to the score but are never
+        // counted as a separate tactic: they cannot turn one tactic into HIGH or raise a warning on their own
+        let ids = Set(found.map(\.id).filter { !isWeak($0) })
         var score = found.isEmpty ? 0 : 100 * (1 - found.reduce(1.0) { $0 * (1 - Double($1.weight) / 100) })
         // A single tactic alone never yields HIGH — except a forged bank / government site.
         let forgedSite = links.contains { $0.score >= 70 }
         if ids.count <= 1 && !forgedSite { score = min(score, 45) }
         if forgedSite { score = max(score, 75) }
-        let critical = ids.contains("credentials_request") || ids.contains("safe_account_transfer") || ids.contains("remote_access")
-            || ids.contains("family_emergency") || ids.contains("fee_request")
-            || links.contains { $0.score >= 50 }
+        let critical = !ids.isDisjoint(with: ScamRules.critical) || links.contains { $0.score >= 50 }
         if critical && ids.count >= 2 { score = max(score, 75) }
         let words = t.isEmpty ? 0 : t.split(separator: " ").count
         return TextRisk(score: (score * 10).rounded() / 10, level: .of(score), tactics: found, words: words)

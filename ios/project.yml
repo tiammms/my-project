@@ -37,7 +37,7 @@ targets:
   MessageFilter:
     type: app-extension
     platform: iOS
-    sources: [MessageFilter, Core/ScamAnalyzer.swift, Core/LinkCheck.swift]
+    sources: [MessageFilter, Core/ScamAnalyzer.swift, Core/ScamRules.swift, Core/LinkCheck.swift]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.neuroshield.app.MessageFilter

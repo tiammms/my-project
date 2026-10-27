@@ -1,0 +1,34 @@
+{
+ "normal/all": {
+  "LOW": 30
+ },
+ "normal/en": {
+  "LOW": 6
+ },
+ "normal/kk": {
+  "LOW": 6
+ },
+ "normal/ru": {
+  "LOW": 18
+ },
+ "scam/all": {
+  "MEDIUM": 14,
+  "HIGH": 20
+ },
+ "scam/en": {
+  "HIGH": 3,
+  "MEDIUM": 1
+ },
+ "scam/kk": {
+  "HIGH": 6,
+  "MEDIUM": 2
+ },
+ "scam/ru": {
+  "MEDIUM": 11,
+  "HIGH": 11
+ },
+ "scam_warned": "34/34",
+ "scam_high": "20/34",
+ "normal_false_warnings": "0/30",
+ "errors": []
+}
