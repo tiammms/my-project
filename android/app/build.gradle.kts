@@ -1,3 +1,5 @@
+import java.time.Duration
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -70,7 +72,7 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
-        unitTests.all { it.testLogging { events("started", "failed") }; it.timeout.set(java.time.Duration.ofMinutes(10)) }
+        unitTests.all { it.testLogging { events("started", "failed") }; it.timeout.set(Duration.ofMinutes(10)) }
     }
     lint {
         abortOnError = false          // findings are reported by ci/security_checks.py (security errors fail CI there)
