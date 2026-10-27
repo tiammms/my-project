@@ -1,0 +1,15 @@
+{
+ "test/bonafide/human": 780,
+ "test/spoof/espeak": 279,
+ "test/spoof/mms": 270,
+ "test/spoof/piper": 540,
+ "test/spoof/silero": 180,
+ "train/bonafide/human": 933,
+ "train/spoof/espeak": 469,
+ "train/spoof/mms": 310,
+ "train/spoof/piper": 469,
+ "val/bonafide/human": 172,
+ "val/spoof/espeak": 80,
+ "val/spoof/mms": 50,
+ "val/spoof/piper": 82
+}
