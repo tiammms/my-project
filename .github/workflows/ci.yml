@@ -82,10 +82,10 @@ jobs:
           set +e
           # release key from repository secrets (if the owner added them); otherwise the public demo key is used
           if [ -n "$SAQTAN_KEYSTORE_B64" ]; then echo "$SAQTAN_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"; export SAQTAN_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"; echo "::notice title=signing::release key from secrets"; else echo "::warning title=signing::demo key (public) - test build only, not for publication"; fi
-          ./gradlew --no-daemon testDebugUnitTest assembleRelease > build.log 2>&1
+          timeout 35m ./gradlew --no-daemon testDebugUnitTest assembleRelease > build.log 2>&1
           code=$?
           tail -30 build.log
-          if [ $code -ne 0 ]; then python3 -c "import re;t=open('build.log').read();e=[l for l in t.splitlines() if l.startswith('e: ') or 'error:' in l or 'FAILED' in l or 'expected' in l][:60];i=t.find('What went wrong');print('::error title=android build::'+('\n'.join(e)+'\n'+t[i:i+2500]).replace('%','%25').replace('\r','').replace('\n','%0A'))"; fi
+          if [ $code -ne 0 ]; then python3 -c "import re;t=open('build.log').read();e=[l for l in t.splitlines() if l.startswith('e: ') or 'error:' in l or 'FAILED' in l or 'expected' in l][:60];i=t.find('What went wrong');print('::error title=android build::'+('\n'.join(e)+'\n'+t[i:i+2500]+'\nLAST LINES:\n'+t[-1500:]).replace('%','%25').replace('\r','').replace('\n','%0A'))"; fi
           exit $code
       - name: security checks (manifest, APK, logs, dependencies, lint)
         run: |

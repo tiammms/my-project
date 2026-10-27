@@ -68,7 +68,10 @@ android {
     packaging {
         resources { excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "META-INF/DEPENDENCIES") }
     }
-    testOptions { unitTests.isReturnDefaultValues = true }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+        unitTests.all { it.testLogging { events("started", "failed") }; it.timeout.set(java.time.Duration.ofMinutes(10)) }
+    }
     lint {
         abortOnError = false          // findings are reported by ci/security_checks.py (security errors fail CI there)
         xmlReport = true
