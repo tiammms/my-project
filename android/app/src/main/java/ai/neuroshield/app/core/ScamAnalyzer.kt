@@ -73,10 +73,12 @@ object ScamAnalyzer {
                 "Не открывайте ссылку и не вводите на ней данные. Зайдите в приложение банка или на сайт сами.",
                 worst.score.coerceIn(30, 60), links.take(3).map { Evidence(it.host, it.reasons.joinToString("; ")) })
         }
-        // "weak" categories (only mentioning a bank, a card, a code) add a little to the score but are never
-        // counted as a separate tactic: they cannot turn one tactic into HIGH or raise a warning on their own
+        // "weak" categories (only mentioning a bank, a card, a code) are never counted as a separate tactic
         val ids = found.map { it.id }.filter { !isWeak(it) }.toSet()
-        var score = if (found.isEmpty()) 0.0 else 100 * (1 - found.fold(1.0) { acc, f -> acc * (1 - f.weight / 100.0) })
+        // ...and never change the risk level: they only move the score within the level the real tactics give
+        fun comb(l: List<Tactic>) = if (l.isEmpty()) 0.0 else 100 * (1 - l.fold(1.0) { acc, f -> acc * (1 - f.weight / 100.0) })
+        val base = comb(found.filter { !isWeak(it.id) }); val full = comb(found)
+        var score = if (levelOf(full) == levelOf(base)) full else base
         // A single tactic alone never yields HIGH (same safeguard as the NeuroShield risk engine).
         // A fake bank/government site is strong evidence on its own (brand in the address but not the official domain + risky signs).
         val forgedSite = links.any { it.score >= 70 }

@@ -49,10 +49,15 @@ def analyze(text: str) -> dict:
                       "weight": max(30, min(60, worst["score"])),
                       "advice": "Не открывайте ссылку и не вводите на ней данные. Зайдите в приложение банка или на сайт сами.",
                       "evidence": [{"match": f["host"], "context": "; ".join(f["reasons"])} for f in links[:3]]})
-    # "weak" categories (just mentioning a bank, a card, a code) add a little to the score
-    # but are never counted as a separate tactic: they cannot lift one tactic to HIGH on their own
-    cats = {f["category"] for f in found if not CATEGORIES.get(f["category"], {}).get("weak")}
-    score = 100 * (1 - __import__("math").prod(1 - f["weight"] / 100 for f in found)) if found else 0.0
+    # "weak" categories (just mentioning a bank, a card, a code) are never counted as a separate tactic
+    # and never change the risk level: they only move the score within the level the real tactics give
+    strong = [f for f in found if not CATEGORIES.get(f["category"], {}).get("weak")]
+    cats = {f["category"] for f in strong}
+    prod = __import__("math").prod
+    lvl = lambda x: 2 if x >= 70 else 1 if x >= 30 else 0
+    base = 100 * (1 - prod(1 - f["weight"] / 100 for f in strong)) if strong else 0.0
+    full = 100 * (1 - prod(1 - f["weight"] / 100 for f in found)) if found else 0.0
+    score = full if lvl(full) == lvl(base) else base
     # A single tactic alone never yields HIGH (same safeguard as the transaction engine) —
     # except a forged bank/government site (brand in the address but not the official domain + risky signs).
     forged_site = any(f["score"] >= 70 for f in links)

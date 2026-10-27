@@ -92,10 +92,12 @@ public enum ScamAnalyzer {
                                 weight: min(60, max(30, worst.score)),
                                 evidence: links.prefix(3).map { Evidence(match: $0.host, context: $0.reasons.joined(separator: "; ")) }))
         }
-        // "weak" categories (only mentioning a bank, a card, a code) add a little to the score but are never
-        // counted as a separate tactic: they cannot turn one tactic into HIGH or raise a warning on their own
+        // "weak" categories (only mentioning a bank, a card, a code) are never counted as a separate tactic
         let ids = Set(found.map(\.id).filter { !isWeak($0) })
-        var score = found.isEmpty ? 0 : 100 * (1 - found.reduce(1.0) { $0 * (1 - Double($1.weight) / 100) })
+        // ...and never change the risk level: they only move the score within the level the real tactics give
+        func comb(_ l: [Tactic]) -> Double { l.isEmpty ? 0 : 100 * (1 - l.reduce(1.0) { $0 * (1 - Double($1.weight) / 100) }) }
+        let base = comb(found.filter { !isWeak($0.id) }), full = comb(found)
+        var score = RiskLevel.of(full) == RiskLevel.of(base) ? full : base
         // A single tactic alone never yields HIGH — except a forged bank / government site.
         let forgedSite = links.contains { $0.score >= 70 }
         if ids.count <= 1 && !forgedSite { score = min(score, 45) }
