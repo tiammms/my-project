@@ -57,6 +57,15 @@ SILERO = {"ru": ("ru", "v4_ru", ["aidar", "baya", "kseniya", "xenia", "eugene"])
           "en": ("en", "v3_en", ["en_0", "en_10", "en_21", "en_45", "en_99"])}
 
 
+import time
+T0 = time.time()
+
+
+def notice(msg: str):
+    """Shows progress as a GitHub annotation (readable even when the job log is not)."""
+    print(f"::notice title=data progress::{(time.time() - T0) / 60:.1f} min: {msg}", flush=True)
+
+
 def fetch(url: str, dst: pathlib.Path) -> pathlib.Path:
     if dst.exists() and dst.stat().st_size > 0:
         return dst
@@ -132,6 +141,7 @@ def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_s
                         got += 1
             texts[(lang, split)] = [t for _, t in rows]
             print(f"fleurs {lang} {split}: {got}", flush=True)
+        notice(f"FLEURS {lang} done")
 
     # ---- Piper
     from piper.voice import PiperVoice
@@ -151,6 +161,7 @@ def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_s
             x, sr = sf.read(tmp, dtype="float32")
             add(save(out, f"fake/piper/{name}/{i:04d}.wav", x, sr), "spoof", split, lang, f"piper:{name}", "piper")
         print("piper", name, split, len(sel), flush=True)
+    notice("Piper done")
 
     # ---- eSpeak NG (robot voice)
     for lang, v in ESPEAK.items():
@@ -168,6 +179,7 @@ def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_s
                     tag = (var or "+default").lstrip("+")
                     add(save(out, f"fake/espeak/{lang}/{tag}/{i:04d}.wav", x, sr), "spoof", split, lang, f"espeak:{lang}{var}", "espeak")
             print("espeak", lang, split, flush=True)
+    notice("eSpeak done")
 
     if not skip_eval_engines:
         import torch
@@ -184,6 +196,7 @@ def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_s
                     w = model(**inp).waveform[0].numpy()
                 add(save(out, f"fake/mms/{lang}/{i:04d}.wav", w, model.config.sampling_rate), "spoof", "test", lang, f"mms:{lang}", "mms")
             print("mms", lang, flush=True)
+        notice("MMS done")
         # ---- Silero TTS (test only)
         for lang, (l, spk_model, speakers) in SILERO.items():
             model, _ = torch.hub.load("snakers4/silero-models", "silero_tts", language=l, speaker=spk_model, trust_repo=True)
@@ -195,6 +208,7 @@ def build(out: pathlib.Path, cache: pathlib.Path, n_train: int, n_test: int, n_s
                     continue
                 add(save(out, f"fake/silero/{lang}/{i:04d}.wav", w, 24000), "spoof", "test", lang, f"silero:{lang}", "silero")
             print("silero", lang, flush=True)
+        notice("Silero done")
 
     # validation = 15 % of training clips (same sources), used only to pick the threshold and the best epoch
     train = [m for m in manifest if m["split"] == "train"]

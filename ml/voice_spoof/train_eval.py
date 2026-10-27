@@ -139,6 +139,7 @@ def train(model, rows, audio, epochs: int, budget_min: float, lr: float, log):
         vr = [r for r in va if r["label"] == "bonafide"]; vf = [r for r in va if r["label"] == "spoof"]
         e = np.mean([eer(scores(model, vr, audio, c), scores(model, vf, audio, c)) for c in ("clean", "phone")])
         log(f"epoch {ep + 1}: loss {tot / len(tr):.4f}  val EER {e:.4f}  ({(time.time() - t0) / 60:.1f} min)")
+        print(f"::notice title=train progress::epoch {ep + 1}: val EER {e:.4f}, {(time.time() - t0) / 60:.1f} min", flush=True)
         if e < best:
             best = e
             best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
@@ -222,6 +223,7 @@ def main():
     t_base = threshold_for(scores(base, vr, audio, "phone"), TARGET_FPR)
     metrics["baseline_original_weights"] = {"threshold": round(t_base, 4), "test": evaluate(base, rows, audio, t_base)}
     log("baseline: " + json.dumps(metrics["baseline_original_weights"], ensure_ascii=False))
+    print("::notice title=train progress::baseline evaluated", flush=True)
 
     model = base
     t0 = time.time()

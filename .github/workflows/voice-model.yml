@@ -42,7 +42,7 @@ jobs:
       - name: Build the data set
         run: |
           set +e
-          timeout 150m python -u data.py --out work/data --cache work/cache > data.log 2>&1; code=$?
+          timeout 150m python -u data.py --out work/data --cache work/cache 2>&1 | tee data.log | grep --line-buffered '::notice'; code=${PIPESTATUS[0]}
           tail -c 4000 data.log
           python -c "import sys;t=open('data.log').read();print('::notice title=data::'+t[-3500:].replace('%','%25').replace('\r','').replace('\n','%0A'))"
           echo "::notice title=disk::$(df -h / | tail -1) | $(du -sh work 2>/dev/null)"
@@ -55,7 +55,7 @@ jobs:
       - name: Train, evaluate, export
         run: |
           set +e
-          timeout 190m python -u train_eval.py --aasist /tmp/aasist --data work/data --out work/out > train.log 2>&1; code=$?
+          timeout 190m python -u train_eval.py --aasist /tmp/aasist --data work/data --out work/out 2>&1 | tee train.log | grep --line-buffered '::notice'; code=${PIPESTATUS[0]}
           tail -c 4000 train.log
           python -c "import sys;t=open('train.log').read();print('::notice title=train::'+t[-3500:].replace('%','%25').replace('\r','').replace('\n','%0A'))"
           exit $code
