@@ -790,3 +790,24 @@ class SyntheticVoiceTest {
         } finally { I18n.kk = false }
     }
 }
+
+/** C-02: every app-opening PendingIntent has its own identity, so one can never overwrite another's extras. */
+class AppIntentTest {
+    @Test fun requestCodesAndActionsAreUnique() {
+        val all = AppIntent.values()
+        assertEquals(all.size, all.map { it.requestCode }.toSet().size)
+        assertEquals(all.size, all.map { it.action }.toSet().size)
+    }
+
+    @Test fun reportAndTileNoLongerShareAnIdentity() {
+        // before the fix both used request code 31 on the same component with no action
+        assertNotEquals(AppIntent.OPEN_REPORT.requestCode, AppIntent.TILE_START_LISTEN.requestCode)
+        assertNotEquals(AppIntent.OPEN_REPORT.action, AppIntent.TILE_START_LISTEN.action)
+    }
+
+    @Test fun eachReportAndWarningHasItsOwnData() {
+        assertNotEquals(AppIntent.OPEN_REPORT.dataFor(1), AppIntent.OPEN_REPORT.dataFor(2))
+        assertNotEquals(AppIntent.OPEN_REPORT.dataFor(5), AppIntent.OPEN_ALERT.dataFor(5))
+        assertTrue(AppIntent.OPEN_ALERT.dataFor(42).endsWith("/42"))
+    }
+}

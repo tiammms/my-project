@@ -212,7 +212,8 @@ class ListenService : Service() {
     }
 
     private fun notification(text: String): Notification {
-        val open = PendingIntent.getActivity(this, 11, MainActivity.internalIntent(this).apply {
+        val open = PendingIntent.getActivity(this, ai.neuroshield.app.core.AppIntent.OPEN_FROM_LISTENING.requestCode, MainActivity.internalIntent(this).apply {
+            action = ai.neuroshield.app.core.AppIntent.OPEN_FROM_LISTENING.action
             addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_ROUTE, "protection")
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val stop = PendingIntent.getService(this, 12, Intent(this, ListenService::class.java).setAction(ACTION_STOP),

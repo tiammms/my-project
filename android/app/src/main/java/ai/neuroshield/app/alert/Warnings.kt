@@ -33,6 +33,7 @@ import ai.neuroshield.app.LockScreen
 import ai.neuroshield.app.Perms
 import ai.neuroshield.app.R
 import ai.neuroshield.app.app
+import ai.neuroshield.app.core.AppIntent
 import ai.neuroshield.app.core.RiskLevel
 import androidx.core.app.NotificationCompat
 
@@ -349,14 +350,17 @@ object Warnings {
         })
     }
 
-    fun listenIntent(ctx: Context): PendingIntent = PendingIntent.getActivity(ctx, 7,
+    fun listenIntent(ctx: Context): PendingIntent = PendingIntent.getActivity(ctx, AppIntent.START_LISTEN_OFFER.requestCode,
         MainActivity.internalIntent(ctx).apply {
+            action = AppIntent.START_LISTEN_OFFER.action
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_START_LISTEN, true)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
     private fun notify(ctx: Context, w: Warning, alertId: Long = -1L) {
         if (!Perms.notifications(ctx)) return
-        val open = PendingIntent.getActivity(ctx, 3, MainActivity.internalIntent(ctx).apply {
+        val open = PendingIntent.getActivity(ctx, AppIntent.OPEN_ALERT.requestCode, MainActivity.internalIntent(ctx).apply {
+            action = AppIntent.OPEN_ALERT.action
+            if (alertId > 0) data = android.net.Uri.parse(AppIntent.OPEN_ALERT.dataFor(alertId))
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_ROUTE, "history")
             if (alertId > 0) putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
