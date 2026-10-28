@@ -25,15 +25,12 @@ data class CallRiskResult(val score: Double, val level: RiskLevel, val reasons: 
  * It cannot know whether a stranger is a scammer; it only says how much caution fits.
  */
 object CallRisk {
-    fun normalizeNumber(raw: String?): String? {
-        if (raw.isNullOrBlank()) return null
-        val digits = raw.filter { it.isDigit() || it == '+' }
-        return digits.ifEmpty { null }
-    }
+    /** One written form per number (see [PhoneNumbers]): "87015550888", "+7 701 555 08 88" -> "+77015550888". */
+    fun normalizeNumber(raw: String?): String? = PhoneNumbers.normalize(raw)
 
     fun assess(f: CallFacts): CallRiskResult {
         val reasons = mutableListOf<Reason>()
-        val n = normalizeNumber(f.number)
+        val n = PhoneNumbers.normalize(f.number, f.homeCallingCode)
         if (f.userMarkedSafe) return CallRiskResult(0.0, RiskLevel.LOW, listOf(Reason("Вы отметили этот номер как надёжный", 0)), emptyList())
         if (f.userMarkedScam) reasons += Reason("Вы ранее отметили этот номер как мошеннический", 80)
         if (n == null) {

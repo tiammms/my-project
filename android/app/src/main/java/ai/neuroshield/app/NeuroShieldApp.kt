@@ -22,6 +22,7 @@ class NeuroShieldApp : Application() {
         super.onCreate()
         instance = this
         prefs = Prefs(this)
+        ai.neuroshield.app.core.PhoneNumbers.homeCode = prefs.homeCallingCode
         I18n.kk = prefs.uiLang == "kk"
         alerts = AlertStore(this)
         Thread {

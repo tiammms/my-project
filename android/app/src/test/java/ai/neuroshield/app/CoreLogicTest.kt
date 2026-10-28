@@ -811,3 +811,43 @@ class AppIntentTest {
         assertTrue(AppIntent.OPEN_ALERT.dataFor(42).endsWith("/42"))
     }
 }
+
+/** C-06: one written form per number, with Kazakhstan's formats; different numbers are never merged. */
+class PhoneNumbersTest {
+    @Test fun kazakhFormatsBecomeOne() {
+        for (raw in listOf("87015550888", "+77015550888", "77015550888", "7015550888", "+7 (701) 555-08-88", "8 701 555 08 88", "8-701-555-08-88"))
+            assertEquals(raw, "+77015550888", PhoneNumbers.normalize(raw, "+7"))
+    }
+
+    @Test fun differentNumbersStayDifferent() {
+        assertNotEquals(PhoneNumbers.normalize("87015550888", "+7"), PhoneNumbers.normalize("87015550889", "+7"))
+        assertNotEquals(PhoneNumbers.normalize("87015550888", "+7"), PhoneNumbers.normalize("+447015550888", "+7"))
+    }
+
+    @Test fun internationalPrefixes() {
+        assertEquals("+447911123456", PhoneNumbers.normalize("00447911123456", "+7"))
+        assertEquals("+447911123456", PhoneNumbers.normalize("81044 7911 123456", "+7"))
+        assertEquals("+447911123456", PhoneNumbers.normalize("+44 7911 123456", "+7"))
+    }
+
+    @Test fun shortAndOtherNumbersAreNotRewritten() {
+        assertEquals("7700", PhoneNumbers.normalize("7700", "+7"))          // bank short number
+        assertEquals("1414", PhoneNumbers.normalize("1414", "+7"))
+        assertEquals("9161234567", PhoneNumbers.normalize("9161234567", "+7"))   // no rule for 10 digits not starting with 7
+        assertEquals("87015550888", PhoneNumbers.normalize("87015550888", "+44"))  // the +7 rules apply only to home code +7
+        assertNull(PhoneNumbers.normalize("Kaspi.kz", "+7"))
+        assertNull(PhoneNumbers.normalize("  ", "+7"))
+    }
+
+    @Test fun oldStoredFormsAreFound() {
+        assertEquals(listOf("+77015550888", "87015550888", "77015550888", "7015550888"), PhoneNumbers.storedForms("+77015550888"))
+        assertEquals(listOf("+447911123456"), PhoneNumbers.storedForms("+447911123456"))
+    }
+
+    @Test fun localNumberWrittenWith8IsNotInternational() {
+        val r = CallRisk.assess(CallFacts("87015550888", false, "+7", 1, false, false))
+        assertTrue(r.reasons.none { it.text.startsWith("Международный") })
+        val intl = CallRisk.assess(CallFacts("00447911123456", false, "+7", 1, false, false))
+        assertTrue(intl.reasons.any { it.text.startsWith("Международный") })
+    }
+}
