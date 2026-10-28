@@ -78,6 +78,8 @@ jobs:
           SAQTAN_KEYSTORE_PASSWORD: ${{ secrets.SAQTAN_KEYSTORE_PASSWORD }}
           SAQTAN_KEY_ALIAS: ${{ secrets.SAQTAN_KEY_ALIAS }}
           SAQTAN_KEY_PASSWORD: ${{ secrets.SAQTAN_KEY_PASSWORD }}
+          # without the owner's key, CI test builds are signed with the public demo key (marked as test builds)
+          SAQTAN_ALLOW_DEMO_SIGNING: "1"
         run: |
           set +e
           # release key from repository secrets (if the owner added them); otherwise the public demo key is used
