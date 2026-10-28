@@ -85,6 +85,10 @@ object CallSessions {
         ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).edit().putString("recording", id).commit()
     }
 
+    /** The recording linked to the call still in progress (not yet in history), if any. */
+    fun pendingRecording(ctx: Context): String? =
+        ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).getString("recording", null)
+
     private fun takeRecording(ctx: Context): String? {
         val p = ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE)
         return p.getString("recording", null).also { p.edit().remove("recording").commit() }

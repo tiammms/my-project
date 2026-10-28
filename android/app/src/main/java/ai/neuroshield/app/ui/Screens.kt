@@ -747,13 +747,17 @@ fun RecordingPlayer(a: Alert) {
             tr("${secs / 60} мин ${secs % 60} с · с микрофона телефона", "${secs / 60} мин ${secs % 60} с · телефон микрофонынан"), tint = NS.cyan,
             onClick = {
                 if (playing) stop() else {
-                    val f = ai.neuroshield.app.data.CallRecordings.toWav(ctx, id)
-                    if (f == null) error = tr("Запись не удалось открыть", "Жазбаны ашу мүмкін болмады") else try {
+                    val pl = ai.neuroshield.app.data.CallRecordings.open(ctx, id)
+                    if (pl == null) error = tr("Запись не удалось открыть", "Жазбаны ашу мүмкін болмады") else try {
+                        val f = pl.file
                         temp[0] = f
                         player[0] = android.media.MediaPlayer().apply {
                             setDataSource(f.absolutePath); prepare(); setOnCompletionListener { stop() }; start()
                         }
-                        playing = true; error = null
+                        playing = true
+                        // honest about a recording cut off by a crash: only the part before the interruption exists
+                        error = if (pl.complete) null else tr("Запись оборвалась (приложение было остановлено): доступна часть до обрыва",
+                            "Жазба үзілді (қосымша тоқтатылды): үзілгенге дейінгі бөлігі ғана бар")
                     } catch (e: Exception) { stop(); error = tr("Запись не удалось воспроизвести", "Жазбаны ойнату мүмкін болмады") }
                 }
             })

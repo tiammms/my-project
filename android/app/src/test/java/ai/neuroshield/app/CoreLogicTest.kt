@@ -715,6 +715,52 @@ class ChunkedAeadTest {
         val other = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
         assertEquals(true, fails { ChunkedAead.decrypt(java.io.ByteArrayInputStream(sealed), other, java.io.ByteArrayOutputStream()) })
     }
+
+    // D-01: a recording whose writer was killed (no final chunk) can be read up to the last whole chunk, and says so
+
+    private val small = 1000
+    private fun sealSmall(data: ByteArray, flushed: MutableList<Long>? = null, finish: Boolean = true): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val w = ChunkedAead.Writer(out, key, small) { flushed?.add(it) }
+        w.write(data)
+        if (finish) w.close()           // finish = false: the process died before close()
+        return out.toByteArray()
+    }
+    private fun openTolerant(sealed: ByteArray): Pair<Boolean, ByteArray> {
+        val out = java.io.ByteArrayOutputStream()
+        val complete = ChunkedAead.decrypt(java.io.ByteArrayInputStream(sealed), key, out, allowTruncated = true)
+        return complete to out.toByteArray()
+    }
+
+    @Test fun smallChunksRoundTripAndReportEachChunk() {
+        val data = ByteArray(3500) { (it * 3).toByte() }
+        val flushed = mutableListOf<Long>()
+        val (complete, plain) = openTolerant(sealSmall(data, flushed))
+        assertEquals(true, complete)
+        assertEquals(true, plain.contentEquals(data))
+        assertEquals(listOf(1L, 2L, 3L), flushed)     // three full chunks sealed before the final one
+    }
+
+    @Test fun killedWriterLeavesReadablePrefixMarkedIncomplete() {
+        val data = ByteArray(3500) { (it * 5).toByte() }
+        val sealed = sealSmall(data, finish = false)  // 3 whole chunks written, the last 500 bytes still in memory
+        val (complete, plain) = openTolerant(sealed)
+        assertEquals(false, complete)
+        assertEquals(true, plain.contentEquals(data.copyOf(3000)))
+        assertEquals(true, fails { open(sealed) })   // the strict reader still refuses it
+        // cut in the middle of a chunk (power loss during a write): the partial chunk is dropped, the rest is kept
+        val (c2, p2) = openTolerant(sealed.copyOf(sealed.size - 100))
+        assertEquals(false, c2)
+        assertEquals(true, p2.contentEquals(data.copyOf(2000)))
+    }
+
+    @Test fun tolerantReadingStillRejectsChangedData() {
+        val sealed = sealSmall(ByteArray(3500) { it.toByte() }, finish = false)
+        assertEquals(true, fails { openTolerant(sealed.copyOf().also { it[50] = (it[50] + 1).toByte() }) })
+        val chunk = 4 + 12 + small + 16              // swapping two chunks is detected (chunk number is authenticated)
+        val swapped = sealed.copyOfRange(chunk, 2 * chunk) + sealed.copyOfRange(0, chunk) + sealed.copyOfRange(2 * chunk, sealed.size)
+        assertEquals(true, fails { openTolerant(swapped) })
+    }
 }
 
 /** Experimental synthetic-voice check: how 4-second pieces are cut and how the cautious verdict is made. */

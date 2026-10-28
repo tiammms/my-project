@@ -32,6 +32,15 @@ class NeuroShieldApp : Application() {
             // decrypted copies made for playback/voice check are deleted after use; this removes any left behind
             // if the app was killed in the middle (they must never outlive the session)
             runCatching { cacheDir.listFiles { f -> f.name.startsWith("play_rec_") && f.name.endsWith(".wav") }?.forEach { it.delete() } }
+            // a recording interrupted by a crash never got its history entry: add one, so it can be played or deleted
+            // (the process has just started, so no recording is being written now)
+            runCatching {
+                val known = alerts.audioIds() + listOfNotNull(ai.neuroshield.app.call.CallSessions.pendingRecording(this))
+                ai.neuroshield.app.data.CallRecordings.ids(this).filter { it !in known }.forEach { id ->
+                    alerts.add("recording", null, ai.neuroshield.app.core.RiskLevel.LOW, 0.0, "Запись разговора",
+                        listOf("Запись оборвалась: приложение было остановлено во время звонка"), null, id)
+                }
+            }
         }.start()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CH_ALERTS, tr("Предупреждения о мошенничестве", "Алаяқтық туралы ескертулер"), NotificationManager.IMPORTANCE_HIGH).apply {

@@ -249,6 +249,11 @@ class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", 
         writableDatabase.delete("alerts", "id = ?", arrayOf(id.toString())); _version.value++
     }
     fun clear() { writableDatabase.delete("alerts", null, null); CallRecordings.deleteAll(ctx); _version.value++ }
+    /** Recording ids referenced by history entries. */
+    fun audioIds(): Set<String> = readableDatabase.rawQuery("SELECT audio FROM alerts WHERE audio IS NOT NULL", null).use { c ->
+        buildSet { while (c.moveToNext()) add(c.getString(0)) }
+    }
+
     /** Removes only the audio of a record (the report stays). */
     fun deleteAudio(id: Long, audio: String?) {
         CallRecordings.delete(ctx, audio)
