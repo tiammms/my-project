@@ -899,3 +899,46 @@ class CallStateGuardTest {
         assertNull(CellularCallWindow.riskyCall("OFFHOOK", 0L, now, isContact = true))                      // a contact
     }
 }
+
+/** M-01: a display name in a messenger notification is never taken as proof that the person is a saved contact. */
+class SenderStatusTest {
+    @Test fun numberDecidesWhenItIsShown() {
+        assertEquals(SenderStatus.CONTACT_BY_NUMBER, Messenger.senderStatus("Telegram", "+77015550888", numberInContacts = true, nameInContacts = false))
+        assertEquals(SenderStatus.STRANGER, Messenger.senderStatus("WhatsApp", "+77015550888", numberInContacts = false, nameInContacts = true))
+    }
+
+    @Test fun telegramOrViberNameIsNotProof() {
+        val st = Messenger.senderStatus("Telegram", null, numberInContacts = false, nameInContacts = true)
+        assertEquals(SenderStatus.NAME_LIKE_CONTACT, st)
+        assertFalse("a matching name must not switch off the code-during-call alarm", st.trusted)
+        assertEquals(SenderStatus.STRANGER, Messenger.senderStatus("Viber", null, numberInContacts = false, nameInContacts = false))
+    }
+
+    @Test fun whatsappNameOfASavedContact() {
+        assertTrue(Messenger.senderStatus("WhatsApp", null, numberInContacts = false, nameInContacts = true).trusted)
+        // WhatsApp business or "~profile" names that match no contact are strangers
+        assertEquals(SenderStatus.STRANGER, Messenger.senderStatus("WhatsApp", null, numberInContacts = false, nameInContacts = false))
+    }
+
+    @Test fun telegramCallFromANameIsParsedWithoutNumber() {
+        val e = Messenger.parse("org.telegram.messenger", "Aidar Bank", "Входящий звонок", true) as MessengerEvent.IncomingCall
+        assertNull(e.number)
+        assertEquals("Aidar Bank", e.caller)
+    }
+
+    @Test fun nameOnlyCallerIsExplainedNotCalledHidden() {
+        val r = CallRisk.assess(CallFacts(null, false, "+7", 1, false, false, messenger = "Telegram", callerName = "Aidar Bank"))
+        assertTrue(r.reasons.any { it.text == "Номер не виден: «Aidar Bank» нет в ваших контактах" })
+        assertTrue(r.reasons.none { it.text == "Номер скрыт" })
+        assertTrue(r.reasons.any { it.text.startsWith("Звонок через Telegram") })
+    }
+
+    @Test fun newTextsAreTranslated() {
+        I18n.kk = true
+        try {
+            for (s in listOf("Номер не виден: «Aidar» нет в ваших контактах", "Звонок в Telegram от незнакомого собеседника",
+                    "Имя совпадает с контактом, но номер не виден — это может быть другой человек", "номер не виден"))
+                assertTrue(s, I18n.core(s) != s)
+        } finally { I18n.kk = false }
+    }
+}

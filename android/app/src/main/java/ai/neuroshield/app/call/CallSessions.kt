@@ -119,7 +119,7 @@ object CallSessions {
         val r = s.report() ?: return
         Log.i(TAG, "report level=${r.level} answered=${r.answered}")
         val reasons = r.findings + r.checks.map { "Проверка — $it" } + r.advice.map { "Совет — $it" }
-        val id = ctx.app.alerts.add("call_report", r.number ?: "скрытый номер", r.level, r.score, r.title, reasons, null, takeRecording(ctx))
+        val id = ctx.app.alerts.add("call_report", r.number ?: if (r.channel == CallChannel.MESSENGER) "номер не виден" else "скрытый номер", r.level, r.score, r.title, reasons, null, takeRecording(ctx))
         notifyReport(ctx, r, id)
     }
 
@@ -130,7 +130,7 @@ object CallSessions {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_ROUTE, "history"); putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val who = r.number ?: tr("скрытый номер", "жасырын нөмір")
+        val who = r.number ?: if (r.channel == CallChannel.MESSENGER) tr("номер не виден", "нөмір көрінбейді") else tr("скрытый номер", "жасырын нөмір")
         val how = when { r.channel == CallChannel.MESSENGER -> tr("звонок в ${r.app ?: "мессенджере"}", "${r.app ?: "мессенджер"} арқылы қоңырау"); r.answered -> tr("звонок ${r.durationSec / 60} мин ${r.durationSec % 60} с", "қоңырау ${r.durationSec / 60} мин ${r.durationSec % 60} с"); else -> tr("пропущенный звонок", "қабылданбаған қоңырау") }
         val body = (listOf("${I18n.core(r.level.ru)} · $who · $how") + r.findings.take(4).map { "• " + I18n.core(it) } + r.advice.take(2).map { "→ " + I18n.core(it) }).joinToString("\n")
         val risky = r.level != RiskLevel.LOW

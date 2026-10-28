@@ -98,4 +98,21 @@ object Contacts {
             ctx.contentResolver.query(uri, arrayOf(ContactsContract.PhoneLookup._ID), null, null, null)?.use { it.count > 0 } ?: false
         } catch (e: Exception) { false }
     }
+
+    /**
+     * true if a saved contact has exactly this display name (case-insensitive). Only a hint: a messenger shows the name it
+     * wants, and a stranger can use the same name (see SenderStatus).
+     */
+    fun hasName(ctx: Context, name: String?): Boolean {
+        val n = name?.trim().orEmpty()
+        if (n.isEmpty() || !Perms.contacts(ctx)) return false
+        return try {
+            val uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_FILTER_URI, Uri.encode(n))
+            ctx.contentResolver.query(uri, arrayOf(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY), null, null, null)?.use { c ->
+                var found = false
+                while (!found && c.moveToNext()) found = c.getString(0)?.trim().equals(n, ignoreCase = true)
+                found
+            } ?: false
+        } catch (e: Exception) { false }
+    }
 }

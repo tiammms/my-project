@@ -17,6 +17,7 @@ import ai.neuroshield.app.core.Messenger
 import ai.neuroshield.app.core.MessengerEvent
 import ai.neuroshield.app.core.RiskLevel
 import ai.neuroshield.app.core.ScamAnalyzer
+import ai.neuroshield.app.core.SenderStatus
 
 /**
  * Sees notifications of WhatsApp, Telegram, Viber (only with the user's "notification access" permission).
@@ -39,12 +40,14 @@ class MessengerListener : NotificationListenerService() {
         when (event) {
             is MessengerEvent.IncomingCall -> onIncomingCall(sbn.key, event)
             is MessengerEvent.OngoingCall -> {
-                val contact = event.number == null || Contacts.contains(this, event.number)
+                val st = status(event.app, event.number, event.caller)
+                val stranger = st == SenderStatus.STRANGER
                 val wasActive = p.voipActive && activeKey == sbn.key
-                p.voipActive = true; p.voipApp = event.app; p.voipNumber = event.number ?: event.caller; p.voipIsContact = contact
+                // only a verified contact switches off the "code during a call" alarm; a matching name is not enough
+                p.voipActive = true; p.voipApp = event.app; p.voipNumber = event.number ?: event.caller; p.voipIsContact = st.trusted
                 activeKey = sbn.key
-                if (!contact && !wasActive) CallSessions.on(this, CallEvent.Answered(System.currentTimeMillis()))
-                if (!contact && !wasActive) {
+                if (stranger && !wasActive) CallSessions.on(this, CallEvent.Answered(System.currentTimeMillis()))
+                if (stranger && !wasActive) {
                     if (event.video) Warnings.showVideoOffer(this) else if (p.offerListening) Warnings.showListenOffer(this)
                 }
             }
@@ -68,43 +71,56 @@ class MessengerListener : NotificationListenerService() {
         }
     }
 
+    /** Contact check for a messenger notification: by number if it is shown, otherwise by name (see [SenderStatus]). */
+    private fun status(app: String, number: String?, name: String): SenderStatus =
+        Messenger.senderStatus(app, number, number != null && Contacts.contains(this, number), number == null && Contacts.hasName(this, name))
+
     private fun onIncomingCall(key: String, e: MessengerEvent.IncomingCall) {
         val p = app.prefs
-        // contact names (not numbers) mean WhatsApp knows this person from your address book
-        val contact = e.number == null || Contacts.contains(this, e.number)
+        val st = status(e.app, e.number, e.caller)
         ringingKey = key
-        p.voipApp = e.app; p.voipNumber = e.number ?: e.caller; p.voipIsContact = contact
-        if (contact) return
-        val num: String = e.number ?: return
+        p.voipApp = e.app; p.voipNumber = e.number ?: e.caller; p.voipIsContact = st.trusted
+        // a verified contact, or a name equal to a contact's name: no warning before the call (the "code during a call"
+        // alarm stays on for a name match, see OngoingCall)
+        if (st != SenderStatus.STRANGER) return
+        val num: String? = e.number
         val now = System.currentTimeMillis()
-        if ((warnedCalls[num] ?: 0L) > now - 30_000) return
-        warnedCalls[num] = now
-        val prior = p.senderRisk(num)
-        val facts = CallFacts(num, false, p.homeCallingCode, p.countRecentCall(num), num in p.scamNumbers(),
-            num in p.safeNumbers(), messenger = e.app, priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList(),
-            highReports = app.alerts.reportCounts(num).first, mediumReports = app.alerts.reportCounts(num).second)
+        val dedup = num ?: "name:${e.caller}"
+        if ((warnedCalls[dedup] ?: 0L) > now - 30_000) return
+        warnedCalls[dedup] = now
+        val prior = num?.let { p.senderRisk(it) }
+        val reports = num?.let { app.alerts.reportCounts(it) } ?: (0 to 0)
+        val facts = CallFacts(num, false, p.homeCallingCode, if (num != null) p.countRecentCall(num) else 1, num != null && num in p.scamNumbers(),
+            num != null && num in p.safeNumbers(), messenger = e.app, priorMessageLevel = prior?.first, priorTactics = prior?.second ?: emptyList(),
+            highReports = reports.first, mediumReports = reports.second, callerName = if (num == null) e.caller else null)
         if (facts.userMarkedSafe) return
-        val r = CallTracker.withReputation(CallRisk.assess(facts), num)
+        val r = if (num != null) CallTracker.withReputation(CallRisk.assess(facts), num) else CallRisk.assess(facts)
         CallSessions.start(this, num, CallChannel.MESSENGER, e.app, r)
         Warnings.show(this, Warning(
-            level = r.level, score = r.score, source = "messenger_call", number = num,
-            title = (if (e.video) "Видеозвонок" else "Звонок") + " в ${e.app} с незнакомого номера",
+            level = r.level, score = r.score, source = "messenger_call", number = num ?: e.caller,
+            title = (if (e.video) "Видеозвонок" else "Звонок") + " в ${e.app} " + (if (num != null) "с незнакомого номера" else "от незнакомого собеседника"),
             reasons = r.reasons.map { it.text }, advice = r.advice,
         ))
     }
 
     private fun onMessage(e: MessengerEvent.Message) {
         val num = e.number
-        val unknown = num != null && !Contacts.contains(this, num)
         val r = ScamAnalyzer.analyze(e.text)
         if (r.level == RiskLevel.LOW) return
+        val st = status(e.app, num, e.sender)
+        val unknown = st == SenderStatus.STRANGER
         if (num != null) app.prefs.rememberSenderRisk(num, r.level, r.tactics.map { it.title })
-        // messages from saved contacts are only flagged when clearly fraudulent (their account may be hacked)
+        // messages from saved contacts (or from a name equal to a contact's) are flagged only when clearly fraudulent
         if (!unknown && r.level != RiskLevel.HIGH) return
+        val who = when (st) {
+            SenderStatus.NAME_LIKE_CONTACT -> listOf("Имя совпадает с контактом, но номер не виден — это может быть другой человек")
+            SenderStatus.STRANGER -> emptyList()
+            else -> listOf("Отправитель есть в контактах — возможно, его аккаунт взломан")
+        }
         Warnings.show(this, Warning(
             level = r.level, score = r.score, source = "messenger_text", number = num ?: e.sender,
             title = "Подозрительное сообщение в ${e.app} от «${e.sender}»",
-            reasons = r.tactics.map { it.title } + (if (!unknown) listOf("Отправитель есть в контактах — возможно, его аккаунт взломан") else emptyList()),
+            reasons = r.tactics.map { it.title } + who,
             advice = r.tactics.sortedByDescending { it.weight }.take(2).map { it.advice },
         ))
     }
