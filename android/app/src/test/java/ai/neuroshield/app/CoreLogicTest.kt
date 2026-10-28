@@ -851,3 +851,51 @@ class PhoneNumbersTest {
         assertTrue(intl.reasons.any { it.text.startsWith("Международный") })
     }
 }
+
+/** C-03: a saved "call in progress" that can no longer be true must not turn an ordinary SMS code into an alarm. */
+class CallStateGuardTest {
+    private val h = 3_600_000L
+    private val boot = 1_000_000_000_000L
+    private val now = boot + 2 * h
+
+    @Test fun callSavedBeforeRestartIsIdle() {
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", boot - 60_000, now, boot, null))
+        assertEquals("IDLE", CallStateGuard.effective("RINGING", boot - 1, now, boot, true))
+    }
+
+    @Test fun stateFromOldVersionWithoutTimeIsIdle() =
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", 0L, now, boot, null))
+
+    @Test fun systemSaysNoCallAfterGracePeriod() {
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", now - 5 * 60_000, now, boot, false))
+        // call setup: the state was saved a moment ago, the system may not report it yet
+        assertEquals("OFFHOOK", CallStateGuard.effective("OFFHOOK", now - 5_000, now, boot, false))
+    }
+
+    @Test fun systemConfirmsTheCall() {
+        // a very long call (7 h, phone on for 10 h): the system confirms it, so age does not matter
+        assertEquals("OFFHOOK", CallStateGuard.effective("OFFHOOK", now - 7 * h, now, now - 10 * h, true))
+    }
+
+    @Test fun withoutTheSystemOnlyAgeDecides() {
+        assertEquals("RINGING", CallStateGuard.effective("RINGING", now - 30_000, now, boot, null))
+        assertEquals("IDLE", CallStateGuard.effective("RINGING", now - 5 * 60_000, now, boot, null))
+        assertEquals("OFFHOOK", CallStateGuard.effective("OFFHOOK", now - h, now, boot, null))
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", now - 7 * h, now, boot, null))
+    }
+
+    @Test fun idleStaysIdle() = assertEquals("IDLE", CallStateGuard.effective("IDLE", now, now, boot, true))
+
+    @Test fun smsCodeAfterRestartIsNotDuringACall() {
+        // the phone restarted during a call with a stranger; an hour later an SMS with a code arrives
+        val eff = CallStateGuard.effective("OFFHOOK", boot - 10 * 60_000, now, boot, null)
+        assertNull(CellularCallWindow.riskyCall(eff, endedAt = 0L, now = now, isContact = false))
+    }
+
+    @Test fun smsCodeDuringOrRightAfterACallWithAStranger() {
+        assertEquals(true, CellularCallWindow.riskyCall("OFFHOOK", 0L, now, isContact = false))
+        assertEquals(false, CellularCallWindow.riskyCall("IDLE", now - 3 * 60_000, now, isContact = false))   // just after
+        assertNull(CellularCallWindow.riskyCall("IDLE", now - 30 * 60_000, now, isContact = false))         // long after
+        assertNull(CellularCallWindow.riskyCall("OFFHOOK", 0L, now, isContact = true))                      // a contact
+    }
+}

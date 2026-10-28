@@ -90,6 +90,20 @@ object CallSessions {
         return p.getString("recording", null).also { p.edit().remove("recording").commit() }
     }
 
+    /** Discards (without a report) a call session that began before [t] — e.g. before the phone restarted. */
+    @Synchronized fun dropIfStartedBefore(ctx: Context, t: Long) {
+        val s = load(ctx) ?: return
+        val start = s.events.firstOrNull()?.tMs ?: return
+        if (start >= t) return
+        Log.i(TAG, "stale call session dropped")
+        save(ctx, null)
+        // a recording made during that call must stay visible, so the user can listen to it or delete it
+        takeRecording(ctx)?.let { id ->
+            ctx.app.alerts.add("recording", null, RiskLevel.LOW, 0.0, "Запись разговора",
+                listOf("Звонок прервался: телефон перезагружался или приложение было остановлено"), null, id)
+        }
+    }
+
     fun active(ctx: Context): Boolean = load(ctx)?.let { it.isStarted && !it.isEnded } ?: false
 
     /** Ends the current call. [channel] = only if the current call came through that channel. */

@@ -77,7 +77,9 @@ class Prefs(ctx: Context) {
     // ---- call session (survives process restarts between broadcasts) ----
     var callState: String
         get() = p.getString("call_state", "IDLE") ?: "IDLE"
-        set(v) = p.edit().putString("call_state", v).apply()
+        set(v) = p.edit().putString("call_state", v).putLong("call_state_at", System.currentTimeMillis()).apply()
+    /** When [callState] was last saved (0 = saved by a version before 1.0.84). See CallStateGuard. */
+    val callStateAt: Long get() = p.getLong("call_state_at", 0L)
     var callNumber: String?
         get() = p.getString("call_number", null)
         set(v) = p.edit().putString("call_number", v).apply()

@@ -25,6 +25,8 @@ class NeuroShieldApp : Application() {
         ai.neuroshield.app.core.PhoneNumbers.homeCode = prefs.homeCallingCode
         I18n.kk = prefs.uiLang == "kk"
         alerts = AlertStore(this)
+        // a "call in progress" saved before a restart (or a missed IDLE broadcast) must not stay in force
+        runCatching { ai.neuroshield.app.call.CallTracker.reconcile(this) }
         Thread {
             runCatching { alerts.purgeOld(); alerts.encryptLegacyExcerpts() }
             // decrypted copies made for playback/voice check are deleted after use; this removes any left behind
