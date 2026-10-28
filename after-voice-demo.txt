@@ -1,0 +1,155 @@
+    topResumedActivity=ActivityRecord{1bfa8e9 u0 ai.neuroshield.app/.MainActivity t11}
+  ResumedActivity: ActivityRecord{1bfa8e9 u0 ai.neuroshield.app/.MainActivity t11}
+WINDOW MANAGER LAST ANR (dumpsys window lastanr)
+  <no ANR has occurred since boot>
+  mCurrentFocus=Window{b179e59 u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.356  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.356  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 V MediaPlayer: resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+10-28 06:34:57.357  8180  8180 V MediaPlayer: cleanDrmObj: mDrmObj=null mDrmSessionId=null
+10-28 06:34:57.357  8180  8180 W MediaPlayer: mediaplayer went away with unhandled events
+10-28 06:35:13.021   526   755 D CoreBackPreview: Window{50853fe u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}: Setting back callback null
+10-28 06:35:13.024   526   755 W InputManager-JNI: Input channel object '50853fe ai.neuroshield.app/ai.neuroshield.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-28 06:35:13.054   526  2043 I ImeTracker: ai.neuroshield.app:cbed936f: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+10-28 06:35:13.057   526  2043 I ImeTracker: ai.neuroshield.app:cbed936f: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-28 06:35:13.061  1572  1572 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=ai.neuroshield.app fieldId=0 fieldName=null extras=null}, false)
+10-28 06:35:14.014   526  2043 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+10-28 06:35:14.015   838   880 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:35:20.040   526  1004 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+10-28 06:35:20.041   838   880 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:35:23.063   526  1004 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+10-28 06:35:23.064   838   880 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:35:25.042   526   548 E BLASTSyncEngine: WM sent Transaction to organized, but never received commit callback. Application ANR likely to follow.
+10-28 06:35:29.152   526  1995 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+10-28 06:35:29.154   838   880 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:35:34.153   526   548 E BLASTSyncEngine: WM sent Transaction to organized, but never received commit callback. Application ANR likely to follow.
+10-28 06:35:37.606   526  1995 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+10-28 06:35:37.608   838   880 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:35:43.672   526  1748 I ActivityManager: Force stopping ai.neuroshield.app appid=10192 user=0: from pid 8756
+10-28 06:35:43.674   526  1748 I ActivityManager: Killing 8180:ai.neuroshield.app/u0a192 (adj 0): stop ai.neuroshield.app due to from pid 8756
+10-28 06:35:43.675   526  1748 W ActivityTaskManager: Force removing ActivityRecord{257d0b8 u0 ai.neuroshield.app/.MainActivity t10 f}}: app died, no saved state
+10-28 06:35:43.675   838   880 V WindowManagerShell: Transition requested: android.os.BinderProxy@fd6d383 TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=10 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} numActivities=0 lastActiveTime=611416 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@d3c2900} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-28 06:35:43.676   526   526 V NotificationListeners: 0 notification listener connection lost: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener}
+10-28 06:35:43.676   526   526 W NotificationListeners: 0 notification listener binding died: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener}
+10-28 06:35:43.689  1055  1055 D CarrierSvcBindHelper: onHandleForceStop: [ai.neuroshield.app]
+10-28 06:35:43.694   526   526 V NotificationListeners: enabling notification listener for 0: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener}
+10-28 06:35:43.695   526   526 E NotificationListeners: notification listener ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener} could not be unbound
+10-28 06:35:43.695   526   526 V NotificationListeners: binding: Intent { act=android.service.notification.NotificationListenerService cmp=ai.neuroshield.app/.notify.MessengerListener (has extras) }
+10-28 06:35:43.696   526   526 W ActivityManager: ProcessRecord{c2a469d 0:ai.neuroshield.app/u0a192} is attached to a previous process 8180
+10-28 06:35:43.708   526   599 I ImeTracker: ai.neuroshield.app:cd6fe02f: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_REMOVE_CLIENT
+10-28 06:35:43.709   526  2683 I WindowManager: WIN DEATH: Window{bcd7e8 u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:35:43.710   526  2683 W InputManager-JNI: Input channel object 'bcd7e8 ai.neuroshield.app/ai.neuroshield.app.MainActivity (client)' was disposed without first being removed with the input manager!
+10-28 06:35:43.711   526   599 I ImeTracker: ai.neuroshield.app:cd6fe02f: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-28 06:35:43.711   526   755 V ActivityManager: Got obituary of 8180:ai.neuroshield.app
+10-28 06:35:43.726   526   526 E NotificationListeners: unable to notify listener (removed): ManagedServiceInfo[component=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener},userid=0,isSystem=false,targetSdkVersion=35,connection=<connection>,service=android.service.notification.INotificationListener$Stub$Proxy@c6ca632]
+10-28 06:35:43.733   526   557 I ActivityManager: Start proc 8759:ai.neuroshield.app/u0a192 for service {ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener}
+10-28 06:35:43.738   526   549 W WindowManager: Failed to deliver inset control state change to w=Window{bcd7e8 u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity EXITING}
+10-28 06:35:43.738   526   549 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1337)
+10-28 06:35:43.738   526   549 W WindowManager: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1348)
+10-28 06:35:43.738   526   549 W WindowManager: 	at android.view.Choreographer.doCallbacks(Choreographer.java:952)
+10-28 06:35:43.738   526   549 W WindowManager: 	at android.view.Choreographer.doFrame(Choreographer.java:878)
+10-28 06:35:43.738   526   549 W WindowManager: 	at android.view.Choreographer$FrameDisplayEventReceiver.run(Choreographer.java:1322)
+10-28 06:35:43.760  8759  8759 I neuroshield.app: Using CollectorTypeCC GC.
+10-28 06:35:43.761  8759  8759 W neuroshield.app: Unexpected CPU variant for x86: x86_64.
+10-28 06:35:43.761  8759  8759 W neuroshield.app: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+10-28 06:35:43.763  8759  8759 E neuroshield.app: Not starting debugger since process cannot load the jdwp agent.
+10-28 06:35:43.903  8759  8759 D nativeloader: Configuring clns-6 for other apk /data/app/~~LV9S4xI2Hfj8iQ4aTswnpg==/ai.neuroshield.app-DrCr81kDF5mlSgSxmatGiQ==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~LV9S4xI2Hfj8iQ4aTswnpg==/ai.neuroshield.app-DrCr81kDF5mlSgSxmatGiQ==/lib/x86_64:/data/app/~~LV9S4xI2Hfj8iQ4aTswnpg==/ai.neuroshield.app-DrCr81kDF5mlSgSxmatGiQ==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/ai.neuroshield.app
+10-28 06:35:43.930  8759  8759 V GraphicsEnvironment: ANGLE GameManagerService for ai.neuroshield.app: false
+10-28 06:35:43.944  8759  8759 V GraphicsEnvironment: ai.neuroshield.app is not listed in per-application setting
+10-28 06:35:44.017   526   545 V WindowManager: Sent Transition #53 createdAt=10-28 06:35:43.675 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=10 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} numActivities=0 lastActiveTime=611416 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{a913df Task{74c1e91 #10 type=standard A=10192:ai.neuroshield.app}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-28 06:35:44.017   526   545 V WindowManager:     info={id=53 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{a913df Task{74c1e91 #10 type=standard A=10192:ai.neuroshield.app}}} m=CLOSE f=NONE leash=Surface(name=Task=10)/@0x84b493d sb=Rect(0, 0 - 1080, 2340) eb=Rect(0, 0 - 1080, 2340) d=0},{WCT{RemoteToken{ba6a90 Task{c921793 #1 type=home}}} m=TO_FRONT f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xc23777 sb=Rect(0, 0 - 1080, 2340) eb=Rect(0, 0 - 1080, 2340) d=0},{null m=TO_FRONT f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{a6c3db6 token=android.os.Binder@2581151})/@0xfa6ab7f sb=Rect(0, 0 - 1080, 2340) eb=Rect(0, 0 - 1080, 2340) d=0}]}
+10-28 06:35:44.022   526   526 V NotificationListeners: 0 notification listener service connected: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener}
+10-28 06:35:44.026   526   549 W WindowManager: Failed to deliver inset control state change to w=Window{bcd7e8 u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity EXITING}
+10-28 06:35:44.056   838   896 W Looper  : Slow dispatch took 74ms wmshell.anim h=android.view.Choreographer$FrameHandler c=android.view.Choreographer$FrameDisplayEventReceiver@d850a9e m=0
+10-28 06:35:44.066   526  1748 W WindowManager: Exception thrown during dispatchAppVisibility Window{bcd7e8 u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity EXITING}
+10-28 06:35:45.720   526  2207 V SplashScreenExceptionList: SplashScreen checking exception for package ai.neuroshield.app (target sdk:35) -> false
+10-28 06:35:45.722   526  2207 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+10-28 06:35:45.724   838   880 V WindowManagerShell: Transition requested: android.os.BinderProxy@c6bed0b TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=11 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity } baseActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} topActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} origActivity=null realActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} numActivities=1 lastActiveTime=688643 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@daf77e8} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 136 - 0, 0) topActivityInfo=ActivityInfo{faeee01 ai.neuroshield.app.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-28 06:35:45.745   526   541 D CoreBackPreview: Window{c60eaa5 u0 Splash Screen ai.neuroshield.app}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@31a8c21, mPriority=0, mIsAnimationCallback=false}
+10-28 06:35:45.882   526  1741 D CoreBackPreview: Window{b179e59 u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@e9ac715, mPriority=0, mIsAnimationCallback=false}
+10-28 06:35:45.928   526   545 V WindowManager: Sent Transition #54 createdAt=10-28 06:35:45.717 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=11 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity } baseActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} topActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} origActivity=null realActivity=ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity} numActivities=1 lastActiveTime=688643 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{9e755b8 Task{148196e #11 type=standard A=10192:ai.neuroshield.app}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 136 - 0, 0) topActivityInfo=ActivityInfo{7edbf91 ai.neuroshield.app.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-28 06:35:45.928   526   545 V WindowManager:     info={id=54 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{9e755b8 Task{148196e #11 type=standard A=10192:ai.neuroshield.app}}} m=OPEN f=NONE leash=Surface(name=Task=11)/@0xfcd5a2a sb=Rect(0, 0 - 1080, 2340) eb=Rect(0, 0 - 1080, 2340) d=0},{WCT{RemoteToken{ba6a90 Task{c921793 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xc23777 sb=Rect(0, 0 - 1080, 2340) eb=Rect(0, 0 - 1080, 2340) d=0}]}
+10-28 06:35:47.037  8759  8759 I Choreographer: Skipped 72 frames!  The application may be doing too much work on its main thread.
+10-28 06:35:47.042   526   545 I ActivityTaskManager: Displayed ai.neuroshield.app/.MainActivity for user 0: +1s321ms
+10-28 06:35:47.074   526   541 W InputManager-JNI: Input channel object 'c60eaa5 Splash Screen ai.neuroshield.app (client)' was disposed without first being removed with the input manager!
+10-28 06:35:47.076   526  1753 D CoreBackPreview: Window{c60eaa5 u0 Splash Screen ai.neuroshield.app EXITING}: Setting back callback null
+10-28 06:35:47.078   526  1741 I ImeTracker: ai.neuroshield.app:d2e72b8c: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+10-28 06:35:47.078   526  1741 I ImeTracker: ai.neuroshield.app:d2e72b8c: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-28 06:35:47.091  1572  1572 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=ai.neuroshield.app fieldId=0 fieldName=null extras=null}, false)
+10-28 06:35:51.813   526  1753 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+10-28 06:35:51.815   838   880 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:35:52.889   526  1753 W ProcessStats: Tracking association SourceState{ebbe3a7 ai.neuroshield.app/10192 BTop #16160} whose proc state 2 is better than process ProcessState{5d47444 com.google.android.gms.persistent/10131 pkg=com.google.android.gms} proc state 4 (301 skipped)
+10-28 06:35:53.690   526   526 V NotificationListeners: binding: Intent { act=android.service.notification.NotificationListenerService cmp=ai.neuroshield.app/.notify.MessengerListener (has extras) }
+10-28 06:35:53.691   526   526 V NotificationListeners: 0 notification listener service connected: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.notify.MessengerListener}
+10-28 06:36:37.998   838   880 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+10-28 06:36:37.999   526  2155 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=ai.neuroshield.app/.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=3
+10-28 06:36:42.999   526   548 E BLASTSyncEngine: WM sent Transaction to organized, but never received commit callback. Application ANR likely to follow.

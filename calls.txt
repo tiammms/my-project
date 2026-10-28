@@ -1,0 +1,5 @@
+10-28 06:38:03.727  9384  9384 I SaqtanCall: incoming screened=true
+10-28 06:38:03.748  9384  9384 I SaqtanCall: start CELLULAR level=LOW
+10-28 06:38:03.818  9384  9384 I SaqtanCall: phone state RINGING number=false
+10-28 06:38:13.649  9384  9384 I SaqtanCall: phone state IDLE number=false
+10-28 06:38:13.654  9384  9384 I SaqtanCall: report level=LOW answered=false

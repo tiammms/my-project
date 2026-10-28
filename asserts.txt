@@ -1,0 +1,21 @@
+PASS report after scam call (code during call)
+PASS report after missed call
+PASS report notification has the mark-number button
+UNVERIFIED mark-number button: the automated test could not open the grouped notification
+PASS outside app cannot start the microphone
+PASS internal entry is not reachable from outside
+PASS call recording is attached to the call report
+PASS recording playback starts without errors
+PASS voice model loads and checks a recording
+INFO navigation works: right after the recording check (before the demo)
+INFO navigation works: demo opened, nothing tapped
+INFO navigation STUCK: demo scrolled to the end, nothing tapped
+PASS voice model runs on both demo examples
+INFO demo voice example: Модель: не похож на синтезированный (оценка 2%, порог 61%)
+INFO demo voice example: Модель: похож на синтезированный (оценка 98%, порог 61%)
+PASS phone gives the same verdicts on the demo examples as the training run
+PASS app responds after the voice demo
+PASS interface switches to Kazakh
+PASS delete all data empties history and resets settings
+PASS app logs contain no phone numbers or codes
+PASS no crash with permissions revoked
