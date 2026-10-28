@@ -249,7 +249,11 @@ class ListenService : Service() {
         val voiceExec = java.util.concurrent.Executors.newSingleThreadExecutor()
         val voiceBusy = java.util.concurrent.atomic.AtomicBoolean(false)
         val voiceWarned = java.util.concurrent.atomic.AtomicBoolean(false)
-        if (voice != null) ListenState.ui.value = ListenState.ui.value.copy(voice = voice.result)
+        if (voice != null) {
+            ListenState.ui.value = ListenState.ui.value.copy(voice = voice.result)
+            // the report must say the check ran even if no piece with speech came (e.g. the phone gave silence)
+            ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.Voice(System.currentTimeMillis(), voice.result))
+        }
         val silence = SilenceDetector(SAMPLE_RATE)
         val buf = ShortArray(SAMPLE_RATE / 5)
         val started = System.currentTimeMillis()
