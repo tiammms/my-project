@@ -24,7 +24,12 @@ class NeuroShieldApp : Application() {
         prefs = Prefs(this)
         I18n.kk = prefs.uiLang == "kk"
         alerts = AlertStore(this)
-        Thread { runCatching { alerts.purgeOld(); alerts.encryptLegacyExcerpts() } }.start()
+        Thread {
+            runCatching { alerts.purgeOld(); alerts.encryptLegacyExcerpts() }
+            // decrypted copies made for playback/voice check are deleted after use; this removes any left behind
+            // if the app was killed in the middle (they must never outlive the session)
+            runCatching { cacheDir.listFiles { f -> f.name.startsWith("play_rec_") && f.name.endsWith(".wav") }?.forEach { it.delete() } }
+        }.start()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CH_ALERTS, tr("Предупреждения о мошенничестве", "Алаяқтық туралы ескертулер"), NotificationManager.IMPORTANCE_HIGH).apply {
             description = tr("Срочные предупреждения во время звонков и при получении кодов", "Қоңырау кезінде және код келгенде шұғыл ескертулер")
