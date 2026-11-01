@@ -47,7 +47,7 @@ jobs:
       - run: npm run typecheck && npm run build
         working-directory: frontend
   docker-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright has no Chromium for ubuntu-26.04 (ubuntu-latest since 10.2026)
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4

@@ -1,4 +1,5 @@
 import java.time.Duration
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -31,7 +32,7 @@ android {
     // ---- Signing -------------------------------------------------------------------------------------------------
     // Release key: from the environment (CI secrets) or from android/keystore.properties on the developer's computer
     // (that file and *.jks/*.keystore outside this module are ignored by git). Secrets are never written in this file.
-    val localSigning = java.util.Properties().apply {
+    val localSigning = Properties().apply {
         val f = rootProject.file("keystore.properties")
         if (f.exists()) f.inputStream().use { load(it) }
     }
