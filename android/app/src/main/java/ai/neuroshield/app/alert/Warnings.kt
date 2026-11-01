@@ -74,6 +74,7 @@ object Warnings {
         val id = if (!w.isTest) app.alerts.add(w.source, w.number, w.level, w.score, w.title, w.reasons,
             if (app.prefs.storeExcerpts) w.excerpt?.take(600) else null) else -1L
         if (w.level != RiskLevel.LOW) vibrate(ctx, w.level)
+        if (w.level == RiskLevel.HIGH && app.prefs.speakWarnings) SpokenAlert.say(ctx)
         // stored in Russian (history reads the same everywhere); shown in the interface language
         val d = w.copy(title = I18n.core(w.title), reasons = w.reasons.map { I18n.core(it) }, advice = w.advice.map { I18n.core(it) })
         main.post {

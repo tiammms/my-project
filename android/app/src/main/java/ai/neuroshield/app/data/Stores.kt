@@ -55,6 +55,9 @@ class Prefs(ctx: Context) {
     var blockMarked: Boolean
         get() = p.getBoolean("block_marked", false)
         set(v) = p.edit().putBoolean("block_marked", v).apply()
+    var speakWarnings: Boolean
+        get() = p.getBoolean("speak_warnings", false)   // opt-in: the phone says a high-risk warning aloud
+        set(v) = p.edit().putBoolean("speak_warnings", v).apply()
     var onboarded: Boolean
         get() = p.getBoolean("onboarded", false)
         set(v) = p.edit().putBoolean("onboarded", v).apply()

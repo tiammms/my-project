@@ -40,6 +40,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
@@ -790,6 +791,7 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     var trustedNumber by remember { mutableStateOf(p.trustedNumber) }
     var bankNumber by remember { mutableStateOf(p.bankNumber) }
     var block by remember { mutableStateOf(p.blockMarked) }
+    var speak by remember { mutableStateOf(p.speakWarnings) }
     Page(tr("Настройки", "Баптаулар")) {
         SectionTitle(tr("Язык интерфейса", "Интерфейс тілі"))
         GlassCard {
@@ -836,6 +838,10 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                     "Бейтаныс нөмірден келген қоңырауға жауап бергеннен кейін Saqtan микрофонды өзі қосып, сөйлеуді телефонда таниды. Дыбыс жазылмайды және ешқайда жіберілмейді. Микрофон жұмыс істеп тұрғанда хабарландыру көрінеді, оны кез келген уақытта тоқтатуға болады. Контактілердегі нөмірлерден келген қоңыраулар талданбайды."), color = NS.text2) })
             ListRow(Icons.Filled.Block, tr("Блокировать отмеченных мошенников", "Белгіленген алаяқ нөмірлерді бұғаттау"), if (Perms.screeningRole(ctx)) tr("Звонки с отмеченных номеров сбрасываются", "Белгіленген нөмірлерден келген қоңыраулар қабылданбайды") else tr("Нужен модуль «Определитель номера»", "«Нөмір анықтағыш» модулі қажет"),
                 tint = NS.threat, onClick = { block = !block; p.blockMarked = block }) { NeoSwitch(block) { block = it; p.blockMarked = it } }
+            ListRow(Icons.AutoMirrored.Filled.VolumeUp, tr("Говорить предупреждение вслух", "Ескертуді дауыстап айту"),
+                tr("При высоком риске телефон скажет: «Возможно, это мошенник. Положите трубку»", "Қауіп жоғары болғанда телефон: «Бұл алаяқ болуы мүмкін. Тұтқаны қойыңыз» дейді"),
+                onClick = { speak = !speak; p.speakWarnings = speak; if (speak) ai.neuroshield.app.alert.SpokenAlert.say(ctx, preview = true) }) {
+                NeoSwitch(speak) { speak = it; p.speakWarnings = it; if (it) ai.neuroshield.app.alert.SpokenAlert.say(ctx, preview = true) } }
         }
 
         SectionTitle(tr("Экстренная помощь", "Шұғыл көмек"))

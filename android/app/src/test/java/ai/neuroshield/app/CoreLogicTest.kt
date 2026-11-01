@@ -51,6 +51,14 @@ class ScamAnalyzerTest {
         assertTrue(r.tactics.map { it.id }.containsAll(listOf("urgency_pressure", "threat_fear")))
         assertTrue(ScamAnalyzer.analyze("сіздің картаңыздан күдікті аударым жасалып жатыр шұғыл түрде растау керек").tactics.any { it.id == "urgency_pressure" })
     }
+    @Test fun spokenWarningDoesNotRaiseRiskWhenHeardBack() {
+        // same text as alert/SpokenAlert.kt (RU, KK): on speakerphone the app hears its own warning
+        for (t in listOf("Внимание. Возможно, это мошенник. Положите трубку и сами позвоните в банк.",
+                "Абайлаңыз. Бұл алаяқ болуы мүмкін. Тұтқаны қойып, банкке өзіңіз қоңырау шалыңыз.")) {
+            val r = ScamAnalyzer.analyze(t)
+            assertEquals(t, RiskLevel.LOW, r.level); assertTrue(t, r.tactics.all { it.weak })
+        }
+    }
     @Test fun kazakhEverydayTalkStaysLow() {
         for (t in listOf("кодты ешкімге айтпаңыз деп банк смс жіберді", "смс келді ме деп сұрадым посылка туралы",
                 "құпия сөзімді ұмытып қалдым қалпына келтірдім", "кеше жол апаты болды деп жаңалықта айтты",
