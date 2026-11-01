@@ -40,6 +40,25 @@ class ScamAnalyzerTest {
         assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("this is the bank security team read me the verification code right now").level)
     }
 
+    @Test fun kazakhRequestsWithWordsInBetween() {
+        // the code request is found even with a word between "кодты" and the verb; mixed Kazakh-Russian speech too
+        for (t in listOf("қазір сізге смс келеді сол кодты маған айтып жіберіңіз", "сізге код келді ме сол цифрларды атаңызшы"))
+            assertTrue(t, ScamAnalyzer.analyze(t).tactics.any { it.id == "credentials_request" })
+        val mixed = ScamAnalyzer.analyze("каспи банктен звондап тұрмыз карточкаңыздан ақша списать болып жатыр")
+        assertTrue(mixed.tactics.map { it.id }.containsAll(listOf("authority_impersonation", "threat_fear")))
+        assertNotEquals(RiskLevel.LOW, mixed.level)
+        val r = ScamAnalyzer.analyze("тұтқаны қоймаңыз әйтпесе барлық ақшаңыздан айырыласыз")
+        assertTrue(r.tactics.map { it.id }.containsAll(listOf("urgency_pressure", "threat_fear")))
+        assertTrue(ScamAnalyzer.analyze("сіздің картаңыздан күдікті аударым жасалып жатыр шұғыл түрде растау керек").tactics.any { it.id == "urgency_pressure" })
+    }
+    @Test fun kazakhEverydayTalkStaysLow() {
+        for (t in listOf("кодты ешкімге айтпаңыз деп банк смс жіберді", "смс келді ме деп сұрадым посылка туралы",
+                "құпия сөзімді ұмытып қалдым қалпына келтірдім", "кеше жол апаты болды деп жаңалықта айтты",
+                "шұғыл жиналыс бар сағат үште кездесейік", "мектептің қауіпсіздік қызметі бүгін жиналыс өткізеді", "мама срочно үйге кел тамақ дайын"))
+            assertEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+        // a bank SMS that warns not to share the code is not a request for the code
+        assertFalse(ScamAnalyzer.analyze("кодты ешкімге айтпаңыз деп банк смс жіберді").tactics.any { it.id == "credentials_request" || it.id == "secrecy_isolation" })
+    }
     @Test fun newSchemes() {
         val cases = listOf(
             Triple("Мам, у меня новый номер, старый телефон украли. Кинь, пожалуйста, 30 тысяч на эту карту", RiskLevel.HIGH, "family_emergency"),
