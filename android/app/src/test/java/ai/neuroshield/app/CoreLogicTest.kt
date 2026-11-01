@@ -284,6 +284,16 @@ class VideoCallCheckTest {
 }
 
 class LinkCheckTest {
+    @Test fun apkAndRemoteAccessLinks() {
+        assertTrue(LinkCheck.check("http://kaspi-update.example/app.apk").score >= 60)
+        assertTrue(LinkCheck.check("https://files.example.kz/doc/Kaspi_new.apk?x=1").score >= 60)
+        assertTrue(LinkCheck.check("https://anydesk.com/ru/downloads").score >= 40)
+        assertEquals(0, LinkCheck.check("https://example.kz/apkinfo").score)   // "apk" in a word is not a file
+        // an .apk link plus "install it" is high risk
+        assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Обновите приложение банка, установите приложение по ссылке http://files.example.kz/bank.apk").level)
+        // alone, without other tactics, it is a warning but not high
+        assertEquals(RiskLevel.MEDIUM, ScamAnalyzer.analyze("фото тут http://files.example.kz/photo.apk").level)
+    }
     @Test fun lookalikeBrandIsFlagged() {
         val f = LinkCheck.check("https://kaspi-verify.top/login")
         assertTrue(f.score >= 70); assertTrue(f.reasons.any { "Kaspi" in it })

@@ -21,6 +21,9 @@ object LinkCheck {
     )
     private val SHORTENERS = setOf("bit.ly", "clck.ru", "tinyurl.com", "goo.su", "cutt.ly", "is.gd", "t.co", "rb.gy", "u.to", "vk.cc", "shorturl.at")
     private val RISKY_TLDS = setOf("top", "xyz", "click", "icu", "live", "online", "site", "shop", "buzz", "rest", "link", "info", "cfd", "sbs")
+    /** remote-control programs: a stranger who sends one wants to control the phone */
+    private val REMOTE_APPS = setOf("anydesk.com", "rustdesk.com", "teamviewer.com", "airdroid.com", "anydesk.ru")
+    private val APK = Regex("""(?i)\.apk(?:$|[?#])""")
     private val CRED_WORDS = Regex("(?i)(login|signin|verify|verif|secure|account|update|confirm|bonus|prize|vyigrysh|kompensac|vozvrat|parol|password)")
 
     fun extract(text: String): List<String> = urlRx.findAll(text).map { it.value.trimEnd('.', ',', ')', '!', '?', ';') }.distinct().take(10).toList()
@@ -49,6 +52,9 @@ object LinkCheck {
                 break
             }
         }
+        val path = url.replace(Regex("(?i)^https?://"), "").substringAfter('/', "")
+        if (APK.containsMatchIn(path)) { score += 60; reasons += "Ссылка скачивает файл приложения (.apk) не из магазина — так устанавливают вирусы и программы для управления телефоном" }
+        if (reg in REMOTE_APPS) { score += 40; reasons += "Сайт программы удалённого доступа — с ней посторонний сможет управлять телефоном" }
         if (h.count { it == '-' } >= 2) { score += 10; reasons += "Много дефисов в адресе" }
         if (CRED_WORDS.containsMatchIn(url) && score > 0) { score += 15; reasons += "Страница просит войти или «подтвердить» данные" }
         if (url.contains('@')) { score += 20; reasons += "Символ @ в ссылке маскирует настоящий адрес" }
