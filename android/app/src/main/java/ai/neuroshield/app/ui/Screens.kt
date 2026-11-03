@@ -770,6 +770,13 @@ fun RecordingPlayer(a: Alert) {
 }
 
 // =========================================================================== SETTINGS
+
+/** Plays the spoken-warning sample and shows what happened (speaking, or why the phone cannot speak). */
+private fun speakSample(ctx: android.content.Context) =
+    ai.neuroshield.app.alert.SpokenAlert.say(ctx, preview = true) { msg ->
+        android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_LONG).show()
+    }
+
 @Composable
 fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     val ctx = LocalContext.current
@@ -840,8 +847,8 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                 tint = NS.threat, onClick = { block = !block; p.blockMarked = block }) { NeoSwitch(block) { block = it; p.blockMarked = it } }
             ListRow(Icons.AutoMirrored.Filled.VolumeUp, tr("Говорить предупреждение вслух", "Ескертуді дауыстап айту"),
                 tr("При высоком риске телефон скажет: «Возможно, это мошенник. Положите трубку»", "Қауіп жоғары болғанда телефон: «Бұл алаяқ болуы мүмкін. Тұтқаны қойыңыз» дейді"),
-                onClick = { speak = !speak; p.speakWarnings = speak; if (speak) ai.neuroshield.app.alert.SpokenAlert.say(ctx, preview = true) }) {
-                NeoSwitch(speak) { speak = it; p.speakWarnings = it; if (it) ai.neuroshield.app.alert.SpokenAlert.say(ctx, preview = true) } }
+                onClick = { speak = !speak; p.speakWarnings = speak; if (speak) speakSample(ctx) }) {
+                NeoSwitch(speak) { speak = it; p.speakWarnings = it; if (it) speakSample(ctx) } }
         }
 
         SectionTitle(tr("Экстренная помощь", "Шұғыл көмек"))

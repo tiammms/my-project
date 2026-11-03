@@ -152,7 +152,7 @@ object CallTracker {
             val n = CallRisk.normalizeNumber(number)
             p.callNumber = n; p.callIsContact = Contacts.contains(ctx, n)
         }
-        Warnings.hide()
+        Warnings.hide(ctx)
         if (p.callIsContact || !CallSessions.active(ctx)) return
         CallSessions.on(ctx, CallEvent.Answered(System.currentTimeMillis()))
         // automatic speech analysis: only when it can actually run, otherwise record why and offer the manual way
@@ -187,6 +187,7 @@ object CallTracker {
         val p = ctx.app.prefs
         if (p.callState != "IDLE") p.callEndedAt = System.currentTimeMillis()
         p.callState = "IDLE"
+        Warnings.cancelLowCallTip(ctx)
         Warnings.hideListenOffer()
         Warnings.cancelListenOffer(ctx)
         ListenService.stop(ctx, reason = "Звонок завершён")

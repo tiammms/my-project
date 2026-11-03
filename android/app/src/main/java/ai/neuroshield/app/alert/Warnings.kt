@@ -82,12 +82,25 @@ object Warnings {
             if (Perms.overlay(ctx)) showOverlay(ctx.applicationContext, d, id) else notify(ctx, d, id)
             // a window on top of other apps is not visible on the lock screen: there the notification is what the person sees;
             // a high-risk one also stays in the shade
-            if (Perms.overlay(ctx) && (d.level == RiskLevel.HIGH || (locked && d.level != RiskLevel.LOW))) notify(ctx, d, id)
-            if (locked && d.level != RiskLevel.LOW) wakeScreen(ctx)
+            if (Perms.overlay(ctx) && (d.level == RiskLevel.HIGH || locked)) notify(ctx, d, id)
+            lowCallTip = locked && d.source == "incoming_call" && d.level == RiskLevel.LOW
+            if (locked) wakeScreen(ctx)
         }
     }
 
-    fun hide() = main.post { dismiss(view); view = null }
+    /** true while the lock-screen notification is only the "unknown number" tip of the ringing call */
+    @Volatile private var lowCallTip = false
+
+    fun hide(ctx: Context? = null) = main.post {
+        dismiss(view); view = null
+        if (ctx != null) cancelLowCallTip(ctx)
+    }
+
+    fun cancelLowCallTip(ctx: Context) {
+        if (!lowCallTip) return
+        lowCallTip = false
+        try { ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_ALERT) } catch (_: Exception) {}
+    }
 
     private fun removeView(v: View?) {
         if (v == null) return
@@ -103,11 +116,13 @@ object Warnings {
 
     private fun dp(ctx: Context, v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, ctx.resources.displayMetrics).toInt()
 
+    @Suppress("DEPRECATION")
     private fun params(ctx: Context, focusable: Boolean) = WindowManager.LayoutParams(
         WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT,
         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         (if (focusable) 0 else WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE) or
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,   // some phones honour it for the card over the call screen
         PixelFormat.TRANSLUCENT,
     ).apply { gravity = Gravity.CENTER }   // centre: the system's incoming-call / SMS banners sit at the top
 
@@ -381,7 +396,7 @@ object Warnings {
             .setContentIntent(open)
             .setAutoCancel(true)
             .apply { if (w.offerListening) addAction(0, tr("Слушать звонок", "Қоңырауды тыңдау"), listenIntent(ctx)) }
-            .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS, headline(w.level)) }
+            .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS, headline(w.level), lockScreenAdvice(w)) }
             .build()
         ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_ALERT, n)
     }
@@ -400,6 +415,21 @@ object Warnings {
     }
 
     fun cancelListenOffer(ctx: Context) = ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_OFFER)
+
+    /** What the lock screen shows: what to do, without the number or the message text. */
+    private fun lockScreenAdvice(w: Warning): String = when {
+        w.source == "incoming_call" && w.level == RiskLevel.LOW ->
+            tr("Если представятся банком или полицией — положите трубку. Никому не называйте коды.",
+                "Банк не полиция деп таныстырса — тұтқаны қойыңыз. Кодты ешкімге айтпаңыз.")
+        w.source == "incoming_call" ->
+            tr("Подозрительный звонок. Не называйте коды из SMS, не переводите деньги.",
+                "Күдікті қоңырау. SMS-тегі кодты айтпаңыз, ақша аудармаңыз.")
+        w.level == RiskLevel.HIGH ->
+            tr("Не называйте код, не открывайте ссылку. Положите трубку и сами позвоните в банк.",
+                "Кодты айтпаңыз, сілтемені ашпаңыз. Тұтқаны қойып, банкке өзіңіз қоңырау шалыңыз.")
+        else -> tr("Есть признаки обмана. Не открывайте ссылки и не называйте коды.",
+                "Алдау белгілері бар. Сілтемені ашпаңыз, кодты айтпаңыз.")
+    }
 
     private fun isLocked(ctx: Context): Boolean = try {
         ctx.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true ||

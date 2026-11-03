@@ -90,12 +90,14 @@ object Perms {
  */
 object LockScreen {
     /** On the lock screen only [title] and "unlock to see" are shown, never the number or the message text. */
-    fun hideDetails(b: androidx.core.app.NotificationCompat.Builder, ctx: Context, channel: String, title: String = "Saqtan"): androidx.core.app.NotificationCompat.Builder =
+    fun hideDetails(b: androidx.core.app.NotificationCompat.Builder, ctx: Context, channel: String, title: String = "Saqtan",
+                    text: String = tr("Есть предупреждение. Разблокируйте телефон, чтобы посмотреть", "Ескерту бар. Көру үшін телефонның құлпын ашыңыз")): androidx.core.app.NotificationCompat.Builder =
         b.setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(androidx.core.app.NotificationCompat.Builder(ctx, channel)
                 .setSmallIcon(R.drawable.ic_shield)
                 .setContentTitle(title)
-                .setContentText(tr("Есть предупреждение. Разблокируйте телефон, чтобы посмотреть", "Ескерту бар. Көру үшін телефонның құлпын ашыңыз"))
+                .setContentText(text)
+                .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(text))
                 .build())
 }
 
