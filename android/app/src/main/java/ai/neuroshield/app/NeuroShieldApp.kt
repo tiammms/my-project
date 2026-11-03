@@ -89,11 +89,12 @@ object Perms {
  * On the lock screen the user sees a neutral notice that Saqtan has a warning.
  */
 object LockScreen {
-    fun hideDetails(b: androidx.core.app.NotificationCompat.Builder, ctx: Context, channel: String): androidx.core.app.NotificationCompat.Builder =
+    /** On the lock screen only [title] and "unlock to see" are shown, never the number or the message text. */
+    fun hideDetails(b: androidx.core.app.NotificationCompat.Builder, ctx: Context, channel: String, title: String = "Saqtan"): androidx.core.app.NotificationCompat.Builder =
         b.setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(androidx.core.app.NotificationCompat.Builder(ctx, channel)
                 .setSmallIcon(R.drawable.ic_shield)
-                .setContentTitle("Saqtan")
+                .setContentTitle(title)
                 .setContentText(tr("Есть предупреждение. Разблокируйте телефон, чтобы посмотреть", "Ескерту бар. Көру үшін телефонның құлпын ашыңыз"))
                 .build())
 }

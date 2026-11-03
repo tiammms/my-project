@@ -32,6 +32,7 @@ EXPECTED_PERMISSIONS = {
     "android.permission.SYSTEM_ALERT_WINDOW": "warning on top of the call screen",
     "android.permission.POST_NOTIFICATIONS": "warnings and call reports",
     "android.permission.VIBRATE": "vibration for a high-risk warning",
+    "android.permission.WAKE_LOCK": "turn the screen on for 5 s when a warning arrives on a locked phone (the phone stays locked)",
     "android.permission.FOREGROUND_SERVICE": "visible service while the microphone or screen check runs",
     "android.permission.FOREGROUND_SERVICE_MICROPHONE": "same, microphone type (Android 14+)",
     "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION": "same, screen-capture type for the video-call check",

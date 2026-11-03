@@ -78,8 +78,12 @@ object Warnings {
         // stored in Russian (history reads the same everywhere); shown in the interface language
         val d = w.copy(title = I18n.core(w.title), reasons = w.reasons.map { I18n.core(it) }, advice = w.advice.map { I18n.core(it) })
         main.post {
+            val locked = isLocked(ctx)
             if (Perms.overlay(ctx)) showOverlay(ctx.applicationContext, d, id) else notify(ctx, d, id)
-            if (d.level == RiskLevel.HIGH && Perms.overlay(ctx)) notify(ctx, d, id)   // also stays in the shade
+            // a window on top of other apps is not visible on the lock screen: there the notification is what the person sees;
+            // a high-risk one also stays in the shade
+            if (Perms.overlay(ctx) && (d.level == RiskLevel.HIGH || (locked && d.level != RiskLevel.LOW))) notify(ctx, d, id)
+            if (locked && d.level != RiskLevel.LOW) wakeScreen(ctx)
         }
     }
 
@@ -377,7 +381,7 @@ object Warnings {
             .setContentIntent(open)
             .setAutoCancel(true)
             .apply { if (w.offerListening) addAction(0, tr("Слушать звонок", "Қоңырауды тыңдау"), listenIntent(ctx)) }
-            .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS) }
+            .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS, headline(w.level)) }
             .build()
         ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_ALERT, n)
     }
@@ -396,6 +400,22 @@ object Warnings {
     }
 
     fun cancelListenOffer(ctx: Context) = ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_OFFER)
+
+    private fun isLocked(ctx: Context): Boolean = try {
+        ctx.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true ||
+            ctx.getSystemService(android.os.PowerManager::class.java)?.isInteractive == false
+    } catch (_: Exception) { false }
+
+    /** Turns the screen on for a few seconds so the warning on the lock screen is seen (the phone stays locked). */
+    @Suppress("DEPRECATION")
+    private fun wakeScreen(ctx: Context) {
+        try {
+            val pm = ctx.getSystemService(android.os.PowerManager::class.java) ?: return
+            if (pm.isInteractive) return
+            pm.newWakeLock(android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                android.os.PowerManager.ON_AFTER_RELEASE, "saqtan:warning").acquire(5_000L)
+        } catch (_: Exception) {}
+    }
 
     private fun vibrate(ctx: Context, level: RiskLevel) {
         try {
