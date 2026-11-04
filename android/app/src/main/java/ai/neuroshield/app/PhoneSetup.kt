@@ -34,8 +34,14 @@ object PhoneSetup {
         out += Check("battery", tr("Без ограничения батареи", "Батарея шектеусіз"),
             tr("Иначе система может усыпить Saqtan, и он не заметит звонок", "Әйтпесе жүйе Saqtan-ды ұйықтатып, қоңырауды байқамауы мүмкін"),
             try { ctx.getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(ctx.packageName) } catch (_: Exception) { null })
-        if (strictMaker) out += Check("autostart", tr("Автозапуск", "Автоіске қосу"),
-            tr("На ${Build.MANUFACTURER} без него Saqtan не запускается при звонке, пока его не откроют. Проверьте вручную", "${Build.MANUFACTURER} телефонында онсыз Saqtan қоңырау кезінде іске қосылмайды. Қолмен тексеріңіз"), null)
+        // after a restart the app can tell whether the system started it (BootReceiver); before the first restart only by hand
+        val boot = BootLog.startedAfterLastBoot(ctx)
+        if (strictMaker || boot == false) out += Check("autostart", tr("Автозапуск", "Автоіске қосу"),
+            when (boot) {
+                true -> tr("После перезагрузки телефон сам запустил Saqtan", "Қайта қосылғаннан кейін телефон Saqtan-ды өзі іске қосты")
+                false -> tr("После перезагрузки телефон не запустил Saqtan: автозапуск запрещён. Без него Saqtan не замечает звонки и SMS", "Қайта қосылғаннан кейін телефон Saqtan-ды іске қоспады: автоіске қосуға тыйым салынған. Онсыз Saqtan қоңырау мен SMS-ті байқамайды")
+                null -> tr("На ${Build.MANUFACTURER} без него Saqtan не запускается при звонке, пока его не откроют. Разрешите вручную; после перезагрузки телефона здесь будет видно, сработало ли", "${Build.MANUFACTURER} телефонында онсыз Saqtan қоңырау кезінде іске қосылмайды. Қолмен рұқсат беріңіз; телефон қайта қосылғаннан кейін мұнда нәтижесі көрінеді")
+            }, boot)
         out += Check("tts", tr("Голосовой движок", "Дауыс қозғалтқышы"),
             tr("Нужен, чтобы предупреждение звучало вслух", "Ескерту дауыстап айтылуы үшін қажет"), ttsEngineInstalled(ctx))
         return out
@@ -68,7 +74,9 @@ object PhoneSetup {
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, pkg), details)
             "lockscreen" -> listOf(Intent("android.settings.NOTIFICATION_SETTINGS"),
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, pkg), details)
-            "battery" -> listOf(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS), details)
+            // system dialog "allow Saqtan to run in the background" (one tap); if a phone hides it, the list of apps
+            "battery" -> listOf(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$pkg")),
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS), details)
             "autostart" -> listOf(
                 // OPPO / realme / OnePlus (ColorOS)
                 Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")),
