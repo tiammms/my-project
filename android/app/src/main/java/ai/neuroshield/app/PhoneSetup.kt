@@ -42,6 +42,10 @@ object PhoneSetup {
                 false -> tr("После перезагрузки телефон не запустил Saqtan: автозапуск запрещён. Без него Saqtan не замечает звонки и SMS", "Қайта қосылғаннан кейін телефон Saqtan-ды іске қоспады: автоіске қосуға тыйым салынған. Онсыз Saqtan қоңырау мен SMS-ті байқамайды")
                 null -> tr("На ${Build.MANUFACTURER} без него Saqtan не запускается при звонке, пока его не откроют. Разрешите вручную; после перезагрузки телефона здесь будет видно, сработало ли", "${Build.MANUFACTURER} телефонында онсыз Saqtan қоңырау кезінде іске қосылмайды. Қолмен рұқсат беріңіз; телефон қайта қосылғаннан кейін мұнда нәтижесі көрінеді")
             }, boot)
+        out += Check("callaudio", tr("Звук звонка для анализа речи (эксперимент)", "Сөйлеуді талдауға қоңырау дыбысы (тәжірибе)"),
+            tr("Если в отчёте о звонке написано «телефон отдаёт тишину»: включите службу Saqtan в «Специальных возможностях». Она не читает экран; помогает не на всех телефонах",
+                "Қоңырау есебінде «телефон тыныштық береді» деп жазылса: «Арнайы мүмкіндіктерде» Saqtan қызметін қосыңыз. Ол экранды оқымайды; барлық телефонда көмектеспейді"),
+            ai.neuroshield.app.listen.CallAudioAccessibility.enabled(ctx))
         out += Check("tts", tr("Голосовой движок", "Дауыс қозғалтқышы"),
             tr("Нужен, чтобы предупреждение звучало вслух", "Ескерту дауыстап айтылуы үшін қажет"), ttsEngineInstalled(ctx))
         return out
@@ -89,6 +93,7 @@ object PhoneSetup {
                 // Huawei / Honor
                 Intent().setComponent(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")),
                 details)
+            "callaudio" -> listOf(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), details)
             "tts" -> listOf(Intent("com.android.settings.TTS_SETTINGS"),
                 Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.tts")), details)
             else -> listOf(details)
