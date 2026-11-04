@@ -234,15 +234,22 @@ class ListenService : Service() {
         val inCall = app.prefs.callState == "OFFHOOK"
         ListenState.ui.value = ListenUi(running = true, inCall = inCall, speakerOn = isSpeakerOn(am),
             message = tr("Загружаю модель распознавания…", "Тану моделі жүктелуде…"))
+        // every way this start can end is written to the call report (never a bare "did not start")
+        fun state(st: ai.neuroshield.app.core.SpeechStatus) = ai.neuroshield.app.call.CallSessions.on(this, ai.neuroshield.app.core.CallEvent.SpeechState(System.currentTimeMillis(), st))
+        if (inCall) state(ai.neuroshield.app.core.SpeechStatus.STARTING)
         LibVosk.setLogLevel(LogLevel.WARNINGS)
         val model = if (dir == null) null else try { Model(dir.absolutePath) } catch (e: Exception) {
-            if (!record) { finish(tr("Модель не загрузилась", "Модель жүктелмеді")); return } else null
+            if (!record) { if (inCall) state(ai.neuroshield.app.core.SpeechStatus.MODEL_FAILED); finish(tr("Модель не загрузилась", "Модель жүктелмеді")); return } else null
         }
         val rec = model?.let { Recognizer(it, SAMPLE_RATE.toFloat()) }
         val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        val audio = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuf, SAMPLE_RATE))
-        if (audio.state != AudioRecord.STATE_INITIALIZED) { rec?.close(); model?.close(); finish(tr("Микрофон занят или недоступен", "Микрофон бос емес немесе қолжетімсіз")); return }
+        // during a call some phones refuse the plain MIC source but give another one: try them in order
+        val audio = openAudio(maxOf(minBuf, SAMPLE_RATE))
+        if (audio == null) {
+            rec?.close(); model?.close()
+            if (inCall) state(ai.neuroshield.app.core.SpeechStatus.MIC_BUSY)
+            finish(tr("Микрофон занят звонком: телефон не даёт приложениям микрофон во время разговора", "Микрофонды қоңырау алып тұр: телефон сөйлесу кезінде қосымшаларға микрофон бермейді")); return
+        }
         val monitor = LiveCallMonitor()
         // experimental synthetic-voice check (4-second pieces scored on a separate thread; pieces are dropped while busy)
         val voiceModel = VoiceModel.get(this)
@@ -354,6 +361,17 @@ class ListenService : Service() {
             advice = r.tactics.sortedByDescending { it.weight }.take(2).map { it.advice },
             excerpt = transcript.takeLast(600),
         ))
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun openAudio(bufBytes: Int): AudioRecord? {
+        for (src in intArrayOf(MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION, MediaRecorder.AudioSource.CAMCORDER)) {
+            val a = try { AudioRecord(src, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufBytes) } catch (_: Exception) { null }
+            if (a != null && a.state == AudioRecord.STATE_INITIALIZED) { android.util.Log.i("SaqtanListen", "audio source $src"); return a }
+            try { a?.release() } catch (_: Exception) {}
+        }
+        return null
     }
 
     private fun finish(message: String?) {
