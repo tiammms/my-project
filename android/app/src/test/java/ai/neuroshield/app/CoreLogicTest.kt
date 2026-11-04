@@ -1032,3 +1032,23 @@ class SenderStatusTest {
         } finally { I18n.kk = false }
     }
 }
+
+class BootJudgeTest {
+    private val boot = 1_800_000_000_000L
+    private val min = 60_000L
+
+    @Test fun bootJudgeStartedAfterRestart() {
+        assertEquals(true, BootJudge.judge(boot, boot + 2 * min, boot - 86_400_000L, 10 * min))
+    }
+
+    @Test fun bootJudgeNotStartedAfterRestartMeansAutoStartBlocked() {
+        // recorded before the latest restart only, restarted 10 minutes ago
+        assertEquals(false, BootJudge.judge(boot, boot - 86_400_000L, boot - 2 * 86_400_000L, 10 * min))
+        assertEquals(false, BootJudge.judge(boot, 0L, boot - 86_400_000L, 10 * min))
+    }
+
+    @Test fun bootJudgeUnknownRightAfterRestartOrInstall() {
+        assertNull("the boot broadcast may come late", BootJudge.judge(boot, 0L, boot - 86_400_000L, 2 * min))
+        assertNull("installed after the restart: nothing to judge", BootJudge.judge(boot, 0L, boot + 5 * min, 30 * min))
+    }
+}
