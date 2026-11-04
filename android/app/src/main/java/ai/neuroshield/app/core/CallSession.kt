@@ -22,6 +22,11 @@ enum class SpeechStatus(val ru: String) {
     NOT_AVAILABLE("недоступен: звук звонков в мессенджерах закрыт для других приложений"),
     /** auto mode was on, but the phone did not let the app come forward and start the microphone during the call */
     BLOCKED("не запустился сам: телефон не дал Saqtan включить микрофон во время звонка — показана кнопка «Слушать звонок»"),
+    /** the service started and was loading the speech model when the call ended */
+    STARTING("запускался, но звонок закончился раньше, чем загрузилась модель речи"),
+    /** no audio source could be opened: the phone keeps the microphone for the call */
+    MIC_BUSY("не запустился: микрофон занят звонком — телефон не даёт приложениям микрофон во время разговора"),
+    MODEL_FAILED("не запустился: модель распознавания речи не загрузилась"),
 }
 
 sealed interface CallEvent {
@@ -82,7 +87,8 @@ class CallSession(
 
     private fun rank(s: SpeechStatus) = when (s) {
         SpeechStatus.NOT_STARTED -> 0
-        SpeechStatus.AUTO_OFF, SpeechStatus.NO_MODEL, SpeechStatus.NO_PERMISSION, SpeechStatus.NOT_AVAILABLE, SpeechStatus.BLOCKED -> 1
+        SpeechStatus.AUTO_OFF, SpeechStatus.NO_MODEL, SpeechStatus.NO_PERMISSION, SpeechStatus.NOT_AVAILABLE, SpeechStatus.BLOCKED,
+        SpeechStatus.STARTING, SpeechStatus.MIC_BUSY, SpeechStatus.MODEL_FAILED -> 1
         SpeechStatus.STARTED -> 2
         SpeechStatus.SILENCE -> 3
     }
