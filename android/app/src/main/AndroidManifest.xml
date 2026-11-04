@@ -17,6 +17,10 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- turns the screen on for a few seconds when a warning arrives on a locked phone -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- after a restart: drop a call state saved before it and record that the system started the app (auto-start check) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- one-tap "do not restrict battery" dialog in Protection (ColorOS and others put background apps to sleep) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
@@ -74,6 +78,17 @@
                 <action android:name="android.telecom.CallScreeningService" />
             </intent-filter>
         </service>
+
+        <!-- not exported: boot broadcasts come from the system, which reaches non-exported receivers -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".call.ReportActionReceiver"
