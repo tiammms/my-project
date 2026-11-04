@@ -237,6 +237,54 @@ else
   top -b -n 1 > /dev/null 2>&1; adb shell top -b -n 1 -H -p $pid | head -30 >> shots/stack-after-voice-demo.txt 2>&1 || true
 fi
 adb shell am force-stop $P; sleep 2
+# ---- locked phone: a warning must be posted (and, when turned on, spoken) without unlocking, before the call is answered.
+# The logcat is not cleared here (a later check reads the whole log); the last matching lines are used instead.
+adb shell am force-stop $P; sleep 2
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
+adb shell am start -n $P/.MainActivity --es route settings; sleep 3
+for k in 1 2 3 4 5; do
+  adb shell uiautomator dump /sdcard/s.xml >/dev/null 2>&1; adb pull /sdcard/s.xml /tmp/s.xml >/dev/null 2>&1
+  if grep -q 'text="Говорить предупреждение вслух"' /tmp/s.xml; then break; fi
+  adb shell input swipe 540 1700 540 900 300; sleep 1
+done
+tap_text "Говорить предупреждение вслух"; sleep 8; shot 39-tts-sample 0
+adb logcat -d -s SaqtanTTS | tail -8 > shots/tts-sample.txt
+if grep -q "speak result=0" shots/tts-sample.txt; then echo "PASS spoken warning: the speech engine accepted the sample phrase" >> shots/asserts.txt
+elif grep -q "init status=-1" shots/tts-sample.txt; then echo "INFO spoken warning: no speech engine on this emulator image (the app tells the user what to install)" >> shots/asserts.txt
+else echo "FAIL spoken warning sample (see tts-sample.txt)" >> shots/asserts.txt; fi
+adb shell input keyevent KEYCODE_HOME; sleep 1
+adb shell locksettings set-disabled false || true
+adb shell input keyevent KEYCODE_SLEEP; sleep 4
+adb emu gsm call 87015550321; sleep 9; shot 40-locked-incoming-call 0
+adb shell dumpsys notification --noredact > shots/notif-locked-call.txt
+adb logcat -d -s SaqtanWarn | grep "source=incoming_call" | tail -1 > shots/warn-locked-call.txt
+adb emu gsm cancel 87015550321; sleep 5
+adb shell dumpsys notification --noredact > shots/notif-after-call.txt
+if grep -q "locked=true" shots/warn-locked-call.txt; then
+  if grep -q "Звонит незнакомый номер" shots/notif-locked-call.txt; then echo "PASS locked phone: unknown-caller warning is posted while it rings, before answering" >> shots/asserts.txt
+  else echo "FAIL locked phone: unknown-caller warning is posted while it rings" >> shots/asserts.txt; fi
+  if grep -q "Звонит незнакомый номер" shots/notif-after-call.txt; then echo "FAIL the unknown-caller tip is removed after the call" >> shots/asserts.txt
+  else echo "PASS the unknown-caller tip is removed after the call" >> shots/asserts.txt; fi
+else echo "UNVERIFIED locked-phone call: the emulator did not report a locked screen ($(cat shots/warn-locked-call.txt))" >> shots/asserts.txt; fi
+adb shell input keyevent KEYCODE_SLEEP; sleep 4
+adb emu sms send 7700 "Update your bank app: install the app from http://files.example.kz/bank.apk"; sleep 9
+adb shell dumpsys power | grep -o "mWakefulness=[A-Za-z]*" > shots/power-after-sms.txt
+shot 41-locked-sms 0
+adb shell dumpsys notification --noredact > shots/notif-locked-sms.txt
+adb logcat -d -s SaqtanWarn | grep "source=sms_text" | tail -1 > shots/warn-locked-sms.txt
+adb logcat -d -s SaqtanTTS | tail -6 > shots/tts-locked-sms.txt
+if grep -q "level=HIGH locked=true" shots/warn-locked-sms.txt; then
+  if grep -q "ВОЗМОЖНО, МОШЕННИК" shots/notif-locked-sms.txt; then echo "PASS locked phone: high-risk SMS warning is posted" >> shots/asserts.txt
+  else echo "FAIL locked phone: high-risk SMS warning is posted" >> shots/asserts.txt; fi
+  if grep -q "Awake" shots/power-after-sms.txt; then echo "PASS locked phone: the screen turns on for the warning" >> shots/asserts.txt
+  else echo "FAIL locked phone: the screen turns on for the warning ($(cat shots/power-after-sms.txt))" >> shots/asserts.txt; fi
+  if grep -q "speak result=0" shots/tts-locked-sms.txt; then echo "PASS locked phone: the high-risk warning is spoken automatically" >> shots/asserts.txt
+  elif grep -q "init status=-1" shots/tts-sample.txt; then echo "INFO locked phone: spoken warning not checked, no speech engine on this emulator image" >> shots/asserts.txt
+  else echo "FAIL locked phone: the high-risk warning is spoken automatically (see tts-locked-sms.txt)" >> shots/asserts.txt; fi
+else echo "UNVERIFIED locked-phone SMS: $(cat shots/warn-locked-sms.txt)" >> shots/asserts.txt; fi
+adb shell input keyevent KEYCODE_WAKEUP; sleep 1; adb shell wm dismiss-keyguard; sleep 2
+adb shell am force-stop $P; sleep 2
+
 # Kazakh interface: switch the language in settings like a user would, then look at the main screens
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3; ensure_ready
 adb shell am start -n $P/.MainActivity --es route settings; sleep 3

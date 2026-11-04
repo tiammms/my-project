@@ -436,6 +436,23 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
             }
         }
 
+        // ---- phone settings that decide whether a warning is seen on a locked phone (OPPO/ColorOS and others)
+        val phone = remember(tick, refresh) { ai.neuroshield.app.PhoneSetup.checks(ctx) }
+        SectionTitle(tr("Телефон: экран блокировки и фон", "Телефон: құлыптаулы экран және фон"))
+        GlassCard(padding = 10.dp) {
+            phone.forEach { c ->
+                ListRow(if (c.id == "tts") Icons.AutoMirrored.Filled.VolumeUp else if (c.id == "battery" || c.id == "autostart") Icons.Filled.Settings else Icons.Filled.NotificationsActive,
+                    c.title, c.why, tint = if (c.ok == true) NS.cyan else NS.muted,
+                    onClick = if (c.ok == true) null else ({ ai.neuroshield.app.PhoneSetup.open(ctx, c.id) })) {
+                    when (c.ok) {
+                        true -> Icon(Icons.Filled.CheckCircle, tr("включено", "қосулы"), tint = NS.safe, modifier = Modifier.size(22.dp))
+                        false -> Text(tr("Включить", "Қосу"), color = NS.cyan, style = MaterialTheme.typography.labelLarge)
+                        null -> Text(tr("Проверить", "Тексеру"), color = NS.warn, style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+        }
+
         // ---- voice AI
         SectionTitle(tr("Голосовой ИИ", "Дауыстық ЖИ"))
         GlassCard(accent = if (ui.running) (ui.risk?.level?.let { levelColor(it) } ?: NS.cyan) else null) {

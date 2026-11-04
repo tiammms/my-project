@@ -46,6 +46,7 @@ class NeuroShieldApp : Application() {
         nm.createNotificationChannel(NotificationChannel(CH_ALERTS, tr("Предупреждения о мошенничестве", "Алаяқтық туралы ескертулер"), NotificationManager.IMPORTANCE_HIGH).apply {
             description = tr("Срочные предупреждения во время звонков и при получении кодов", "Қоңырау кезінде және код келгенде шұғыл ескертулер")
             enableVibration(true)
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE   // headline + what to do on the lock screen, details after unlocking
         })
         nm.createNotificationChannel(NotificationChannel(CH_CALL, tr("Защита звонка", "Қоңырауды қорғау"), NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = tr("Предложение включить анализ речи во время звонка с незнакомого номера", "Бейтаныс нөмірмен сөйлескенде сөйлеуді талдауды қосу ұсынысы")

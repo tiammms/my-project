@@ -62,6 +62,7 @@ object Warnings {
     private var offerView: View? = null
     private const val NOTIF_ALERT = 1001
     const val NOTIF_OFFER = 1002
+    private const val NOTIF_CALL_TIP = 1003
 
     fun headline(level: RiskLevel) = when (level) {
         RiskLevel.HIGH -> tr("⚠️ ВНИМАНИЕ! ВОЗМОЖНО, МОШЕННИК!", "⚠️ НАЗАР АУДАРЫҢЫЗ! АЛАЯҚ БОЛУЫ МҮМКІН!")
@@ -74,7 +75,8 @@ object Warnings {
         val id = if (!w.isTest) app.alerts.add(w.source, w.number, w.level, w.score, w.title, w.reasons,
             if (app.prefs.storeExcerpts) w.excerpt?.take(600) else null) else -1L
         if (w.level != RiskLevel.LOW) vibrate(ctx, w.level)
-        if (w.level == RiskLevel.HIGH && app.prefs.speakWarnings) SpokenAlert.say(ctx)
+        if (w.level == RiskLevel.HIGH && app.prefs.speakWarnings)
+            SpokenAlert.say(ctx, if (w.source == "sms_text" || w.source == "messenger_text") SpokenAlert.Kind.MESSAGE else SpokenAlert.Kind.CALL)
         // stored in Russian (history reads the same everywhere); shown in the interface language
         val d = w.copy(title = I18n.core(w.title), reasons = w.reasons.map { I18n.core(it) }, advice = w.advice.map { I18n.core(it) })
         main.post {
@@ -83,23 +85,19 @@ object Warnings {
             // a window on top of other apps is not visible on the lock screen: there the notification is what the person sees;
             // a high-risk one also stays in the shade
             if (Perms.overlay(ctx) && (d.level == RiskLevel.HIGH || locked)) notify(ctx, d, id)
-            lowCallTip = locked && d.source == "incoming_call" && d.level == RiskLevel.LOW
             if (locked) wakeScreen(ctx)
+            android.util.Log.i("SaqtanWarn", "shown source=${d.source} level=${d.level} locked=$locked overlay=${Perms.overlay(ctx)} notifications=${Perms.notifications(ctx)}")
         }
     }
-
-    /** true while the lock-screen notification is only the "unknown number" tip of the ringing call */
-    @Volatile private var lowCallTip = false
 
     fun hide(ctx: Context? = null) = main.post {
         dismiss(view); view = null
         if (ctx != null) cancelLowCallTip(ctx)
     }
 
+    /** the plain "unknown number" tip has its own notification id, so it never replaces (or removes) a real warning */
     fun cancelLowCallTip(ctx: Context) {
-        if (!lowCallTip) return
-        lowCallTip = false
-        try { ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_ALERT) } catch (_: Exception) {}
+        try { ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_CALL_TIP) } catch (_: Exception) {}
     }
 
     private fun removeView(v: View?) {
@@ -398,7 +396,8 @@ object Warnings {
             .apply { if (w.offerListening) addAction(0, tr("Слушать звонок", "Қоңырауды тыңдау"), listenIntent(ctx)) }
             .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS, headline(w.level), lockScreenAdvice(w)) }
             .build()
-        ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_ALERT, n)
+        val nid = if (w.source == "incoming_call" && w.level == RiskLevel.LOW) NOTIF_CALL_TIP else NOTIF_ALERT
+        ctx.getSystemService(NotificationManager::class.java).notify(nid, n)
     }
 
     fun notifyListenOffer(ctx: Context, number: String?) {

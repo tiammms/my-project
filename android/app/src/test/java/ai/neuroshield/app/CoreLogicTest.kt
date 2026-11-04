@@ -52,9 +52,11 @@ class ScamAnalyzerTest {
         assertTrue(ScamAnalyzer.analyze("сіздің картаңыздан күдікті аударым жасалып жатыр шұғыл түрде растау керек").tactics.any { it.id == "urgency_pressure" })
     }
     @Test fun spokenWarningDoesNotRaiseRiskWhenHeardBack() {
-        // same text as alert/SpokenAlert.kt (RU, KK): on speakerphone the app hears its own warning
-        for (t in listOf("Внимание. Возможно, это мошенник. Положите трубку и сами позвоните в банк.",
-                "Абайлаңыз. Бұл алаяқ болуы мүмкін. Тұтқаны қойып, банкке өзіңіз қоңырау шалыңыз.")) {
+        // same texts as alert/SpokenAlert.PHRASES: on speakerphone the app hears its own warning
+        for (t in listOf("Внимание! Возможно, это мошенник. Никому не говорите коды и пароли, ничего не сообщайте о своей карте. Положите трубку и сами позвоните в банк.",
+                "Внимание! Возможно, это сообщение от мошенников. Не открывайте ссылки, никому не говорите коды и пароли.",
+                "Назар аударыңыз! Бұл алаяқ болуы мүмкін. Кодты, құпия сөзді және картаңыз туралы ешнәрсе айтпаңыз. Тұтқаны қойып, банкке өзіңіз қоңырау шалыңыз.",
+                "Назар аударыңыз! Бұл хабарлама алаяқтардан болуы мүмкін. Сілтемені ашпаңыз, кодты және құпия сөзді ешкімге айтпаңыз.")) {
             val r = ScamAnalyzer.analyze(t)
             assertEquals(t, RiskLevel.LOW, r.level); assertTrue(t, r.tactics.all { it.weak })
         }
@@ -64,6 +66,11 @@ class ScamAnalyzerTest {
                 "құпия сөзімді ұмытып қалдым қалпына келтірдім", "кеше жол апаты болды деп жаңалықта айтты",
                 "шұғыл жиналыс бар сағат үште кездесейік", "мектептің қауіпсіздік қызметі бүгін жиналыс өткізеді", "мама срочно үйге кел тамақ дайын"))
             assertEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+        // bank advice "never tell anyone your password / codes" is not a request and not secrecy
+        for (t in listOf("құпия сөзді ешкімге айтпаңыз", "никому не говорите коды"))
+            assertTrue(t, ScamAnalyzer.analyze(t).tactics.all { it.weak })
+        assertTrue(ScamAnalyzer.analyze("құпия сөзіңізді айтыңыз").tactics.any { it.id == "credentials_request" })
+        assertTrue(ScamAnalyzer.analyze("никому не говори маме").tactics.any { it.id == "secrecy_isolation" })
         // a bank SMS that warns not to share the code is not a request for the code
         assertFalse(ScamAnalyzer.analyze("кодты ешкімге айтпаңыз деп банк смс жіберді").tactics.any { it.id == "credentials_request" || it.id == "secrecy_isolation" })
     }
