@@ -23,6 +23,7 @@ import ai.neuroshield.app.core.ReputationSources
 import ai.neuroshield.app.core.RiskLevel
 import ai.neuroshield.app.core.SpeechStatus
 import ai.neuroshield.app.listen.ListenService
+import ai.neuroshield.app.listen.ListenState
 import ai.neuroshield.app.listen.SpeechModels
 
 /**
@@ -65,6 +66,8 @@ class PhoneStateReceiver : BroadcastReceiver() {
 }
 
 object CallTracker {
+    /** how long the automatic start of speech analysis may take before the one-tap fallback is shown */
+    private const val AUTO_LISTEN_CHECK_MS = 6_000L
     private var lastWarnedNumber: String? = null
     private var lastWarnedAt = 0L
 
@@ -166,6 +169,16 @@ object CallTracker {
         if (status == null) {
             // open the app for a moment (allowed with the overlay permission), start listening, go back to the call
             Warnings.openListen(ctx, auto = true)
+            // some phones (OPPO/ColorOS, a call answered on the lock screen) silently refuse to bring the app forward, so the
+            // microphone never starts and nothing at all happens during the call; then say so and offer the one-tap way
+            val app = ctx.applicationContext
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                if (app.app.prefs.callState == "OFFHOOK" && !ListenState.ui.value.running) {
+                    android.util.Log.i("SaqtanCall", "auto listening did not start")
+                    CallSessions.on(app, CallEvent.SpeechState(System.currentTimeMillis(), SpeechStatus.BLOCKED))
+                    Warnings.showListenOffer(app); Warnings.notifyListenOffer(app, app.app.prefs.callNumber)
+                }
+            }, AUTO_LISTEN_CHECK_MS)
         } else {
             CallSessions.on(ctx, CallEvent.SpeechState(System.currentTimeMillis(), status))
             if (p.offerListening) { Warnings.showListenOffer(ctx); Warnings.notifyListenOffer(ctx, p.callNumber) }
