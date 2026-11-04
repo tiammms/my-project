@@ -613,6 +613,21 @@ class CallScenarioTest {
         assertTrue(s2.report()!!.checks.any { it == "Анализ речи: запущен" })
     }
 
+    @Test fun everySpeechStartOutcomeIsReported() {
+        for ((st, text) in listOf(SpeechStatus.STARTING to "звонок закончился раньше", SpeechStatus.MIC_BUSY to "микрофон занят звонком",
+                SpeechStatus.MODEL_FAILED to "модель распознавания речи не загрузилась")) {
+            val s = CallSession(); s.on(CallEvent.Ringing(0, "+77015550007", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550007"))))
+            s.on(CallEvent.Answered(1)); s.on(CallEvent.SpeechState(2, SpeechStatus.STARTING))
+            if (st != SpeechStatus.STARTING) s.on(CallEvent.SpeechState(3, st))
+            s.on(CallEvent.Ended(9))
+            assertTrue(st.name, s.report()!!.checks.any { it.startsWith("Анализ речи:") && it.contains(text) })
+        }
+        // once the microphone really started, a later loading note does not hide it
+        val s = CallSession(); s.on(CallEvent.Ringing(0, "+77015550007", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550007"))))
+        s.on(CallEvent.Answered(1)); s.on(CallEvent.SpeechState(2, SpeechStatus.STARTING)); s.on(CallEvent.SpeechState(4, SpeechStatus.STARTED)); s.on(CallEvent.Ended(9))
+        assertTrue(s.report()!!.checks.any { it == "Анализ речи: запущен" })
+    }
+
     @Test fun whatsappCallDetectedAndNotDetected() {
         assertTrue(Messenger.parse("com.whatsapp", "+44 7911 123456", "Входящий голосовой звонок", true) is MessengerEvent.IncomingCall)
         // a call whose notification says nothing about a call and is not in the call category is not seen as a call
