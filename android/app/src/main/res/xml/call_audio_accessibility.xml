@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Saqtan's accessibility service does nothing with the screen: it reads no window content, performs no gestures and
+     reacts to no events. It exists only so that, on phones that allow it, the microphone is not silenced during a call
+     (see listen/CallAudioAccessibility.kt). -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/a11y_description"
+    android:summary="@string/a11y_summary"
+    android:accessibilityEventTypes="typeAnnouncement"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:notificationTimeout="1000"
+    android:canRetrieveWindowContent="false"
+    android:accessibilityFlags="flagDefault" />
