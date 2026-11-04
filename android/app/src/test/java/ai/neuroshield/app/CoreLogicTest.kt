@@ -603,6 +603,16 @@ class CallScenarioTest {
         assertTrue(s.report()!!.checks.any { it.contains("нет разрешения на микрофон") })
     }
 
+    @Test fun blockedAutoListeningIsReportedNotHidden() {
+        val s = CallSession(); s.on(CallEvent.Ringing(0, "+77015550006", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550006"))))
+        s.on(CallEvent.Answered(1)); s.on(CallEvent.SpeechState(2, SpeechStatus.BLOCKED)); s.on(CallEvent.Ended(3))
+        assertTrue(s.report()!!.checks.any { it.contains("телефон не дал Saqtan включить микрофон") })
+        // if the user then starts it by hand, the report says it ran
+        val s2 = CallSession(); s2.on(CallEvent.Ringing(0, "+77015550006", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550006"))))
+        s2.on(CallEvent.Answered(1)); s2.on(CallEvent.SpeechState(2, SpeechStatus.BLOCKED)); s2.on(CallEvent.SpeechState(5, SpeechStatus.STARTED)); s2.on(CallEvent.Ended(9))
+        assertTrue(s2.report()!!.checks.any { it == "Анализ речи: запущен" })
+    }
+
     @Test fun whatsappCallDetectedAndNotDetected() {
         assertTrue(Messenger.parse("com.whatsapp", "+44 7911 123456", "Входящий голосовой звонок", true) is MessengerEvent.IncomingCall)
         // a call whose notification says nothing about a call and is not in the call category is not seen as a call
