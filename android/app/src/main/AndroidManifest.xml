@@ -121,6 +121,21 @@
             </intent-filter>
         </service>
 
+        <!-- Experimental, off until the user turns it on in Accessibility settings: on some phones Android stops silencing
+             the microphone during a call while an app's accessibility service is on. Reads no screen content. -->
+        <service
+            android:name=".listen.CallAudioAccessibility"
+            android:exported="true"
+            android:label="Saqtan: звук звонка (эксперимент)"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/call_audio_accessibility" />
+        </service>
+
         <service
             android:name=".listen.ListenService"
             android:exported="false"
