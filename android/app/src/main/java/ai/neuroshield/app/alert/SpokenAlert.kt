@@ -100,8 +100,8 @@ object SpokenAlert {
                 override fun onStart(id: String?) { Log.i(TAG, "speaking") }
                 override fun onDone(id: String?) { Log.i(TAG, "done"); finished() }
                 @Deprecated("Deprecated in Java") override fun onError(id: String?) { onError(id, -1) }
-                override fun onError(id: String?, code: Int) {
-                    Log.w(TAG, "error code=$code"); finished()
+                override fun onError(id: String?, errorCode: Int) {
+                    Log.w(TAG, "engine error=$errorCode"); finished()
                     report(tr("Телефон не смог произнести фразу. Проверьте громкость мультимедиа и голосовой движок в настройках: «Синтез речи».",
                         "Телефон фразаны айта алмады. Мультимедиа дыбысын және баптаулардағы «Сөйлеу синтезі» бөлімін тексеріңіз."))
                 }
