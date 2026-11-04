@@ -365,8 +365,13 @@ class ListenService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun openAudio(bufBytes: Int): AudioRecord? {
-        for (src in intArrayOf(MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                MediaRecorder.AudioSource.VOICE_COMMUNICATION, MediaRecorder.AudioSource.CAMCORDER)) {
+        // with the experimental accessibility mode on, the source call-recording apps use comes first
+        val order = if (CallAudioAccessibility.enabled(this))
+            intArrayOf(MediaRecorder.AudioSource.VOICE_RECOGNITION, MediaRecorder.AudioSource.MIC,
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION, MediaRecorder.AudioSource.CAMCORDER)
+        else intArrayOf(MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION, MediaRecorder.AudioSource.CAMCORDER)
+        for (src in order) {
             val a = try { AudioRecord(src, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufBytes) } catch (_: Exception) { null }
             if (a != null && a.state == AudioRecord.STATE_INITIALIZED) { android.util.Log.i("SaqtanListen", "audio source $src"); return a }
             try { a?.release() } catch (_: Exception) {}
