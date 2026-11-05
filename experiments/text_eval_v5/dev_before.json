@@ -1,0 +1,230 @@
+{
+ "set": "dev",
+ "groups": {
+  "kk/retell": {
+   "scam_warned": "10/15",
+   "scam_high": "5/15",
+   "normal_false_warnings": "0/15"
+  },
+  "kk/speech": {
+   "scam_warned": "12/30",
+   "scam_high": "4/30",
+   "normal_false_warnings": "0/30"
+  },
+  "ru/retell": {
+   "scam_warned": "14/20",
+   "scam_high": "4/20",
+   "normal_false_warnings": "0/20"
+  },
+  "total": {
+   "scam_warned": "36/65",
+   "scam_high": "13/65",
+   "normal_false_warnings": "0/65"
+  }
+ },
+ "errors": [
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "ақшаңызды резервтік шотқа ауыстыру керек әйтпесе жоғалады",
+   "level": "LOW",
+   "score": 23.5
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "бұл әңгіме туралы отбасыңызға айтпаңыз тергеу жүріп жатыр",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "сіздің жеке деректеріңіз алаяқтардың қолына түсті шұғыл әрекет ету керек",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "жеткізу ақысын төлесеңіз сыйлықты бүгін әкелеміз",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "ешкімге тіс жармаңыз бұл құпия тергеу",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "қаржы полициясынан хабарласып тұрмын сіздің шотыңыз ақша жылыстату ісіне ілікті",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "әке мен ұлыңмын нөмірім өзгерді тез ақша аударшы",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "уақыт өте аз дәл қазір шешу керек",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "сізге компенсация төленеді деректеріңізді жіберіңіз",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "несиеңізді жабу үшін алдымен сақтандыру ақысын төлеңіз",
+   "level": "LOW",
+   "score": 10.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "барлық жинағыңызды қолма қол шешіп курьерге беріңіз",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "сілтеме арқылы кіріп картаңызды растаңыз",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "банктің маманымын сіздің есепшотыңызға шабуыл жасалып жатыр",
+   "level": "LOW",
+   "score": 10.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "ақшаны терминал арқылы мына нөмірге салыңыз",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "тергеуге көмектессеңіз ғана жауапкершіліктен құтыласыз ешкімге айтпаңыз",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "сізді прокуратурадан мазалап тұрмыз сотқа шақыру қағазы бар",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "жиырма минут ішінде аудармасаңыз шотыңыз бұғатталады",
+   "level": "LOW",
+   "score": 23.5
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "апа мен немереңмін қиын жағдайға тап болдым ақша керек",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "мне звонили из банка сказали что карту взломали и попросили продиктовать код",
+   "level": "LOW",
+   "score": 10.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "сказали что номер отключат если я не продиктую код",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "звонивший очень торопил и говорил что времени нет",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "женщина представилась сотрудником нацбанка и попросила никому не говорить о звонке",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "он говорил что я соучастник и меня арестуют если не помогу следствию",
+   "level": "LOW",
+   "score": 15.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "мне позвонил оператор и сказал продлить договор назвав код",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "ақшаны резервтік шотқа аудару керек деп айтты",
+   "level": "LOW",
+   "score": 10.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "немереңіз ауруханада ақша керек деп хабарласты",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "нөміріңіз өшіріледі деп кодты сұрады",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "уақыт аз тез аудар деп асықтырды",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "ақшаңыз жоғалады деп қорқытты",
+   "level": "LOW",
+   "score": 15.0
+  }
+ ]
+}

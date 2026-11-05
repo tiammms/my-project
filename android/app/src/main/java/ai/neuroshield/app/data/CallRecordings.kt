@@ -22,6 +22,10 @@ import javax.crypto.spec.SecretKeySpec
 object CallRecordings {
     const val RETENTION_DAYS = 30
     const val SAMPLE_RATE = 16_000
+    /** One second of audio per encrypted chunk: if the app is killed, at most about a second is lost. */
+    private const val CHUNK_BYTES = 2 * SAMPLE_RATE
+    /** Ask the storage to persist the file every 10 chunks (≈10 s), so little is lost even if the phone switches off. */
+    private const val SYNC_EVERY = 10
     private val ID = Regex("rec_[0-9]{10,16}")
 
     private fun dir(ctx: Context) = File(ctx.filesDir, "recordings").apply { mkdirs() }
@@ -51,7 +55,8 @@ object CallRecordings {
         val key = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
         val wrapped = LocalCrypto.encrypt(Base64.encodeToString(key.encoded, Base64.NO_WRAP)) ?: return null
         keyFile(ctx, id).writeText(wrapped)
-        return Recording(id, ChunkedAead.Writer(FileOutputStream(data(ctx, id)), key))
+        val fos = FileOutputStream(data(ctx, id))
+        return Recording(id, ChunkedAead.Writer(fos, key, CHUNK_BYTES) { n -> if (n % SYNC_EVERY == 0L) runCatching { fos.fd.sync() } })
     }
 
     private fun key(ctx: Context, id: String): SecretKey? {
@@ -66,18 +71,32 @@ object CallRecordings {
     /** Seconds of audio (16 kHz mono 16-bit), estimated from the file size. */
     fun seconds(ctx: Context, id: String): Int = (data(ctx, id).length() / (2L * SAMPLE_RATE)).toInt()
 
-    /** Decrypts into a temporary WAV in the cache for playback; the caller deletes it when done. */
-    fun toWav(ctx: Context, id: String): File? {
+    /** A decrypted copy for playback; [complete] = false when the recording was cut off (the app was killed). */
+    class Playable(val file: File, val complete: Boolean)
+
+    /**
+     * Decrypts into a temporary WAV in the cache for playback; the caller deletes it when done. A recording cut off
+     * by a crash is opened up to its last complete second and marked incomplete; a modified file is not opened.
+     */
+    fun open(ctx: Context, id: String): Playable? {
         val k = key(ctx, id) ?: return null
         val out = File(ctx.cacheDir, "play_$id.wav")
         return try {
             RandomAccessFile(out, "rw").use { it.setLength(0); it.write(ByteArray(44)) }
-            FileOutputStream(out, true).use { o -> FileInputStream(data(ctx, id)).use { ChunkedAead.decrypt(it, k, o) } }
+            val complete = FileOutputStream(out, true).use { o -> FileInputStream(data(ctx, id)).use { ChunkedAead.decrypt(it, k, o, allowTruncated = true) } }
             val pcm = out.length() - 44
+            if (pcm <= 0) { out.delete(); return null }
             RandomAccessFile(out, "rw").use { it.seek(0); it.write(wavHeader(pcm)) }
-            out
+            Playable(out, complete)
         } catch (e: Exception) { out.delete(); null }
     }
+
+    fun toWav(ctx: Context, id: String): File? = open(ctx, id)?.file
+
+    /** Ids of all recordings on the phone (used to show recordings left without a history entry after a crash). */
+    fun ids(ctx: Context): List<String> = dir(ctx).listFiles()?.mapNotNull { f ->
+        f.name.removeSuffix(".enc").takeIf { f.name.endsWith(".enc") && ID.matches(it) }
+    } ?: emptyList()
 
     private fun wavHeader(pcmBytes: Long): ByteArray {
         val b = java.nio.ByteBuffer.allocate(44).order(java.nio.ByteOrder.LITTLE_ENDIAN)

@@ -40,6 +40,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
@@ -56,6 +57,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -175,7 +178,7 @@ fun protectionItems(ctx: Context): List<ProtectionItem> {
         ProtectionItem(tr("Окно поверх звонка", "Қоңырау үстіндегі терезе"), tr("Предупреждение прямо на экране звонка", "Ескерту тікелей қоңырау экранында"), Perms.overlay(ctx), Icons.Filled.Layers),
         ProtectionItem(tr("Уведомления", "Хабарландырулар"), tr("Тревоги и быстрые действия", "Дабылдар және жылдам әрекеттер"), Perms.notifications(ctx), Icons.Filled.NotificationsActive),
         ProtectionItem(tr("Голосовой ИИ", "Дауыстық ЖИ"), tr("Микрофон и офлайн-модель речи", "Микрофон және офлайн сөйлеу моделі"), Perms.mic(ctx) && model, Icons.Filled.Mic),
-        ProtectionItem(tr("Мессенджеры", "Мессенджерлер"), tr("WhatsApp, Telegram, Viber и другие", "WhatsApp, Telegram, Viber және басқалар"), Perms.notificationAccess(ctx), Icons.Filled.Forum),
+        ProtectionItem(tr("Мессенджеры", "Мессенджерлер"), tr("WhatsApp, Telegram, Viber и уведомления банков", "WhatsApp, Telegram, Viber және банк хабарламалары"), Perms.notificationAccess(ctx), Icons.Filled.Forum),
     )
 }
 
@@ -187,6 +190,10 @@ fun sourceIcon(source: String): ImageVector = when (source) {
     "video_call" -> Icons.Filled.Videocam
     "face" -> Icons.Filled.Face
     "manual_text" -> Icons.Filled.TextSnippet
+    "voice_message" -> Icons.Filled.AudioFile
+    "retell" -> Icons.Filled.Mic
+    "image_check" -> Icons.Filled.Image
+    "bank_push" -> Icons.Filled.AccountBalance
     "demo" -> Icons.Filled.PlayCircle
     else -> Icons.Filled.Shield
 }
@@ -286,10 +293,17 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
         SectionTitle(tr("Быстрые проверки", "Жылдам тексерулер"))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ActionTile(Modifier.weight(1f), Icons.Filled.TextSnippet, tr("Текст", "Мәтін"), tr("SMS и слова звонящего", "SMS және қоңырау шалушының сөздері"), NS.cyan) { go("text") }
-            ActionTile(Modifier.weight(1f), Icons.Filled.Videocam, tr("Видео", "Бейне"), tr("Живой ли собеседник", "Әңгімелесуші тірі ме"), NS.violet) { go("video") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.Image, tr("Скриншот", "Скриншот"), tr("Фото «письма», переписки", "«Хаттың», хат алмасудың суреті"), NS.cyan) { go("image") }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ActionTile(Modifier.weight(1f), Icons.Filled.AudioFile, tr("Голосовое", "Дауыстық"), tr("Сообщение из WhatsApp, Telegram", "WhatsApp, Telegram хабарламасы"), NS.cyan) { go("voice") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.Mic, tr("Пересказ", "Әңгімелеу"), tr("Что сказали в звонке", "Қоңырауда не айтты"), NS.warn) { go("retell") }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ActionTile(Modifier.weight(1f), Icons.Filled.Videocam, tr("Видео", "Бейне"), tr("Живой ли собеседник", "Әңгімелесуші тірі ме"), NS.violet) { go("video") }
             ActionTile(Modifier.weight(1f), Icons.Filled.Face, tr("Лицо", "Бет"), tr("Проверка живости", "Тірілікті тексеру"), NS.safe) { go("face") }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ActionTile(Modifier.weight(1f), Icons.Filled.Warning, tr("Тест", "Тест"), tr("Пример окна угрозы", "Қауіп терезесінің үлгісі"), NS.threat) {
                 Warnings.show(ctx, Warning(RiskLevel.HIGH, tr("Просят продиктовать код из SMS", "SMS-тегі кодты айтуды сұрайды"),
                     listOf(tr("Звонящий представился службой безопасности банка", "Қоңырау шалушы өзін банктің қауіпсіздік қызметі деп таныстырды"), tr("Просит назвать код из SMS", "SMS-тегі кодты айтуды сұрайды")),
@@ -431,6 +445,23 @@ fun ProtectionScreen(onListen: () -> Unit, onVideo: () -> Unit = {}) {
                     onClick = if (item.ok) null else ({ fix(i) })) {
                     if (item.ok) Icon(Icons.Filled.CheckCircle, tr("включено", "қосулы"), tint = NS.safe, modifier = Modifier.size(22.dp))
                     else Text(tr("Включить", "Қосу"), color = NS.cyan, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+
+        // ---- phone settings that decide whether a warning is seen on a locked phone (OPPO/ColorOS and others)
+        val phone = remember(tick, refresh) { ai.neuroshield.app.PhoneSetup.checks(ctx) }
+        SectionTitle(tr("Телефон: экран блокировки и фон", "Телефон: құлыптаулы экран және фон"))
+        GlassCard(padding = 10.dp) {
+            phone.forEach { c ->
+                ListRow(if (c.id == "tts") Icons.AutoMirrored.Filled.VolumeUp else if (c.id == "battery" || c.id == "autostart") Icons.Filled.Settings else Icons.Filled.NotificationsActive,
+                    c.title, c.why, tint = if (c.ok == true) NS.cyan else NS.muted,
+                    onClick = if (c.ok == true) null else ({ ai.neuroshield.app.PhoneSetup.open(ctx, c.id) })) {
+                    when (c.ok) {
+                        true -> Icon(Icons.Filled.CheckCircle, tr("включено", "қосулы"), tint = NS.safe, modifier = Modifier.size(22.dp))
+                        false -> Text(tr("Включить", "Қосу"), color = NS.cyan, style = MaterialTheme.typography.labelLarge)
+                        null -> Text(tr("Проверить", "Тексеру"), color = NS.warn, style = MaterialTheme.typography.labelLarge)
+                    }
                 }
             }
         }
@@ -706,6 +737,14 @@ fun ThreatDetail(a: Alert, onClose: () -> Unit) {
             SectionTitle(tr("Почему это подозрительно", "Неліктен бұл күдікті"))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { a.reasons.forEach { Bullet(I18n.core(it), NS.text) } }
         }
+        if (a.level != RiskLevel.LOW) GhostButton("✉  " + ai.neuroshield.app.alert.TellFamily.label(ctx), Modifier.fillMaxWidth(), color = NS.text) {
+            ai.neuroshield.app.alert.TellFamily.open(ctx, a.source, a.number, a.title)
+        }
+        if (a.source == "call_report") GhostButton(tr("Рассказать, что сказали в звонке", "Қоңырауда не айтқанын әңгімелеу"), Modifier.fillMaxWidth(), color = NS.cyan) {
+            // speech analysis during the call needs the call's sound, which many phones do not give to apps; a retelling works on every phone
+            ctx.startActivity(ai.neuroshield.app.MainActivity.internalIntent(ctx).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(ai.neuroshield.app.MainActivity.EXTRA_ROUTE, "retell").putExtra(ai.neuroshield.app.MainActivity.EXTRA_NUMBER, a.number))
+        }
         if (ai.neuroshield.app.data.CallRecordings.exists(ctx, a.audio)) RecordingPlayer(a)
         a.excerpt?.let {
             SectionTitle(tr("Фрагмент", "Үзінді"))
@@ -747,13 +786,17 @@ fun RecordingPlayer(a: Alert) {
             tr("${secs / 60} мин ${secs % 60} с · с микрофона телефона", "${secs / 60} мин ${secs % 60} с · телефон микрофонынан"), tint = NS.cyan,
             onClick = {
                 if (playing) stop() else {
-                    val f = ai.neuroshield.app.data.CallRecordings.toWav(ctx, id)
-                    if (f == null) error = tr("Запись не удалось открыть", "Жазбаны ашу мүмкін болмады") else try {
+                    val pl = ai.neuroshield.app.data.CallRecordings.open(ctx, id)
+                    if (pl == null) error = tr("Запись не удалось открыть", "Жазбаны ашу мүмкін болмады") else try {
+                        val f = pl.file
                         temp[0] = f
                         player[0] = android.media.MediaPlayer().apply {
                             setDataSource(f.absolutePath); prepare(); setOnCompletionListener { stop() }; start()
                         }
-                        playing = true; error = null
+                        playing = true
+                        // honest about a recording cut off by a crash: only the part before the interruption exists
+                        error = if (pl.complete) null else tr("Запись оборвалась (приложение было остановлено): доступна часть до обрыва",
+                            "Жазба үзілді (қосымша тоқтатылды): үзілгенге дейінгі бөлігі ғана бар")
                     } catch (e: Exception) { stop(); error = tr("Запись не удалось воспроизвести", "Жазбаны ойнату мүмкін болмады") }
                 }
             })
@@ -765,6 +808,13 @@ fun RecordingPlayer(a: Alert) {
 }
 
 // =========================================================================== SETTINGS
+
+/** Plays the spoken-warning sample and shows what happened (speaking, or why the phone cannot speak). */
+private fun speakSample(ctx: android.content.Context) =
+    ai.neuroshield.app.alert.SpokenAlert.say(ctx, preview = true) { msg ->
+        android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_LONG).show()
+    }
+
 @Composable
 fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     val ctx = LocalContext.current
@@ -786,6 +836,7 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
     var trustedNumber by remember { mutableStateOf(p.trustedNumber) }
     var bankNumber by remember { mutableStateOf(p.bankNumber) }
     var block by remember { mutableStateOf(p.blockMarked) }
+    var speak by remember { mutableStateOf(p.speakWarnings) }
     Page(tr("Настройки", "Баптаулар")) {
         SectionTitle(tr("Язык интерфейса", "Интерфейс тілі"))
         GlassCard {
@@ -832,6 +883,10 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                     "Бейтаныс нөмірден келген қоңырауға жауап бергеннен кейін Saqtan микрофонды өзі қосып, сөйлеуді телефонда таниды. Дыбыс жазылмайды және ешқайда жіберілмейді. Микрофон жұмыс істеп тұрғанда хабарландыру көрінеді, оны кез келген уақытта тоқтатуға болады. Контактілердегі нөмірлерден келген қоңыраулар талданбайды."), color = NS.text2) })
             ListRow(Icons.Filled.Block, tr("Блокировать отмеченных мошенников", "Белгіленген алаяқ нөмірлерді бұғаттау"), if (Perms.screeningRole(ctx)) tr("Звонки с отмеченных номеров сбрасываются", "Белгіленген нөмірлерден келген қоңыраулар қабылданбайды") else tr("Нужен модуль «Определитель номера»", "«Нөмір анықтағыш» модулі қажет"),
                 tint = NS.threat, onClick = { block = !block; p.blockMarked = block }) { NeoSwitch(block) { block = it; p.blockMarked = it } }
+            ListRow(Icons.AutoMirrored.Filled.VolumeUp, tr("Говорить предупреждение вслух", "Ескертуді дауыстап айту"),
+                tr("При высоком риске телефон скажет: «Возможно, это мошенник. Положите трубку»", "Қауіп жоғары болғанда телефон: «Бұл алаяқ болуы мүмкін. Тұтқаны қойыңыз» дейді"),
+                onClick = { speak = !speak; p.speakWarnings = speak; if (speak) speakSample(ctx) }) {
+                NeoSwitch(speak) { speak = it; p.speakWarnings = it; if (it) speakSample(ctx) } }
         }
 
         SectionTitle(tr("Экстренная помощь", "Шұғыл көмек"))
@@ -840,7 +895,16 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                 color = NS.muted, style = MaterialTheme.typography.bodySmall)
             NeoField(trustedName, tr("Имя близкого (например, «Сын»)", "Жақын адамның аты (мысалы, «Ұлым»)"), KeyboardType.Text, Icons.Filled.FavoriteBorder) { trustedName = it.take(30); p.trustedName = trustedName }
             NeoField(trustedNumber, tr("Телефон близкого", "Жақын адамның телефоны"), KeyboardType.Phone, Icons.Filled.Call) { trustedNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.trustedNumber = trustedNumber }
+            // official short numbers of the main banks: one tap fills the field (the number on the card always wins if it differs)
+            Text(tr("Ваш банк:", "Сіздің банкіңіз:"), color = NS.muted, style = MaterialTheme.typography.bodySmall)
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ai.neuroshield.app.core.BankDirectory.ALL.forEach { b ->
+                    FilterPill("${b.name} · ${b.number}", bankNumber.filter { it.isDigit() } == b.number, NS.cyan) { bankNumber = b.number; p.bankNumber = b.number }
+                }
+            }
             NeoField(bankNumber, tr("Номер вашего банка (с карты)", "Банкіңіздің нөмірі (картадан)"), KeyboardType.Phone, Icons.Filled.AccountBalance) { bankNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.bankNumber = bankNumber }
+            Text(tr("Номера из открытых списков банков; сверьте с номером на обратной стороне карты.", "Нөмірлер банктердің ашық тізімінен; картаның артындағы нөмірмен салыстырыңыз."),
+                color = NS.muted, style = MaterialTheme.typography.labelSmall)
         }
 
         SectionTitle(tr("Конфиденциальность", "Құпиялылық"))

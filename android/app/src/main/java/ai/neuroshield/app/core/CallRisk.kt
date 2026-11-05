@@ -15,6 +15,7 @@ data class CallFacts(
     val priorTactics: List<String> = emptyList(),
     val highReports: Int = 0,                   // earlier calls from this number ended with a HIGH / MEDIUM report
     val mediumReports: Int = 0,
+    val callerName: String? = null,             // messenger call: only this name is visible, no number
 )
 
 data class Reason(val text: String, val points: Int)
@@ -25,18 +26,18 @@ data class CallRiskResult(val score: Double, val level: RiskLevel, val reasons: 
  * It cannot know whether a stranger is a scammer; it only says how much caution fits.
  */
 object CallRisk {
-    fun normalizeNumber(raw: String?): String? {
-        if (raw.isNullOrBlank()) return null
-        val digits = raw.filter { it.isDigit() || it == '+' }
-        return digits.ifEmpty { null }
-    }
+    /** One written form per number (see [PhoneNumbers]): "87015550888", "+7 701 555 08 88" -> "+77015550888". */
+    fun normalizeNumber(raw: String?): String? = PhoneNumbers.normalize(raw)
 
     fun assess(f: CallFacts): CallRiskResult {
         val reasons = mutableListOf<Reason>()
-        val n = normalizeNumber(f.number)
+        val n = PhoneNumbers.normalize(f.number, f.homeCallingCode)
         if (f.userMarkedSafe) return CallRiskResult(0.0, RiskLevel.LOW, listOf(Reason("Вы отметили этот номер как надёжный", 0)), emptyList())
         if (f.userMarkedScam) reasons += Reason("Вы ранее отметили этот номер как мошеннический", 80)
-        if (n == null) {
+        if (n == null && f.callerName != null) {
+            // a messenger shows a name instead of the number; the name matches no saved contact
+            reasons += Reason("Номер не виден: «${f.callerName}» нет в ваших контактах", 10)
+        } else if (n == null) {
             reasons += Reason("Номер скрыт", 30)
         } else {
             if (!f.inContacts) reasons += Reason("Номера нет в ваших контактах", 10)

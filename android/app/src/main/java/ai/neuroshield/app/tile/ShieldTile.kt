@@ -9,6 +9,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import ai.neuroshield.app.MainActivity
+import ai.neuroshield.app.core.AppIntent
 import ai.neuroshield.app.listen.ListenState
 
 /** Quick Settings tile: during a call, pull down the shade and tap «NeuroShield» to start the speech analysis. */
@@ -23,10 +24,11 @@ class ShieldTile : TileService() {
     }
 
     override fun onClick() {
-        val i = MainActivity.internalIntent(this).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val i = MainActivity.internalIntent(this).setAction(AppIntent.TILE_START_LISTEN.action)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             .putExtra(MainActivity.EXTRA_START_LISTEN, true)
         if (Build.VERSION.SDK_INT >= 34) {
-            startActivityAndCollapse(PendingIntent.getActivity(this, 31, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
+            startActivityAndCollapse(PendingIntent.getActivity(this, AppIntent.TILE_START_LISTEN.requestCode, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
         } else {
             @Suppress("DEPRECATION") startActivityAndCollapse(i)
         }

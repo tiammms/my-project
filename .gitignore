@@ -15,3 +15,9 @@ ml/data/generated/
 # biometric model weights (downloaded by scripts/download_models.py)
 ml/biometric_models/
 ml/voice_spoof/work/
+
+# signing secrets (the release key and its passwords never go into git)
+android/keystore.properties
+*.jks
+android/*.keystore
+local.properties

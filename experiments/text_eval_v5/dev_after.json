@@ -1,0 +1,62 @@
+{
+ "set": "dev",
+ "groups": {
+  "kk/retell": {
+   "scam_warned": "13/15",
+   "scam_high": "7/15",
+   "normal_false_warnings": "0/15"
+  },
+  "kk/speech": {
+   "scam_warned": "28/30",
+   "scam_high": "9/30",
+   "normal_false_warnings": "0/30"
+  },
+  "ru/retell": {
+   "scam_warned": "19/20",
+   "scam_high": "7/20",
+   "normal_false_warnings": "0/20"
+  },
+  "total": {
+   "scam_warned": "60/65",
+   "scam_high": "23/65",
+   "normal_false_warnings": "0/65"
+  }
+ },
+ "errors": [
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "ешкімге тіс жармаңыз бұл құпия тергеу",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "уақыт өте аз дәл қазір шешу керек",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "звонивший очень торопил и говорил что времени нет",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "уақыт аз тез аудар деп асықтырды",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "ақшаңыз жоғалады деп қорқытты",
+   "level": "LOW",
+   "score": 15.0
+  }
+ ]
+}

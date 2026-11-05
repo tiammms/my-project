@@ -20,6 +20,8 @@ BRANDS: dict[str, tuple[str, ...]] = {
 SHORTENERS = {"bit.ly", "clck.ru", "tinyurl.com", "goo.su", "cutt.ly", "is.gd", "t.co", "rb.gy", "u.to", "vk.cc", "shorturl.at"}
 RISKY_TLDS = {"top", "xyz", "click", "icu", "live", "online", "site", "shop", "buzz", "rest", "link", "info", "cfd", "sbs"}
 _CRED = re.compile(r"(?i)(login|signin|verify|verif|secure|account|update|confirm|bonus|prize|vyigrysh|kompensac|vozvrat|parol|password)")
+REMOTE_APPS = {"anydesk.com", "rustdesk.com", "teamviewer.com", "airdroid.com", "anydesk.ru"}
+_APK = re.compile(r"(?i)\.apk(?:$|[?#])")
 _IP = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 
 
@@ -61,6 +63,11 @@ def check(url: str) -> dict:
         if brand in h and reg not in official and not any(h == o or h.endswith("." + o) for o in official):
             score += 55; reasons.append(f"Похоже на «{brand.capitalize()}», но это не официальный сайт ({official[0]})")
             break
+    path = re.sub(r"(?i)^https?://", "", url).partition("/")[2]
+    if _APK.search(path):
+        score += 60; reasons.append("Ссылка скачивает файл приложения (.apk) не из магазина — так устанавливают вирусы и программы для управления телефоном")
+    if reg in REMOTE_APPS:
+        score += 40; reasons.append("Сайт программы удалённого доступа — с ней посторонний сможет управлять телефоном")
     if h.count("-") >= 2:
         score += 10; reasons.append("Много дефисов в адресе")
     if _CRED.search(url) and score > 0:

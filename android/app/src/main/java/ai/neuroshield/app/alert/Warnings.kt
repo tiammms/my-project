@@ -33,6 +33,7 @@ import ai.neuroshield.app.LockScreen
 import ai.neuroshield.app.Perms
 import ai.neuroshield.app.R
 import ai.neuroshield.app.app
+import ai.neuroshield.app.core.AppIntent
 import ai.neuroshield.app.core.RiskLevel
 import androidx.core.app.NotificationCompat
 
@@ -61,6 +62,7 @@ object Warnings {
     private var offerView: View? = null
     private const val NOTIF_ALERT = 1001
     const val NOTIF_OFFER = 1002
+    private const val NOTIF_CALL_TIP = 1003
 
     fun headline(level: RiskLevel) = when (level) {
         RiskLevel.HIGH -> tr("⚠️ ВНИМАНИЕ! ВОЗМОЖНО, МОШЕННИК!", "⚠️ НАЗАР АУДАРЫҢЫЗ! АЛАЯҚ БОЛУЫ МҮМКІН!")
@@ -73,15 +75,30 @@ object Warnings {
         val id = if (!w.isTest) app.alerts.add(w.source, w.number, w.level, w.score, w.title, w.reasons,
             if (app.prefs.storeExcerpts) w.excerpt?.take(600) else null) else -1L
         if (w.level != RiskLevel.LOW) vibrate(ctx, w.level)
+        if (w.level == RiskLevel.HIGH && app.prefs.speakWarnings)
+            SpokenAlert.say(ctx, if (w.source == "sms_text" || w.source == "messenger_text") SpokenAlert.Kind.MESSAGE else SpokenAlert.Kind.CALL)
         // stored in Russian (history reads the same everywhere); shown in the interface language
         val d = w.copy(title = I18n.core(w.title), reasons = w.reasons.map { I18n.core(it) }, advice = w.advice.map { I18n.core(it) })
         main.post {
+            val locked = isLocked(ctx)
             if (Perms.overlay(ctx)) showOverlay(ctx.applicationContext, d, id) else notify(ctx, d, id)
-            if (d.level == RiskLevel.HIGH && Perms.overlay(ctx)) notify(ctx, d, id)   // also stays in the shade
+            // a window on top of other apps is not visible on the lock screen: there the notification is what the person sees;
+            // a high-risk one also stays in the shade
+            if (Perms.overlay(ctx) && (d.level == RiskLevel.HIGH || locked)) notify(ctx, d, id)
+            if (locked) wakeScreen(ctx)
+            android.util.Log.i("SaqtanWarn", "shown source=${d.source} level=${d.level} locked=$locked overlay=${Perms.overlay(ctx)} notifications=${Perms.notifications(ctx)}")
         }
     }
 
-    fun hide() = main.post { dismiss(view); view = null }
+    fun hide(ctx: Context? = null) = main.post {
+        dismiss(view); view = null
+        if (ctx != null) cancelLowCallTip(ctx)
+    }
+
+    /** the plain "unknown number" tip has its own notification id, so it never replaces (or removes) a real warning */
+    fun cancelLowCallTip(ctx: Context) {
+        try { ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_CALL_TIP) } catch (_: Exception) {}
+    }
 
     private fun removeView(v: View?) {
         if (v == null) return
@@ -97,11 +114,13 @@ object Warnings {
 
     private fun dp(ctx: Context, v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, ctx.resources.displayMetrics).toInt()
 
+    @Suppress("DEPRECATION")
     private fun params(ctx: Context, focusable: Boolean) = WindowManager.LayoutParams(
         WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT,
         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         (if (focusable) 0 else WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE) or
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,   // some phones honour it for the card over the call screen
         PixelFormat.TRANSLUCENT,
     ).apply { gravity = Gravity.CENTER }   // centre: the system's incoming-call / SMS banners sit at the top
 
@@ -207,6 +226,15 @@ object Warnings {
                 }
                 card.addView(hr)
             }
+            // "tell someone close": the SMS app (trusted person) or the share sheet opens with the text filled in; the user sends it
+            val tell = Button(ctx).apply {
+                text = "✉  " + TellFamily.label(ctx); isAllCaps = false; textSize = 13f; maxLines = 1; stateListAnimator = null; setTextColor(TEXT)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                background = GradientDrawable().apply { cornerRadius = dp(ctx, 14f).toFloat(); setColor(SURFACE) }
+                setPadding(dp(ctx, 8f), 0, dp(ctx, 8f), 0); minWidth = 0; minimumWidth = 0
+                setOnClickListener { dismiss(view); view = null; TellFamily.open(ctx, w.source, w.number, w.title) }
+            }
+            card.addView(tell, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 42f)).apply { topMargin = dp(ctx, if (help.isEmpty()) 12f else 8f) })
         }
 
         // actions
@@ -349,14 +377,17 @@ object Warnings {
         })
     }
 
-    fun listenIntent(ctx: Context): PendingIntent = PendingIntent.getActivity(ctx, 7,
+    fun listenIntent(ctx: Context): PendingIntent = PendingIntent.getActivity(ctx, AppIntent.START_LISTEN_OFFER.requestCode,
         MainActivity.internalIntent(ctx).apply {
+            action = AppIntent.START_LISTEN_OFFER.action
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_START_LISTEN, true)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
     private fun notify(ctx: Context, w: Warning, alertId: Long = -1L) {
         if (!Perms.notifications(ctx)) return
-        val open = PendingIntent.getActivity(ctx, 3, MainActivity.internalIntent(ctx).apply {
+        val open = PendingIntent.getActivity(ctx, AppIntent.OPEN_ALERT.requestCode, MainActivity.internalIntent(ctx).apply {
+            action = AppIntent.OPEN_ALERT.action
+            if (alertId > 0) data = android.net.Uri.parse(AppIntent.OPEN_ALERT.dataFor(alertId))
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP); putExtra(MainActivity.EXTRA_ROUTE, "history")
             if (alertId > 0) putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -372,9 +403,10 @@ object Warnings {
             .setContentIntent(open)
             .setAutoCancel(true)
             .apply { if (w.offerListening) addAction(0, tr("Слушать звонок", "Қоңырауды тыңдау"), listenIntent(ctx)) }
-            .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS) }
+            .let { LockScreen.hideDetails(it, ctx, NeuroShieldApp.CH_ALERTS, headline(w.level), lockScreenAdvice(w)) }
             .build()
-        ctx.getSystemService(NotificationManager::class.java).notify(NOTIF_ALERT, n)
+        val nid = if (w.source == "incoming_call" && w.level == RiskLevel.LOW) NOTIF_CALL_TIP else NOTIF_ALERT
+        ctx.getSystemService(NotificationManager::class.java).notify(nid, n)
     }
 
     fun notifyListenOffer(ctx: Context, number: String?) {
@@ -391,6 +423,37 @@ object Warnings {
     }
 
     fun cancelListenOffer(ctx: Context) = ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_OFFER)
+
+    /** What the lock screen shows: what to do, without the number or the message text. */
+    private fun lockScreenAdvice(w: Warning): String = when {
+        w.source == "incoming_call" && w.level == RiskLevel.LOW ->
+            tr("Если представятся банком или полицией — положите трубку. Никому не называйте коды.",
+                "Банк не полиция деп таныстырса — тұтқаны қойыңыз. Кодты ешкімге айтпаңыз.")
+        w.source == "incoming_call" ->
+            tr("Подозрительный звонок. Не называйте коды из SMS, не переводите деньги.",
+                "Күдікті қоңырау. SMS-тегі кодты айтпаңыз, ақша аудармаңыз.")
+        w.level == RiskLevel.HIGH ->
+            tr("Не называйте код, не открывайте ссылку. Положите трубку и сами позвоните в банк.",
+                "Кодты айтпаңыз, сілтемені ашпаңыз. Тұтқаны қойып, банкке өзіңіз қоңырау шалыңыз.")
+        else -> tr("Есть признаки обмана. Не открывайте ссылки и не называйте коды.",
+                "Алдау белгілері бар. Сілтемені ашпаңыз, кодты айтпаңыз.")
+    }
+
+    private fun isLocked(ctx: Context): Boolean = try {
+        ctx.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true ||
+            ctx.getSystemService(android.os.PowerManager::class.java)?.isInteractive == false
+    } catch (_: Exception) { false }
+
+    /** Turns the screen on for a few seconds so the warning on the lock screen is seen (the phone stays locked). */
+    @Suppress("DEPRECATION")
+    private fun wakeScreen(ctx: Context) {
+        try {
+            val pm = ctx.getSystemService(android.os.PowerManager::class.java) ?: return
+            if (pm.isInteractive) return
+            pm.newWakeLock(android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                android.os.PowerManager.ON_AFTER_RELEASE, "saqtan:warning").acquire(5_000L)
+        } catch (_: Exception) {}
+    }
 
     private fun vibrate(ctx: Context, level: RiskLevel) {
         try {

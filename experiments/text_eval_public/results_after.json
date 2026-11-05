@@ -1,0 +1,510 @@
+{
+ "by_language": {
+  "kk": {
+   "warned": "7/16",
+   "high": "1/16",
+   "noticed": "15/16"
+  },
+  "ru": {
+   "warned": "13/32",
+   "high": "4/32",
+   "noticed": "31/32"
+  }
+ },
+ "total": {
+  "warned": "20/48",
+  "high": "5/48",
+  "noticed": "46/48"
+ },
+ "phrases": [
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "чтобы сохранить деньги переведите их на текущий счет или снимите с депозита и переведите на другой счет",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "safe_account_transfer"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "с вами разговаривает следователь сотрудник мвд кнб не кладите трубку",
+   "level": "MEDIUM",
+   "score": 40.0,
+   "tactics": [
+    "urgency_pressure",
+    "authority_impersonation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "никому не говорите об этом звонке проводится секретная операция",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "secrecy_isolation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "поступила заявка на изменение кодового слова",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "credentials_request"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "я сотрудник службы безопасности сотового оператора сейчас вам придет код просьба сообщить его",
+   "level": "HIGH",
+   "score": 75.0,
+   "tactics": [
+    "credentials_request",
+    "authority_impersonation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "необходимо перевести депозитные средства на защищенный счет банка",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "safe_account_transfer"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "это сотрудник национальной безопасности просим сообщить в каких банках у вас есть счета или кредиты в связи с этим требуется предоставить данные карт или депозитов для их немедленной блокировки",
+   "level": "HIGH",
+   "score": 75.0,
+   "tactics": [
+    "credentials_request",
+    "urgency_pressure",
+    "authority_impersonation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "ваш родственник попал в беду дтп полиция больница срочно переведите деньги",
+   "level": "HIGH",
+   "score": 81.3,
+   "tactics": [
+    "safe_account_transfer",
+    "urgency_pressure",
+    "authority_impersonation",
+    "family_emergency",
+    "money_request"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "вы выиграли приз компенсацию чтобы получить его оплатите госпошлину налог доставку",
+   "level": "HIGH",
+   "score": 75.0,
+   "tactics": [
+    "prize_delivery",
+    "fee_request",
+    "compensation_refund"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "MVD RK",
+   "text": "с вашего счета только что пытались списать деньги чтобы остановить операцию назовите код из sms",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "credentials_request"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "у вас осталось две минуты",
+   "level": "LOW",
+   "score": 0.0,
+   "tactics": []
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "счет сейчас заблокируют",
+   "level": "LOW",
+   "score": 23.5,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "кредит уже оформляется",
+   "level": "LOW",
+   "score": 23.5,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "нужно срочно подтвердить операцию",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "urgency_pressure"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "не кладите трубку",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "urgency_pressure"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "линия должна оставаться открытой",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "secrecy_isolation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "никому не рассказывайте",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "secrecy_isolation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "это секретная операция",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "secrecy_isolation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "на ваше имя оформляют кредит",
+   "level": "LOW",
+   "score": 23.5,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "сейчас украдут все деньги",
+   "level": "LOW",
+   "score": 15.0,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "возбуждено уголовное дело",
+   "level": "LOW",
+   "score": 15.0,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "с вашего счета финансируют преступников",
+   "level": "LOW",
+   "score": 23.5,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finance.kz",
+   "text": "ваш банковский счет используют мошенники",
+   "level": "LOW",
+   "score": 23.5,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "оформлена заявка на кредит",
+   "level": "LOW",
+   "score": 23.5,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "вам звонит сотрудник центробанка",
+   "level": "LOW",
+   "score": 25.0,
+   "tactics": [
+    "authority_impersonation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "специальный или безопасный счет",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "safe_account_transfer"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "идут следственные действия помогите задержать мошенников и не разглашайте информацию",
+   "level": "MEDIUM",
+   "score": 40.0,
+   "tactics": [
+    "authority_impersonation",
+    "secrecy_isolation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "ваши деньги пытаются похитить зафиксирована подозрительная операция",
+   "level": "LOW",
+   "score": 15.0,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "истекает срок действия сим-карты",
+   "level": "LOW",
+   "score": 25.0,
+   "tactics": [
+    "operator_sim"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "продиктуйте код из смс-сообщения",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "credentials_request"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "Bank of Russia",
+   "text": "вас беспокоит специалист финансовой безопасности сотрудник службы безопасности банка",
+   "level": "LOW",
+   "score": 25.0,
+   "tactics": [
+    "authority_impersonation"
+   ]
+  },
+  {
+   "lang": "ru",
+   "source": "finratings.kz",
+   "text": "вам сейчас на телефон придет разовый номер продиктуйте его пожалуйста",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "credentials_request"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "сіздің атыңызға маңызды хат немесе сәлемдеме келді оны табыстау үшін жүйедегі кодты айтуыңыз қажет",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "credentials_request"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "су газ есептегішін тексеруге кезегіңіз келді",
+   "level": "LOW",
+   "score": 0.0,
+   "tactics": []
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "сіздің жеке деректеріңіз бөгде қолға өтіп кетті",
+   "level": "LOW",
+   "score": 15.0,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "қазіргі сәтте бейтаныс тұлғалар атыңызға ірі көлемде заңсыз несие рәсімдеп жатыр",
+   "level": "LOW",
+   "score": 23.5,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "қаржыны сақтап қалу үшін шұғыл әрекет етуіміз керек",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "urgency_pressure"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "тергеу құпиясын жариялауға болмайды",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "secrecy_isolation"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "егер бұл туралы жақындарыңызға айтсаңыз немесе біздің нұсқауды орындамасаңыз",
+   "level": "LOW",
+   "score": 20.0,
+   "tactics": [
+    "secrecy_isolation"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "үстіңізден қылмыстық іс қозғалады",
+   "level": "LOW",
+   "score": 15.0,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "сіз аударған қаражат халықаралық террористік ұйымдарды қаржыландыруға кетті",
+   "level": "LOW",
+   "score": 15.0,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police, Almaty region",
+   "text": "жақын арада үйіңізге тінту жүргізіліп өзіңіз қамауға алынасыз",
+   "level": "LOW",
+   "score": 15.0,
+   "tactics": [
+    "threat_fear"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police (inbusiness.kz)",
+   "text": "сіздің шотыңыздан ақша ұрламақшы болды қаражатыңызды қауіпсіз шотқа аудару керек",
+   "level": "MEDIUM",
+   "score": 45.0,
+   "tactics": [
+    "safe_account_transfer"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police (inbusiness.kz)",
+   "text": "жаңа қосымшаны шұғыл орнатыңыз банк қауіпсіздігін жаңартамыз",
+   "level": "HIGH",
+   "score": 75.0,
+   "tactics": [
+    "urgency_pressure",
+    "remote_access"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police (inbusiness.kz)",
+   "text": "балаңызға қауіп төніп тұр",
+   "level": "MEDIUM",
+   "score": 35.0,
+   "tactics": [
+    "family_emergency"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police (inbusiness.kz)",
+   "text": "жол-көлік апатына қатысты хабар бар",
+   "level": "MEDIUM",
+   "score": 35.0,
+   "tactics": [
+    "family_emergency"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "Police (inbusiness.kz)",
+   "text": "жедел ақша керек",
+   "level": "MEDIUM",
+   "score": 36.0,
+   "tactics": [
+    "urgency_pressure",
+    "money_request"
+   ]
+  },
+  {
+   "lang": "kk",
+   "source": "inbusiness.kz",
+   "text": "ағаңыз бөтеннің машинасын бұзып тастады қазір біз көрсеткен нөмірге ақша аударсаңыз оны жазаламаймыз",
+   "level": "MEDIUM",
+   "score": 35.0,
+   "tactics": [
+    "family_emergency"
+   ]
+  }
+ ]
+}

@@ -8,7 +8,30 @@ sealed interface MessengerEvent {
     data class Message(override val app: String, val sender: String, val number: String?, val text: String) : MessengerEvent
 }
 
+/**
+ * How far the app can trust that a messenger caller or sender is one of the user's contacts (audit M-01).
+ * A notification shows either a phone number or a display name. A NAME IS NOT PROOF: Telegram and Viber show the
+ * profile name a stranger chose for himself, and a scammer can call himself "Мама" or "Kaspi Bank".
+ */
+enum class SenderStatus {
+    CONTACT_BY_NUMBER,       // the number is shown and it is saved in the phone's contacts
+    WHATSAPP_CONTACT_NAME,   // WhatsApp shows a name instead of the number only for numbers saved in the phone's contacts,
+                             // and that name is the one from the phone's contacts (it matches one)
+    NAME_LIKE_CONTACT,       // only a name, and it equals a contact's name — but the messenger chose what to show
+    STRANGER;                // a number not in contacts, or a name that matches no contact
+
+    /** Treated like a saved contact (no warning before a call, messages flagged only when clearly fraudulent). */
+    val trusted: Boolean get() = this == CONTACT_BY_NUMBER || this == WHATSAPP_CONTACT_NAME
+}
+
 object Messenger {
+    fun senderStatus(app: String, number: String?, numberInContacts: Boolean, nameInContacts: Boolean): SenderStatus = when {
+        number != null -> if (numberInContacts) SenderStatus.CONTACT_BY_NUMBER else SenderStatus.STRANGER
+        !nameInContacts -> SenderStatus.STRANGER
+        app.startsWith("WhatsApp") -> SenderStatus.WHATSAPP_CONTACT_NAME
+        else -> SenderStatus.NAME_LIKE_CONTACT
+    }
+
     val APPS = mapOf(
         "com.whatsapp" to "WhatsApp", "com.whatsapp.w4b" to "WhatsApp Business",
         "org.telegram.messenger" to "Telegram", "org.telegram.messenger.web" to "Telegram",

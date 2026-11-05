@@ -14,6 +14,7 @@ import ai.neuroshield.app.LockScreen
 import ai.neuroshield.app.Perms
 import ai.neuroshield.app.R
 import ai.neuroshield.app.app
+import ai.neuroshield.app.core.AppIntent
 import ai.neuroshield.app.core.CallChannel
 import ai.neuroshield.app.core.CallEvent
 import ai.neuroshield.app.core.CallReport
@@ -44,7 +45,7 @@ object CallSessions {
         val raw = ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).getString(KEY, null) ?: return null
         return try {
             val arr = JSONArray(raw)
-            val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx))
+            val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx), ai.neuroshield.app.Perms.notificationAccess(ctx))
             for (i in 0 until arr.length()) s.on(decode(arr.getJSONObject(i)))
             s
         } catch (_: Exception) { null }
@@ -64,7 +65,7 @@ object CallSessions {
             if (r.number == number && System.currentTimeMillis() - r.tMs < 120_000) return
             finish(ctx, prev)
         }
-        val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx))
+        val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx), ai.neuroshield.app.Perms.notificationAccess(ctx))
         s.on(CallEvent.Ringing(System.currentTimeMillis(), number, channel, app, pre))
         save(ctx, s)
         Log.i(TAG, "start $channel level=${pre.level}")
@@ -84,9 +85,27 @@ object CallSessions {
         ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).edit().putString("recording", id).commit()
     }
 
+    /** The recording linked to the call still in progress (not yet in history), if any. */
+    fun pendingRecording(ctx: Context): String? =
+        ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).getString("recording", null)
+
     private fun takeRecording(ctx: Context): String? {
         val p = ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE)
         return p.getString("recording", null).also { p.edit().remove("recording").commit() }
+    }
+
+    /** Discards (without a report) a call session that began before [t] — e.g. before the phone restarted. */
+    @Synchronized fun dropIfStartedBefore(ctx: Context, t: Long) {
+        val s = load(ctx) ?: return
+        val start = s.events.firstOrNull()?.tMs ?: return
+        if (start >= t) return
+        Log.i(TAG, "stale call session dropped")
+        save(ctx, null)
+        // a recording made during that call must stay visible, so the user can listen to it or delete it
+        takeRecording(ctx)?.let { id ->
+            ctx.app.alerts.add("recording", null, RiskLevel.LOW, 0.0, "Запись разговора",
+                listOf("Звонок прервался: телефон перезагружался или приложение было остановлено"), null, id)
+        }
     }
 
     fun active(ctx: Context): Boolean = load(ctx)?.let { it.isStarted && !it.isEnded } ?: false
@@ -104,17 +123,18 @@ object CallSessions {
         val r = s.report() ?: return
         Log.i(TAG, "report level=${r.level} answered=${r.answered}")
         val reasons = r.findings + r.checks.map { "Проверка — $it" } + r.advice.map { "Совет — $it" }
-        val id = ctx.app.alerts.add("call_report", r.number ?: "скрытый номер", r.level, r.score, r.title, reasons, null, takeRecording(ctx))
+        val id = ctx.app.alerts.add("call_report", r.number ?: if (r.channel == CallChannel.MESSENGER) "номер не виден" else "скрытый номер", r.level, r.score, r.title, reasons, null, takeRecording(ctx))
         notifyReport(ctx, r, id)
     }
 
     private fun notifyReport(ctx: Context, r: CallReport, alertId: Long) {
         if (!Perms.notifications(ctx)) { Log.i(TAG, "no notification permission"); return }
-        val open = PendingIntent.getActivity(ctx, 31, MainActivity.internalIntent(ctx).apply {
+        val open = PendingIntent.getActivity(ctx, AppIntent.OPEN_REPORT.requestCode, MainActivity.internalIntent(ctx).apply {
+            action = AppIntent.OPEN_REPORT.action; data = android.net.Uri.parse(AppIntent.OPEN_REPORT.dataFor(alertId))
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(MainActivity.EXTRA_ROUTE, "history"); putExtra(MainActivity.EXTRA_ALERT_ID, alertId)
         }, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val who = r.number ?: tr("скрытый номер", "жасырын нөмір")
+        val who = r.number ?: if (r.channel == CallChannel.MESSENGER) tr("номер не виден", "нөмір көрінбейді") else tr("скрытый номер", "жасырын нөмір")
         val how = when { r.channel == CallChannel.MESSENGER -> tr("звонок в ${r.app ?: "мессенджере"}", "${r.app ?: "мессенджер"} арқылы қоңырау"); r.answered -> tr("звонок ${r.durationSec / 60} мин ${r.durationSec % 60} с", "қоңырау ${r.durationSec / 60} мин ${r.durationSec % 60} с"); else -> tr("пропущенный звонок", "қабылданбаған қоңырау") }
         val body = (listOf("${I18n.core(r.level.ru)} · $who · $how") + r.findings.take(4).map { "• " + I18n.core(it) } + r.advice.take(2).map { "→ " + I18n.core(it) }).joinToString("\n")
         val risky = r.level != RiskLevel.LOW
@@ -139,6 +159,7 @@ object CallSessions {
                 .put("advice", JSONArray(e.pre.advice))
             is CallEvent.Answered -> put("k", "ans")
             is CallEvent.SmsCodeArrived -> put("k", "sms").put("from", e.sender).put("m", e.masked)
+            is CallEvent.BankPushArrived -> put("k", "bank").put("b", e.bank).put("kind", e.kind.name).put("m", e.masked)
             is CallEvent.Speech -> put("k", "sp").put("score", e.risk.score).put("level", e.risk.level.name).put("w", e.risk.words)
                 .put("tac", JSONArray(e.risk.tactics.map { t -> JSONObject().put("id", t.id).put("ti", t.title).put("ad", t.advice)
                     .put("we", t.weight).put("ev", t.evidence.firstOrNull()?.match ?: "") }))
@@ -161,6 +182,7 @@ object CallSessions {
             }
             "ans" -> CallEvent.Answered(t)
             "sms" -> CallEvent.SmsCodeArrived(t, o.getString("from"), o.getString("m"))
+            "bank" -> CallEvent.BankPushArrived(t, o.getString("b"), runCatching { ai.neuroshield.app.core.BankPushKind.valueOf(o.getString("kind")) }.getOrDefault(ai.neuroshield.app.core.BankPushKind.TRANSFER), o.optString("m").takeIf { it.isNotEmpty() })
             "sp" -> {
                 val ta = o.getJSONArray("tac")
                 CallEvent.Speech(t, TextRisk(o.getDouble("score"), RiskLevel.valueOf(o.getString("level")),
