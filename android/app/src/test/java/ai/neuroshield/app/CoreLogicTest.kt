@@ -1077,3 +1077,73 @@ class BootJudgeTest {
         assertNull("installed after the restart: nothing to judge", BootJudge.judge(boot, 0L, boot + 5 * min, 30 * min))
     }
 }
+
+class VoiceInputTest {
+    @Test fun converterDownsamplesStereo48kToMono16k() {
+        val c = PcmConverter(48_000, 2)
+        var out = 0
+        val chunk = ShortArray(4800 * 2) { 1000 }               // 0.1 s of a constant stereo signal
+        repeat(10) { out += c.push(chunk, chunk.size).size }
+        assertTrue("1 s at 48 kHz gives about 16 000 samples, got $out", out in 15_990..16_000)
+        val last = c.push(chunk, chunk.size)
+        assertTrue(last.all { it in 990..1000 })                 // level kept, channels averaged
+    }
+
+    @Test fun converterAveragesChannelsAndKeepsSameRate() {
+        val c = PcmConverter(16_000, 2)
+        val out = c.push(shortArrayOf(100, 300, 100, 300), 4)
+        assertArrayEquals(shortArrayOf(200, 200), out)
+    }
+
+    @Test fun converterUpsamples8k() {
+        val c = PcmConverter(8_000, 1)
+        var out = 0
+        repeat(10) { out += c.push(ShortArray(800) { 500 }, 800).size }
+        assertTrue("1 s at 8 kHz gives about 16 000 samples, got $out", out in 15_990..16_000)
+    }
+
+    @Test fun onlySharedContentIsRead() {
+        assertTrue(VoiceInput.acceptScheme("content"))
+        assertFalse("file:// could point into the app's own storage", VoiceInput.acceptScheme("file"))
+        assertFalse(VoiceInput.acceptScheme(null))
+        assertTrue(VoiceInput.acceptMime("audio/ogg; codecs=opus"))
+        assertTrue(VoiceInput.acceptMime("application/ogg"))
+        assertFalse(VoiceInput.acceptMime("image/jpeg"))
+        assertFalse(VoiceInput.acceptSize(VoiceInput.MAX_BYTES + 1))
+        assertTrue(VoiceInput.acceptSize(null))
+    }
+
+    @Test fun syntheticVoiceRaisesButNeverDecidesAlone() {
+        val calm = ScamAnalyzer.analyze("привет как дела")
+        val scam = ScamAnalyzer.analyze("это служба безопасности банка продиктуйте код из смс")
+        val robot = VoiceCheck(5, 4, 0.99, 0.5)
+        assertEquals(RiskLevel.LOW, VoiceInput.verdict(calm, null).first)
+        assertEquals(RiskLevel.MEDIUM, VoiceInput.verdict(calm, robot).first)
+        assertEquals(RiskLevel.HIGH, VoiceInput.verdict(scam, robot).first)
+    }
+
+    @Test fun retoldScamCallsWarn() {
+        for (t in listOf("мне позвонили из банка сказали что карту взломали и попросили продиктовать код",
+                "сказали что кто-то оформляет на меня кредит и чтобы отменить заявку нужен код из смс",
+                "ол банк қызметкерімін деп кодты айтуды сұрады",
+                "нөміріңіз өшіріледі деп кодты сұрады"))
+            assertNotEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+    }
+
+    @Test fun retoldOrdinaryCallsStayCalm() {
+        for (t in listOf("звонили из банка спросили удобно ли получить карту в отделении",
+                "из банка позвонили предложили кредитную карту я отказался",
+                "банктен қоңырау шалып жаңа карта ұсынды мен бас тарттым",
+                "курьер подъездің алдында тұрмын деді"))
+            assertEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+    }
+
+    @Test fun voiceAndRetellTitlesAreTranslated() {
+        I18n.kk = true
+        try {
+            assertEquals("Дауыстық хабарлама: найдено признаков обмана: 2".substringBefore(":"),
+                I18n.core("Голосовое сообщение: найдено признаков обмана: 2").substringBefore(":"))
+            assertTrue(I18n.core("Пересказ звонка: найдено признаков обмана: 1").startsWith("Қоңырауды әңгімелеу"))
+        } finally { I18n.kk = false }
+    }
+}

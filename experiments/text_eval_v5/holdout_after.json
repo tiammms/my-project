@@ -1,0 +1,104 @@
+{
+ "set": "holdout",
+ "groups": {
+  "kk/retell": {
+   "scam_warned": "10/12",
+   "scam_high": "7/12",
+   "normal_false_warnings": "0/12"
+  },
+  "kk/speech": {
+   "scam_warned": "25/30",
+   "scam_high": "7/30",
+   "normal_false_warnings": "0/30"
+  },
+  "ru/retell": {
+   "scam_warned": "11/15",
+   "scam_high": "6/15",
+   "normal_false_warnings": "0/15"
+  },
+  "total": {
+   "scam_warned": "46/57",
+   "scam_high": "20/57",
+   "normal_false_warnings": "0/57"
+  }
+ },
+ "errors": [
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "сәлеметсіз бе мен kaspi банктің қауіпсіздік қызметінің маманымын сіздің картаңызда күдікті әрекет байқалды",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "ұлттық банктен хабарласып тұрмыз сіздің жинағыңыз қауіпте",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "ертеңге дейін төлемесеңіз сотқа беріледі қазір аударыңыз",
+   "level": "LOW",
+   "score": 15.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "бір сағат ішінде растамасаңыз шотыңыз жабылады",
+   "level": "LOW",
+   "score": 28.0
+  },
+  {
+   "group": "kk/speech",
+   "label": "scam",
+   "text": "кредиттік рейтингіңізді жақсарту үшін бізге алдын ала төлем жасаңыз",
+   "level": "LOW",
+   "score": 10.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "предложили вложить деньги и обещали доход тридцать процентов в месяц",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "он торопил говорил что если не сделаю сейчас то деньги пропадут",
+   "level": "LOW",
+   "score": 20.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "попросили зайти в егов и сказать код который придёт",
+   "level": "LOW",
+   "score": 10.0
+  },
+  {
+   "group": "ru/retell",
+   "label": "scam",
+   "text": "сказали что кредит на моё имя надо срочно отменить и для этого нужен код",
+   "level": "LOW",
+   "score": 28.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "бағдарлама орнатып экранды көрсет деп сұрады",
+   "level": "LOW",
+   "score": 0.0
+  },
+  {
+   "group": "kk/retell",
+   "label": "scam",
+   "text": "картаның артындағы санды айт деп өтінді",
+   "level": "LOW",
+   "score": 0.0
+  }
+ ]
+}

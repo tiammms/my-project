@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -188,6 +189,8 @@ fun sourceIcon(source: String): ImageVector = when (source) {
     "video_call" -> Icons.Filled.Videocam
     "face" -> Icons.Filled.Face
     "manual_text" -> Icons.Filled.TextSnippet
+    "voice_message" -> Icons.Filled.AudioFile
+    "retell" -> Icons.Filled.Mic
     "demo" -> Icons.Filled.PlayCircle
     else -> Icons.Filled.Shield
 }
@@ -288,6 +291,10 @@ fun HomeScreen(go: (String) -> Unit, openAlert: (Long) -> Unit = { go("history")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ActionTile(Modifier.weight(1f), Icons.Filled.TextSnippet, tr("Текст", "Мәтін"), tr("SMS и слова звонящего", "SMS және қоңырау шалушының сөздері"), NS.cyan) { go("text") }
             ActionTile(Modifier.weight(1f), Icons.Filled.Videocam, tr("Видео", "Бейне"), tr("Живой ли собеседник", "Әңгімелесуші тірі ме"), NS.violet) { go("video") }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ActionTile(Modifier.weight(1f), Icons.Filled.AudioFile, tr("Голосовое", "Дауыстық"), tr("Сообщение из WhatsApp, Telegram", "WhatsApp, Telegram хабарламасы"), NS.cyan) { go("voice") }
+            ActionTile(Modifier.weight(1f), Icons.Filled.Mic, tr("Пересказ", "Әңгімелеу"), tr("Что сказали в звонке", "Қоңырауда не айтты"), NS.warn) { go("retell") }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ActionTile(Modifier.weight(1f), Icons.Filled.Face, tr("Лицо", "Бет"), tr("Проверка живости", "Тірілікті тексеру"), NS.safe) { go("face") }
@@ -723,6 +730,11 @@ fun ThreatDetail(a: Alert, onClose: () -> Unit) {
         if (a.reasons.isNotEmpty()) {
             SectionTitle(tr("Почему это подозрительно", "Неліктен бұл күдікті"))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { a.reasons.forEach { Bullet(I18n.core(it), NS.text) } }
+        }
+        if (a.source == "call_report") GhostButton(tr("Рассказать, что сказали в звонке", "Қоңырауда не айтқанын әңгімелеу"), Modifier.fillMaxWidth(), color = NS.cyan) {
+            // speech analysis during the call needs the call's sound, which many phones do not give to apps; a retelling works on every phone
+            ctx.startActivity(ai.neuroshield.app.MainActivity.internalIntent(ctx).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(ai.neuroshield.app.MainActivity.EXTRA_ROUTE, "retell").putExtra(ai.neuroshield.app.MainActivity.EXTRA_NUMBER, a.number))
         }
         if (ai.neuroshield.app.data.CallRecordings.exists(ctx, a.audio)) RecordingPlayer(a)
         a.excerpt?.let {

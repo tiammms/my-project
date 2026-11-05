@@ -47,6 +47,7 @@ EXPECTED_PERMISSIONS = {
 EXPORTED_OK = {
     "ai.neuroshield.app.MainActivity": "launcher; extras that start the microphone/video are ignored unless they come through InternalEntry",
     "ai.neuroshield.app.call.PhoneStateReceiver": "PHONE_STATE is a protected broadcast: only the system can send it",
+    "ai.neuroshield.app.share.ShareVoiceActivity": "share target for a voice message: reads only the shared content:// stream (size and length limited), starts no microphone or network",
 }
 
 manifests = [p for p in glob.glob(str(root / "app/build/intermediates/merged_manifest*/release/**/AndroidManifest.xml"), recursive=True)]

@@ -69,6 +69,25 @@
             android:exported="false"
             android:targetActivity=".MainActivity" />
 
+        <!-- "Поделиться → Saqtan" for a voice message (WhatsApp, Telegram…): reads only the shared content:// stream -->
+        <activity
+            android:name=".share.ShareVoiceActivity"
+            android:exported="true"
+            android:label="@string/share_voice"
+            android:taskAffinity=""
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/ogg" />
+            </intent-filter>
+        </activity>
+
         <!-- Called by Android for every incoming call from a number that is not in contacts -->
         <service
             android:name=".call.ScreeningService"
