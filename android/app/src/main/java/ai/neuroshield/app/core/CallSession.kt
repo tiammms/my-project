@@ -34,6 +34,8 @@ sealed interface CallEvent {
     data class Ringing(override val tMs: Long, val number: String?, val channel: CallChannel, val app: String?, val pre: CallRiskResult) : CallEvent
     data class Answered(override val tMs: Long) : CallEvent
     data class SmsCodeArrived(override val tMs: Long, val sender: String, val masked: String) : CallEvent
+    /** A bank app's notification (code, login, transfer, changed limit) during or right after the call. */
+    data class BankPushArrived(override val tMs: Long, val bank: String, val kind: BankPushKind, val masked: String?) : CallEvent
     data class Speech(override val tMs: Long, val risk: TextRisk) : CallEvent
     data class SpeechState(override val tMs: Long, val status: SpeechStatus) : CallEvent
     /** Latest result of the experimental synthetic-voice check (replaces the previous one). */
@@ -59,11 +61,14 @@ class CallSession(
     private val externalReputation: String = ReputationSources.NOT_CONNECTED,
     /** true when this build carries the synthetic-voice model (ml/voice_spoof). */
     private val voiceModel: Boolean = false,
+    /** true when the user gave notification access: bank-app notifications during the call are watched. */
+    private val bankWatch: Boolean = false,
 ) {
     private var ringing: CallEvent.Ringing? = null
     private var answeredAt: Long? = null
     private var endedAt: Long? = null
     private val codes = mutableListOf<CallEvent.SmsCodeArrived>()
+    private val banks = mutableListOf<CallEvent.BankPushArrived>()
     private var worstSpeech: TextRisk? = null
     private var speech: SpeechStatus = SpeechStatus.NOT_STARTED
     private var voice: VoiceCheck? = null
@@ -78,6 +83,7 @@ class CallSession(
             is CallEvent.Ringing -> if (ringing == null) ringing = e
             is CallEvent.Answered -> if (answeredAt == null) answeredAt = e.tMs
             is CallEvent.SmsCodeArrived -> codes += e
+            is CallEvent.BankPushArrived -> banks += e
             is CallEvent.Speech -> if (worstSpeech == null || e.risk.score > worstSpeech!!.score) worstSpeech = e.risk
             is CallEvent.SpeechState -> if (rank(e.status) >= rank(speech)) speech = e.status   // keep the most informative state
             is CallEvent.Voice -> voice = e.check
@@ -105,6 +111,10 @@ class CallSession(
             score = max(score, 90.0)
             findings += "Во время звонка пришёл код из SMS (${codes.first().masked} от «${codes.first().sender}»)"
         }
+        for (b in banks.distinctBy { it.bank to it.kind }) {
+            score = max(score, b.kind.score)
+            findings += "Во время звонка ${b.bank} прислал уведомление: ${b.kind.ru}" + (b.masked?.let { " ($it)" } ?: "")
+        }
         val sp = worstSpeech
         if (sp != null && sp.level != RiskLevel.LOW) {
             score = max(score, sp.score)
@@ -115,7 +125,7 @@ class CallSession(
         val voiceFlagged = vc?.flagged == true
         if (voiceFlagged) {
             // experimental: alone it gives a MEDIUM warning, together with scam phrases or an SMS code — HIGH
-            score = max(score, if (codes.isNotEmpty() || (sp != null && sp.level != RiskLevel.LOW)) 75.0 else 40.0)
+            score = max(score, if (codes.isNotEmpty() || banks.isNotEmpty() || (sp != null && sp.level != RiskLevel.LOW)) 75.0 else 40.0)
             findings += "Голос в разговоре " + vc!!.summaryRu + " (экспериментальная проверка, может ошибаться)"
         }
         val level = levelOf(score)
@@ -128,6 +138,11 @@ class CallSession(
             !answered -> "не нужен: звонок не принят"
             else -> speech.ru
         }
+        checks += "Уведомления банков во время звонка: " + when {
+            banks.isNotEmpty() -> "было уведомление банка — показана тревога"
+            bankWatch -> "отслеживались, уведомлений не было"
+            else -> "не отслеживались — нет доступа к уведомлениям"
+        }
         checks += "Анализ речи: $speechLine"
         checks += "Синтетический голос (робот, ИИ): " + when {
             vc != null -> vc.summaryRu + " — экспериментальная модель"
@@ -137,8 +152,9 @@ class CallSession(
         }
         val title = when {
             codes.isNotEmpty() -> "Возможное мошенничество: код из SMS во время звонка"
+            banks.isNotEmpty() -> "Возможное мошенничество: уведомление банка во время звонка"
             level == RiskLevel.HIGH -> "Возможное мошенничество"
-            level == RiskLevel.MEDIUM && voiceFlagged && codes.isEmpty() && (sp == null || sp.level == RiskLevel.LOW) -> "Голос в звонке похож на синтезированный"
+            level == RiskLevel.MEDIUM && voiceFlagged && codes.isEmpty() && banks.isEmpty() && (sp == null || sp.level == RiskLevel.LOW) -> "Голос в звонке похож на синтезированный"
             level == RiskLevel.MEDIUM -> "Звонок с признаками мошенничества"
             !answered -> "Пропущенный звонок с незнакомого номера"
             else -> "Звонок с незнакомого номера: признаков мошенничества не найдено"

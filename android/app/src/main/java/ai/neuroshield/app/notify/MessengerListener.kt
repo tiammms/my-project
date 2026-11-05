@@ -35,6 +35,7 @@ class MessengerListener : NotificationListenerService() {
         val ex = n.extras ?: return
         val title = ex.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         val text = (ex.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: ex.getCharSequence(Notification.EXTRA_TEXT))?.toString()
+        ai.neuroshield.app.core.BankApps.parse(sbn.packageName, title, text)?.let { onBankPush(sbn.key, it); return }
         val event = Messenger.parse(sbn.packageName, title, text, n.category == Notification.CATEGORY_CALL) ?: return
         val p = app.prefs
         when (event) {
@@ -100,6 +101,30 @@ class MessengerListener : NotificationListenerService() {
             level = r.level, score = r.score, source = "messenger_call", number = num ?: e.caller,
             title = (if (e.video) "Видеозвонок" else "Звонок") + " в ${e.app} " + (if (num != null) "с незнакомого номера" else "от незнакомого собеседника"),
             reasons = r.reasons.map { it.text }, advice = r.advice,
+        ))
+    }
+
+    /**
+     * A bank app's notification (code, login, transfer, changed limit) while — or within 5 minutes after — talking to a
+     * stranger: the caller is probably guiding the person through it. The notification text is not stored.
+     */
+    private fun onBankPush(key: String, b: ai.neuroshield.app.core.BankPush) {
+        val call = CallTracker.riskyCall(this, 5 * 60_000) ?: return
+        val now = System.currentTimeMillis()
+        val dedup = "${b.bank}:${b.kind}"
+        if ((warnedCalls[dedup] ?: 0L) > now - 60_000) return        // banks update the same notification several times
+        warnedCalls[dedup] = now
+        android.util.Log.i("SaqtanBank", "bank notification during a risky call: kind=${b.kind}")
+        CallSessions.on(this, CallEvent.BankPushArrived(now, b.bank, b.kind, b.masked))
+        val bankNo = app.prefs.bankNumber.takeIf { it.isNotBlank() }
+        Warnings.show(this, Warning(
+            level = RiskLevel.HIGH, score = b.kind.score, source = "bank_push", number = call.number ?: "номер неизвестен",
+            title = "Уведомление ${b.bank} во время звонка с незнакомым номером",
+            reasons = listOf("${b.bank}: ${b.kind.ru}" + (b.masked?.let { " ($it)" } ?: ""), "Звонящего нет в ваших контактах",
+                "Так действуют мошенники: держат на линии, пока человек входит в банк или переводит деньги"),
+            advice = listOf("Не подтверждайте вход и переводы, не называйте коды",
+                "Положите трубку и позвоните в банк сами" + (bankNo?.let { ": $it" } ?: "")),
+            offerListening = false,
         ))
     }
 

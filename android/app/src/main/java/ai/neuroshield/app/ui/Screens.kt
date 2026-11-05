@@ -178,7 +178,7 @@ fun protectionItems(ctx: Context): List<ProtectionItem> {
         ProtectionItem(tr("Окно поверх звонка", "Қоңырау үстіндегі терезе"), tr("Предупреждение прямо на экране звонка", "Ескерту тікелей қоңырау экранында"), Perms.overlay(ctx), Icons.Filled.Layers),
         ProtectionItem(tr("Уведомления", "Хабарландырулар"), tr("Тревоги и быстрые действия", "Дабылдар және жылдам әрекеттер"), Perms.notifications(ctx), Icons.Filled.NotificationsActive),
         ProtectionItem(tr("Голосовой ИИ", "Дауыстық ЖИ"), tr("Микрофон и офлайн-модель речи", "Микрофон және офлайн сөйлеу моделі"), Perms.mic(ctx) && model, Icons.Filled.Mic),
-        ProtectionItem(tr("Мессенджеры", "Мессенджерлер"), tr("WhatsApp, Telegram, Viber и другие", "WhatsApp, Telegram, Viber және басқалар"), Perms.notificationAccess(ctx), Icons.Filled.Forum),
+        ProtectionItem(tr("Мессенджеры", "Мессенджерлер"), tr("WhatsApp, Telegram, Viber и уведомления банков", "WhatsApp, Telegram, Viber және банк хабарламалары"), Perms.notificationAccess(ctx), Icons.Filled.Forum),
     )
 }
 
@@ -193,6 +193,7 @@ fun sourceIcon(source: String): ImageVector = when (source) {
     "voice_message" -> Icons.Filled.AudioFile
     "retell" -> Icons.Filled.Mic
     "image_check" -> Icons.Filled.Image
+    "bank_push" -> Icons.Filled.AccountBalance
     "demo" -> Icons.Filled.PlayCircle
     else -> Icons.Filled.Shield
 }
@@ -894,7 +895,16 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit = {}) {
                 color = NS.muted, style = MaterialTheme.typography.bodySmall)
             NeoField(trustedName, tr("Имя близкого (например, «Сын»)", "Жақын адамның аты (мысалы, «Ұлым»)"), KeyboardType.Text, Icons.Filled.FavoriteBorder) { trustedName = it.take(30); p.trustedName = trustedName }
             NeoField(trustedNumber, tr("Телефон близкого", "Жақын адамның телефоны"), KeyboardType.Phone, Icons.Filled.Call) { trustedNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.trustedNumber = trustedNumber }
+            // official short numbers of the main banks: one tap fills the field (the number on the card always wins if it differs)
+            Text(tr("Ваш банк:", "Сіздің банкіңіз:"), color = NS.muted, style = MaterialTheme.typography.bodySmall)
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ai.neuroshield.app.core.BankDirectory.ALL.forEach { b ->
+                    FilterPill("${b.name} · ${b.number}", bankNumber.filter { it.isDigit() } == b.number, NS.cyan) { bankNumber = b.number; p.bankNumber = b.number }
+                }
+            }
             NeoField(bankNumber, tr("Номер вашего банка (с карты)", "Банкіңіздің нөмірі (картадан)"), KeyboardType.Phone, Icons.Filled.AccountBalance) { bankNumber = it.filter { c -> c.isDigit() || c in "+ ()-" }.take(20); p.bankNumber = bankNumber }
+            Text(tr("Номера из открытых списков банков; сверьте с номером на обратной стороне карты.", "Нөмірлер банктердің ашық тізімінен; картаның артындағы нөмірмен салыстырыңыз."),
+                color = NS.muted, style = MaterialTheme.typography.labelSmall)
         }
 
         SectionTitle(tr("Конфиденциальность", "Құпиялылық"))

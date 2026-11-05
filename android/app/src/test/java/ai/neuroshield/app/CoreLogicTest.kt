@@ -1182,3 +1182,46 @@ class FamilyAlertTest {
         assertTrue(t.contains("код айтпаймын"))
     }
 }
+
+class BankAppsTest {
+    @Test fun bankNotificationsAreRecognised() {
+        assertEquals(BankPushKind.CODE, BankApps.parse("kz.kaspi.mobile", "Kaspi.kz", "Код подтверждения 4821. Никому не сообщайте")?.kind)
+        assertEquals(BankPushKind.LOGIN, BankApps.parse("kz.kkb.homebank", "Halyk", "Выполнен вход в Homebank с нового устройства")?.kind)
+        assertEquals(BankPushKind.TRANSFER, BankApps.parse("kz.bcc.starbanking", "BCC", "Перевод 150 000 ₸ на карту 4400…")?.kind)
+        assertEquals(BankPushKind.CHANGE, BankApps.parse("kz.forte.bank", "ForteBank", "Лимит на переводы изменён")?.kind)
+        assertEquals("Halyk", BankApps.bankOf("kz.kkb.homebank"))
+    }
+
+    @Test fun otherAppsAndPlainNewsAreIgnored() {
+        assertNull("not a bank", BankApps.parse("com.whatsapp", "Мама", "Код от домофона 1234"))
+        assertNull("short part needs a kz. package", BankApps.parse("com.example.bcc", "x", "Перевод выполнен"))
+        assertNull("advertising, no action", BankApps.parse("kz.kaspi.mobile", "Kaspi.kz", "Скидки до 30% в Магазине"))
+    }
+
+    @Test fun bankPushDuringCallMakesTheReportHigh() {
+        val s = CallSession(bankWatch = true)
+        s.on(CallEvent.Ringing(0, "+77001234567", CallChannel.CELLULAR, null, CallRiskResult(30.0, RiskLevel.MEDIUM, emptyList(), emptyList())))
+        s.on(CallEvent.Answered(1000))
+        s.on(CallEvent.BankPushArrived(30_000, "Kaspi", BankPushKind.LOGIN, null))
+        s.on(CallEvent.Ended(90_000))
+        val r = s.report()!!
+        assertEquals(RiskLevel.HIGH, r.level)
+        assertTrue(r.findings.any { it.startsWith("Во время звонка Kaspi прислал уведомление") })
+        assertTrue(r.checks.any { it.startsWith("Уведомления банков во время звонка: было") })
+    }
+
+    @Test fun bankLinesAreTranslated() {
+        I18n.kk = true
+        try {
+            assertTrue(I18n.core("Во время звонка Kaspi прислал уведомление: код подтверждения (4••1)").startsWith("Қоңырау кезінде Kaspi"))
+            assertEquals("Қоңырау кезіндегі банк хабарламалары: қадағаланды, хабарлама келген жоқ",
+                I18n.core("Уведомления банков во время звонка: отслеживались, уведомлений не было"))
+        } finally { I18n.kk = false }
+    }
+
+    @Test fun officialBankNumbers() {
+        assertEquals("Kaspi", BankDirectory.byNumber("9999")?.name)
+        assertEquals("Halyk", BankDirectory.byNumber("7111")?.name)
+        assertNull(BankDirectory.byNumber("+77001234567"))
+    }
+}

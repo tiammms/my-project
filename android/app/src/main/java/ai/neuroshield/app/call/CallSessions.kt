@@ -45,7 +45,7 @@ object CallSessions {
         val raw = ctx.getSharedPreferences("neuroshield_session", Context.MODE_PRIVATE).getString(KEY, null) ?: return null
         return try {
             val arr = JSONArray(raw)
-            val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx))
+            val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx), ai.neuroshield.app.Perms.notificationAccess(ctx))
             for (i in 0 until arr.length()) s.on(decode(arr.getJSONObject(i)))
             s
         } catch (_: Exception) { null }
@@ -65,7 +65,7 @@ object CallSessions {
             if (r.number == number && System.currentTimeMillis() - r.tMs < 120_000) return
             finish(ctx, prev)
         }
-        val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx))
+        val s = CallSession(ReputationSources.status(), ai.neuroshield.app.listen.VoiceModel.bundled(ctx), ai.neuroshield.app.Perms.notificationAccess(ctx))
         s.on(CallEvent.Ringing(System.currentTimeMillis(), number, channel, app, pre))
         save(ctx, s)
         Log.i(TAG, "start $channel level=${pre.level}")
@@ -159,6 +159,7 @@ object CallSessions {
                 .put("advice", JSONArray(e.pre.advice))
             is CallEvent.Answered -> put("k", "ans")
             is CallEvent.SmsCodeArrived -> put("k", "sms").put("from", e.sender).put("m", e.masked)
+            is CallEvent.BankPushArrived -> put("k", "bank").put("b", e.bank).put("kind", e.kind.name).put("m", e.masked)
             is CallEvent.Speech -> put("k", "sp").put("score", e.risk.score).put("level", e.risk.level.name).put("w", e.risk.words)
                 .put("tac", JSONArray(e.risk.tactics.map { t -> JSONObject().put("id", t.id).put("ti", t.title).put("ad", t.advice)
                     .put("we", t.weight).put("ev", t.evidence.firstOrNull()?.match ?: "") }))
@@ -181,6 +182,7 @@ object CallSessions {
             }
             "ans" -> CallEvent.Answered(t)
             "sms" -> CallEvent.SmsCodeArrived(t, o.getString("from"), o.getString("m"))
+            "bank" -> CallEvent.BankPushArrived(t, o.getString("b"), runCatching { ai.neuroshield.app.core.BankPushKind.valueOf(o.getString("kind")) }.getOrDefault(ai.neuroshield.app.core.BankPushKind.TRANSFER), o.optString("m").takeIf { it.isNotEmpty() })
             "sp" -> {
                 val ta = o.getJSONArray("tac")
                 CallEvent.Speech(t, TextRisk(o.getDouble("score"), RiskLevel.valueOf(o.getString("level")),

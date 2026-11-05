@@ -7,7 +7,7 @@ package ai.neuroshield.app.core
  */
 object FamilyAlert {
     private val CALL_SOURCES = setOf("incoming_call", "call_report", "live_speech", "sms_code", "blocked_call", "messenger_call",
-        "retell", "synthetic_voice", "test", "demo")
+        "retell", "synthetic_voice", "test", "demo", "bank_push")
 
     /** [title] is already in the interface language. */
     fun text(kk: Boolean, source: String, number: String?, title: String): String {
