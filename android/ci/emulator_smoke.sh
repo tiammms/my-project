@@ -53,11 +53,13 @@ adb emu sms send 1414 "Kod podtverzhdeniya 482913. Nikomu ne soobshchayte"; shot
 adb emu gsm cancel 87015550123; sleep 4
 # automatic chain: after hang-up the app must post a call report on its own (no tap in the app)
 check() { if adb shell dumpsys notification --noredact | grep -q "$2"; then echo "PASS $1" >> shots/asserts.txt; else echo "FAIL $1" >> shots/asserts.txt; fi; }
-check "report after scam call (code during call)" "Отчёт о звонке: Возможное мошенничество: код из SMS во время звонка"
+# the report is posted after the system reports the end of the call; a slow emulator can take longer than 4 s: wait up to 30 s
+wait_check() { for i in $(seq 1 15); do adb shell dumpsys notification --noredact | grep -q "$2" && break; sleep 2; done; check "$1" "$2"; }
+wait_check "report after scam call (code during call)" "Отчёт о звонке: Возможное мошенничество: код из SMS во время звонка"
 shot 06a-report-notification 1
 adb shell cmd statusbar expand-notifications; shot 06b-report-in-shade 3; adb shell cmd statusbar collapse
 adb emu gsm call 87015550199; sleep 6; adb emu gsm cancel 87015550199; sleep 12
-check "report after missed call" "Отчёт о звонке: Пропущенный звонок с незнакомого номера"
+wait_check "report after missed call" "Отчёт о звонке: Пропущенный звонок с незнакомого номера"
 check "report notification has the mark-number button" "Отметить номер"
 # press the button in the notification shade (as a person would) and check that the number got marked
 adb shell cmd statusbar expand-notifications; sleep 3
