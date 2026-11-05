@@ -1,0 +1,5 @@
+11-05 11:24:09.222  9970  9970 I SaqtanCall: incoming screened=true
+11-05 11:24:09.229  9970  9970 I SaqtanCall: start CELLULAR level=LOW
+11-05 11:24:09.330  9970  9970 I SaqtanCall: phone state RINGING number=false
+11-05 11:24:19.033  9970  9970 I SaqtanCall: phone state IDLE number=false
+11-05 11:24:19.052  9970  9970 I SaqtanCall: report level=LOW answered=false

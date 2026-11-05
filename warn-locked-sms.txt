@@ -1,0 +1,1 @@
+11-05 11:22:37.196  9042  9042 I SaqtanWarn: shown source=sms_text level=HIGH locked=true overlay=true notifications=true

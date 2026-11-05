@@ -1,0 +1,6 @@
+11-05 11:22:02.438  9042  9042 I SaqtanTTS: speak result=0
+11-05 11:22:03.025  9042  9055 I SaqtanTTS: speaking
+11-05 11:22:12.856  9042  9272 I SaqtanTTS: done
+11-05 11:22:37.100  9042  9042 I SaqtanTTS: language kk=false ru=true
+11-05 11:22:37.103  9042  9042 I SaqtanTTS: speak result=0
+11-05 11:22:38.917  9042  9052 I SaqtanTTS: speaking

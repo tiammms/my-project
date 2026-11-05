@@ -1,0 +1,20 @@
+      Window #4: WindowStateAnimator{809a945 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+    mPackageName=ai.neuroshield.app
+  deepestLastOrientationSource=ActivityRecord{6040167 u0 ai.neuroshield.app/.MainActivity t16}
+  mCurrentFocus=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+  mFocusedApp=ActivityRecord{6040167 u0 ai.neuroshield.app/.MainActivity t16}
+  mObscuringWindow=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+      mPreferredTopFocusableRootTask=Task{4cc2b14 #16 type=standard A=10192:ai.neuroshield.app}
+      mLastFocusedRootTask=Task{4cc2b14 #16 type=standard A=10192:ai.neuroshield.app}
+      * Task{4cc2b14 #16 type=standard A=10192:ai.neuroshield.app U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+        * ActivityRecord{6040167 u0 ai.neuroshield.app/.MainActivity t16}
+    mFocusedWindow=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+    mTopFullscreenOpaqueWindowState=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+    mSystemBarColorApps={ActivityRecord{6040167 u0 ai.neuroshield.app/.MainActivity t16}}
+    mNavBarColorWindowCandidate=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+    mNavBarBackgroundWindow=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+      Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+      Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}:
+        mControlTarget=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+        mControlTarget=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
+        mControlTarget=Window{39597b u0 ai.neuroshield.app/ai.neuroshield.app.MainActivity}
