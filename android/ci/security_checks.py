@@ -38,7 +38,7 @@ EXPECTED_PERMISSIONS = {
     "android.permission.FOREGROUND_SERVICE": "visible service while the microphone or screen check runs",
     "android.permission.FOREGROUND_SERVICE_MICROPHONE": "same, microphone type (Android 14+)",
     "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION": "same, screen-capture type for the video-call check",
-    "android.permission.INTERNET": "one-time download of the offline speech model over HTTPS",
+    "android.permission.INTERNET": "one-time downloads over HTTPS: the offline speech model and the text-recognition files (SHA-256 pinned)",
     # added by AndroidX libraries (not dangerous):
     "ai.neuroshield.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "AndroidX core: protects the app's own dynamic receivers",
     "android.permission.ACCESS_NETWORK_STATE": "ML Kit / Play services: network state (no data sent by the app)",
@@ -47,6 +47,7 @@ EXPECTED_PERMISSIONS = {
 EXPORTED_OK = {
     "ai.neuroshield.app.MainActivity": "launcher; extras that start the microphone/video are ignored unless they come through InternalEntry",
     "ai.neuroshield.app.call.PhoneStateReceiver": "PHONE_STATE is a protected broadcast: only the system can send it",
+    "ai.neuroshield.app.share.ShareImageActivity": "share target for a screenshot/photo: reads only the shared content:// image (size limited), starts no microphone or camera",
     "ai.neuroshield.app.share.ShareVoiceActivity": "share target for a voice message: reads only the shared content:// stream (size and length limited), starts no microphone or network",
 }
 

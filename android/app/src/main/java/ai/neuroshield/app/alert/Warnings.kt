@@ -226,6 +226,15 @@ object Warnings {
                 }
                 card.addView(hr)
             }
+            // "tell someone close": the SMS app (trusted person) or the share sheet opens with the text filled in; the user sends it
+            val tell = Button(ctx).apply {
+                text = "✉  " + TellFamily.label(ctx); isAllCaps = false; textSize = 13f; maxLines = 1; stateListAnimator = null; setTextColor(TEXT)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                background = GradientDrawable().apply { cornerRadius = dp(ctx, 14f).toFloat(); setColor(SURFACE) }
+                setPadding(dp(ctx, 8f), 0, dp(ctx, 8f), 0); minWidth = 0; minimumWidth = 0
+                setOnClickListener { dismiss(view); view = null; TellFamily.open(ctx, w.source, w.number, w.title) }
+            }
+            card.addView(tell, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 42f)).apply { topMargin = dp(ctx, if (help.isEmpty()) 12f else 8f) })
         }
 
         // actions

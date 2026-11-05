@@ -134,6 +134,9 @@ dependencies {
     // Experimental synthetic-voice check: small spectrogram CNN (ml/voice_spoof) run on the phone by ONNX Runtime
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 
+    // Offline text recognition for screenshots/photos (Tesseract). Language files are downloaded by the app on request.
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")

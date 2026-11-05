@@ -84,7 +84,7 @@ private sealed interface Step {
 private fun langTitle(lang: String) = SpeechModels.all.firstOrNull { it.lang == lang }?.title ?: lang
 
 /** Saves a risky result to the history (no audio; the recognised text only if the user allowed excerpts). */
-private fun save(ctx: Context, source: String, prefix: String, number: String?, r: VoiceResult) {
+internal fun saveResult(ctx: Context, source: String, prefix: String, number: String?, r: VoiceResult) {
     if (r.level == RiskLevel.LOW) return
     val reasons = r.risk.tactics.filter { !it.weak }.map { t -> t.title + (t.evidence.firstOrNull()?.let { " («${it.match}»)" } ?: "") } +
         (r.voice?.takeIf { it.flagged }?.let { listOf("Голос в сообщении " + it.summaryRu + " (экспериментальная проверка, может ошибаться)") } ?: emptyList())
@@ -153,7 +153,8 @@ private fun NoModel(onNeedModel: () -> Unit) {
 }
 
 @Composable
-private fun ResultCard(r: VoiceResult, heard: String) {
+internal fun ResultCard(r: VoiceResult, heard: String, source: String, prefix: String, number: String?) {
+    val ctx = LocalContext.current
     GlassCard(accent = levelColor(r.level)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             RingGauge((r.score / 100).toFloat(), levelColor(r.level), 76.dp, 8.dp) {
@@ -163,12 +164,15 @@ private fun ResultCard(r: VoiceResult, heard: String) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(levelShort(r.level).uppercase(), style = MaterialTheme.typography.labelSmall, color = levelColor(r.level))
                 Text(I18n.core(r.risk.summary), style = MaterialTheme.typography.titleMedium, color = NS.text)
-                if (r.risk.words < 6) Text(tr("Речи распознано мало — оценка неточная", "Сөйлеу аз танылды — бағалау дәл емес"),
+                if (r.risk.words < 6) Text(tr("Распознано мало слов — оценка неточная", "Сөз аз танылды — бағалау дәл емес"),
                     style = MaterialTheme.typography.bodySmall, color = NS.muted)
             }
         }
     }
     RiskDetails(r.risk)
+    if (r.level != RiskLevel.LOW) GhostButton("✉  " + ai.neuroshield.app.alert.TellFamily.label(ctx), Modifier.fillMaxWidth()) {
+        ai.neuroshield.app.alert.TellFamily.open(ctx, source, number, "$prefix: ${r.risk.summary.lowercase()}")
+    }
     r.voice?.let { v ->
         ListRow(Icons.Filled.GraphicEq, tr("Голос: робот или человек", "Дауыс: робот па, адам ба"),
             voiceCheckText(v) + tr(" · экспериментально, может ошибаться", " · тәжірибелік, қателесуі мүмкін"),
@@ -212,7 +216,7 @@ fun VoiceMessageScreen(initial: Uri?, onBack: () -> Unit, onNeedModel: () -> Uni
                 }
             }
             step = res
-            if (res is Step.Done) save(ctx, "voice_message", "Голосовое сообщение", null, res.r)
+            if (res is Step.Done) saveResult(ctx, "voice_message", "Голосовое сообщение", null, res.r)
         }
     }
     Page(tr("Голосовое сообщение", "Дауыстық хабарлама"), tr("Проверка без интернета, на телефоне", "Интернетсіз, телефонда тексеру"), onBack) {
@@ -234,7 +238,7 @@ fun VoiceMessageScreen(initial: Uri?, onBack: () -> Unit, onNeedModel: () -> Uni
             is Step.Done -> {
                 Text(tr("Длительность: ${s.r.seconds} с · язык: ${langTitle(lang ?: "")}", "Ұзақтығы: ${s.r.seconds} с · тілі: ${langTitle(lang ?: "")}"),
                     color = NS.muted, style = MaterialTheme.typography.bodySmall)
-                ResultCard(s.r, tr("Что сказано в сообщении", "Хабарламада не айтылды"))
+                ResultCard(s.r, tr("Что сказано в сообщении", "Хабарламада не айтылды"), "voice_message", "Голосовое сообщение", null)
             }
             else -> {}
         }
@@ -289,7 +293,7 @@ fun RetellScreen(number: String?, onBack: () -> Unit, onNeedModel: () -> Unit) {
                 } finally { runCatching { rec.stop() }; rec.release() }
             }
             step = res
-            if (res is Step.Done) save(ctx, "retell", "Пересказ звонка", number, res.r)
+            if (res is Step.Done) saveResult(ctx, "retell", "Пересказ звонка", number, res.r)
         }
     }
     val mic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
@@ -333,7 +337,7 @@ fun RetellScreen(number: String?, onBack: () -> Unit, onNeedModel: () -> Unit) {
         }
         when (s) {
             is Step.Failed -> GlassCard(accent = NS.threat) { Text(s.text, color = NS.threat, style = MaterialTheme.typography.bodyLarge) }
-            is Step.Done -> ResultCard(s.r, tr("Что распознано", "Не танылды"))
+            is Step.Done -> ResultCard(s.r, tr("Что распознано", "Не танылды"), "retell", "Пересказ звонка", number)
             else -> {}
         }
         Text(tr("Запись не сохраняется: звук сразу превращается в текст на телефоне.",

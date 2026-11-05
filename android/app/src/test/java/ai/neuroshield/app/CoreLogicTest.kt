@@ -1113,6 +1113,20 @@ class VoiceInputTest {
         assertTrue(VoiceInput.acceptSize(null))
     }
 
+    @Test fun imagesAreScaledAndOnlyImagesAccepted() {
+        assertEquals("small pictures are not enlarged", 1.0, VoiceInput.imageScale(1000, 800, 2200), 1e-9)
+        assertEquals(0.5, VoiceInput.imageScale(4400, 3000, 2200), 1e-9)
+        assertTrue(VoiceInput.acceptImageMime("image/png"))
+        assertFalse(VoiceInput.acceptImageMime("audio/ogg"))
+    }
+
+    @Test fun publicScamPhrasesAreNoticed() {
+        // from the public set (experiments/text_eval_public): police and bank warnings
+        for (t in listOf("вам звонит сотрудник центробанка", "на ваше имя оформляют кредит", "идут следственные действия помогите задержать мошенников и не разглашайте информацию",
+                "тергеу құпиясын жариялауға болмайды", "жол-көлік апатына қатысты хабар бар"))
+            assertTrue(t, ScamAnalyzer.analyze(t).tactics.any { !it.weak })
+    }
+
     @Test fun syntheticVoiceRaisesButNeverDecidesAlone() {
         val calm = ScamAnalyzer.analyze("привет как дела")
         val scam = ScamAnalyzer.analyze("это служба безопасности банка продиктуйте код из смс")
@@ -1145,5 +1159,26 @@ class VoiceInputTest {
                 I18n.core("Голосовое сообщение: найдено признаков обмана: 2").substringBefore(":"))
             assertTrue(I18n.core("Пересказ звонка: найдено признаков обмана: 1").startsWith("Қоңырауды әңгімелеу"))
         } finally { I18n.kk = false }
+    }
+}
+
+class FamilyAlertTest {
+    @Test fun callMessageNamesNumberAndAsksToCallBack() {
+        val t = FamilyAlert.text(false, "call_report", "+7 777 123 45 67", "Просят код, пароль или данные карты.")
+        assertTrue(t, t.startsWith("Мне сейчас звонят с номера +7 777 123 45 67."))
+        assertTrue(t, t.contains("Saqtan предупредил: Просят код, пароль или данные карты."))
+        assertTrue(t.endsWith("Перезвони мне, пожалуйста."))
+    }
+
+    @Test fun messageWithoutNumberSaysWriting() {
+        val t = FamilyAlert.text(false, "voice_message", null, "Голосовое сообщение: найдено признаков обмана: 3")
+        assertTrue(t, t.startsWith("Мне сейчас пишут."))
+        assertFalse("hidden numbers are not quoted", FamilyAlert.text(false, "call_report", "скрытый номер", "x").contains("скрытый"))
+    }
+
+    @Test fun kazakhText() {
+        val t = FamilyAlert.text(true, "incoming_call", "+77001234567", "Күдікті кіріс қоңырау")
+        assertTrue(t, t.startsWith("Маған қазір +77001234567 нөмірінен қоңырау шалып жатыр."))
+        assertTrue(t.contains("код айтпаймын"))
     }
 }

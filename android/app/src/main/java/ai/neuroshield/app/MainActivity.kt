@@ -145,7 +145,7 @@ class MainActivity : ComponentActivity() {
         val tabs = listOf(
             Triple("home", tr("Обзор", "Шолу"), Icons.Outlined.GridView), Triple("protection", tr("Защита", "Қорғаныс"), Icons.Outlined.Shield),
             Triple("history", tr("Угрозы", "Қауіптер"), Icons.Outlined.Radar), Triple("settings", tr("Настройки", "Баптаулар"), Icons.Outlined.Tune))
-        val tab = when (r) { "text", "face", "demo", "voice", "retell" -> "home"; else -> r }
+        val tab = when (r) { "text", "face", "demo", "voice", "retell", "image" -> "home"; else -> r }
         Scaffold(containerColor = NS.bg, bottomBar = { BottomBar(tabs, tab) { route.value = it } }) { pad ->
             Box(Modifier.fillMaxSize().padding(pad).background(Brush.verticalGradient(listOf(Color(0xFF0B0E13), NS.bg)))) {
                 AnimatedContent(targetState = r, label = "screens", transitionSpec = {
@@ -158,6 +158,7 @@ class MainActivity : ComponentActivity() {
                         "text" -> TextCheckScreen(onBack = { route.value = "home" })
                         "face" -> FaceScreen(onBack = { route.value = "home" })
                         "voice" -> ai.neuroshield.app.ui.VoiceMessageScreen(null, onBack = { route.value = "home" }, onNeedModel = { route.value = "protection" })
+                        "image" -> ai.neuroshield.app.ui.ImageCheckScreen(null, onBack = { route.value = "home" })
                         "retell" -> ai.neuroshield.app.ui.RetellScreen(retellNumber.value, onBack = { route.value = "home" }, onNeedModel = { route.value = "protection" })
                         "demo" -> ai.neuroshield.app.ui.DemoScreen(onBack = { route.value = "home" },
                             openHistory = { route.value = "history" })
@@ -192,7 +193,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val INTERNAL_ENTRY = "ai.neuroshield.app.InternalEntry"
-        val ROUTES = setOf("home", "protection", "history", "settings", "text", "face", "demo", "voice", "retell")
+        val ROUTES = setOf("home", "protection", "history", "settings", "text", "face", "demo", "voice", "retell", "image")
         /** Intent for starting the app from its own notifications, overlay and tile (non-exported alias). */
         fun internalIntent(ctx: android.content.Context): Intent = Intent().setClassName(ctx, INTERNAL_ENTRY)
         const val EXTRA_ROUTE = "route"

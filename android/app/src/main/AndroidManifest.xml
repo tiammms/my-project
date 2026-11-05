@@ -24,7 +24,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-    <!-- Only for the one-time download of the offline speech model -->
+    <!-- Only for the one-time downloads of the offline speech model and the text-recognition files -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
@@ -85,6 +85,20 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/ogg" />
+            </intent-filter>
+        </activity>
+
+        <!-- "Поделиться → Saqtan" for a screenshot or photo: reads only the shared content:// image -->
+        <activity
+            android:name=".share.ShareImageActivity"
+            android:exported="true"
+            android:label="@string/share_image"
+            android:taskAffinity=""
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
 

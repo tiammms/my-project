@@ -55,6 +55,12 @@ object VoiceInput {
     const val MAX_SECONDS = 600            // a voice message longer than 10 minutes is not checked
     const val MAX_BYTES = 60L * 1024 * 1024
     const val RETELL_MAX_SECONDS = 90
+    const val MAX_IMAGE_BYTES = 25L * 1024 * 1024
+
+    /** Down-scale factor so the longer side of a picture is at most [maxSide] (text recognition is slow on huge photos). */
+    fun imageScale(w: Int, h: Int, maxSide: Int): Double = if (w <= 0 || h <= 0) 1.0 else minOf(1.0, maxSide.toDouble() / maxOf(w, h))
+
+    fun acceptImageMime(mime: String?): Boolean = mime?.lowercase()?.startsWith("image/") ?: true
 
     /**
      * Only content:// streams are read. A file:// or other URI from another app could point inside this app's own
