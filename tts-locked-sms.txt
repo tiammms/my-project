@@ -1,0 +1,6 @@
+11-09 16:12:30.144  8826  8826 I SaqtanTTS: speak result=0
+11-09 16:12:30.666  8826  8854 I SaqtanTTS: speaking
+11-09 16:12:40.404  8826  8836 I SaqtanTTS: done
+11-09 16:13:03.538  8826  8826 I SaqtanTTS: language kk=false ru=true
+11-09 16:13:03.539  8826  8826 I SaqtanTTS: speak result=0
+11-09 16:13:04.916  8826  8836 I SaqtanTTS: speaking

@@ -1,0 +1,5 @@
+11-09 16:14:31.792  9751  9751 I SaqtanCall: incoming screened=true
+11-09 16:14:31.797  9751  9751 I SaqtanCall: start CELLULAR level=LOW
+11-09 16:14:32.268  9751  9751 I SaqtanCall: phone state RINGING number=false
+11-09 16:14:41.669  9751  9751 I SaqtanCall: phone state IDLE number=false
+11-09 16:14:41.681  9751  9751 I SaqtanCall: report level=LOW answered=false

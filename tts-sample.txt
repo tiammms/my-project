@@ -1,0 +1,5 @@
+--------- beginning of main
+11-09 16:12:30.030  8826  8826 I SaqtanTTS: init status=0
+11-09 16:12:30.140  8826  8826 I SaqtanTTS: language kk=false ru=true
+11-09 16:12:30.144  8826  8826 I SaqtanTTS: speak result=0
+11-09 16:12:30.666  8826  8854 I SaqtanTTS: speaking
