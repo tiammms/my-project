@@ -7,6 +7,9 @@ services:
     environment:
       NS_DB_PATH: /app/backend/data/neuroshield.db
       NS_CORS_ORIGINS: http://localhost:8000
+      # scheme radar: the key comes from the host environment, never from a file in the project
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      NS_ADMIN_TOKEN: ${NS_ADMIN_TOKEN:-}
     volumes: ["ns-data:/app/backend/data"]
 volumes:
   ns-data:
