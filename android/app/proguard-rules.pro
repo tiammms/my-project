@@ -4,6 +4,9 @@
 -keep class org.vosk.** { *; }
 -dontwarn java.awt.**
 -dontwarn com.sun.jna.**
+# Tesseract: native code calls back into these Java classes
+-keep class com.googlecode.tesseract.android.** { *; }
+-keep class com.googlecode.leptonica.android.** { *; }
 # ONNX Runtime: Java classes are created from native code
 -keep class ai.onnxruntime.** { *; }
 # Our own classes are small; keep names readable in crash reports

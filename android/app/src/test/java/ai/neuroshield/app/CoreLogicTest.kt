@@ -40,6 +40,40 @@ class ScamAnalyzerTest {
         assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("this is the bank security team read me the verification code right now").level)
     }
 
+    @Test fun kazakhRequestsWithWordsInBetween() {
+        // the code request is found even with a word between "кодты" and the verb; mixed Kazakh-Russian speech too
+        for (t in listOf("қазір сізге смс келеді сол кодты маған айтып жіберіңіз", "сізге код келді ме сол цифрларды атаңызшы"))
+            assertTrue(t, ScamAnalyzer.analyze(t).tactics.any { it.id == "credentials_request" })
+        val mixed = ScamAnalyzer.analyze("каспи банктен звондап тұрмыз карточкаңыздан ақша списать болып жатыр")
+        assertTrue(mixed.tactics.map { it.id }.containsAll(listOf("authority_impersonation", "threat_fear")))
+        assertNotEquals(RiskLevel.LOW, mixed.level)
+        val r = ScamAnalyzer.analyze("тұтқаны қоймаңыз әйтпесе барлық ақшаңыздан айырыласыз")
+        assertTrue(r.tactics.map { it.id }.containsAll(listOf("urgency_pressure", "threat_fear")))
+        assertTrue(ScamAnalyzer.analyze("сіздің картаңыздан күдікті аударым жасалып жатыр шұғыл түрде растау керек").tactics.any { it.id == "urgency_pressure" })
+    }
+    @Test fun spokenWarningDoesNotRaiseRiskWhenHeardBack() {
+        // same texts as alert/SpokenAlert.PHRASES: on speakerphone the app hears its own warning
+        for (t in listOf("Внимание! Возможно, это мошенник. Никому не говорите коды и пароли, ничего не сообщайте о своей карте. Положите трубку и сами позвоните в банк.",
+                "Внимание! Возможно, это сообщение от мошенников. Не открывайте ссылки, никому не говорите коды и пароли.",
+                "Назар аударыңыз! Бұл алаяқ болуы мүмкін. Кодты, құпия сөзді және картаңыз туралы ешнәрсе айтпаңыз. Тұтқаны қойып, банкке өзіңіз қоңырау шалыңыз.",
+                "Назар аударыңыз! Бұл хабарлама алаяқтардан болуы мүмкін. Сілтемені ашпаңыз, кодты және құпия сөзді ешкімге айтпаңыз.")) {
+            val r = ScamAnalyzer.analyze(t)
+            assertEquals(t, RiskLevel.LOW, r.level); assertTrue(t, r.tactics.all { it.weak })
+        }
+    }
+    @Test fun kazakhEverydayTalkStaysLow() {
+        for (t in listOf("кодты ешкімге айтпаңыз деп банк смс жіберді", "смс келді ме деп сұрадым посылка туралы",
+                "құпия сөзімді ұмытып қалдым қалпына келтірдім", "кеше жол апаты болды деп жаңалықта айтты",
+                "шұғыл жиналыс бар сағат үште кездесейік", "мектептің қауіпсіздік қызметі бүгін жиналыс өткізеді", "мама срочно үйге кел тамақ дайын"))
+            assertEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+        // bank advice "never tell anyone your password / codes" is not a request and not secrecy
+        for (t in listOf("құпия сөзді ешкімге айтпаңыз", "никому не говорите коды"))
+            assertTrue(t, ScamAnalyzer.analyze(t).tactics.all { it.weak })
+        assertTrue(ScamAnalyzer.analyze("құпия сөзіңізді айтыңыз").tactics.any { it.id == "credentials_request" })
+        assertTrue(ScamAnalyzer.analyze("никому не говори маме").tactics.any { it.id == "secrecy_isolation" })
+        // a bank SMS that warns not to share the code is not a request for the code
+        assertFalse(ScamAnalyzer.analyze("кодты ешкімге айтпаңыз деп банк смс жіберді").tactics.any { it.id == "credentials_request" || it.id == "secrecy_isolation" })
+    }
     @Test fun newSchemes() {
         val cases = listOf(
             Triple("Мам, у меня новый номер, старый телефон украли. Кинь, пожалуйста, 30 тысяч на эту карту", RiskLevel.HIGH, "family_emergency"),
@@ -265,6 +299,16 @@ class VideoCallCheckTest {
 }
 
 class LinkCheckTest {
+    @Test fun apkAndRemoteAccessLinks() {
+        assertTrue(LinkCheck.check("http://kaspi-update.example/app.apk").score >= 60)
+        assertTrue(LinkCheck.check("https://files.example.kz/doc/Kaspi_new.apk?x=1").score >= 60)
+        assertTrue(LinkCheck.check("https://anydesk.com/ru/downloads").score >= 40)
+        assertEquals(0, LinkCheck.check("https://example.kz/apkinfo").score)   // "apk" in a word is not a file
+        // an .apk link plus "install it" is high risk
+        assertEquals(RiskLevel.HIGH, ScamAnalyzer.analyze("Обновите приложение банка, установите приложение по ссылке http://files.example.kz/bank.apk").level)
+        // alone, without other tactics, it is a warning but not high
+        assertEquals(RiskLevel.MEDIUM, ScamAnalyzer.analyze("фото тут http://files.example.kz/photo.apk").level)
+    }
     @Test fun lookalikeBrandIsFlagged() {
         val f = LinkCheck.check("https://kaspi-verify.top/login")
         assertTrue(f.score >= 70); assertTrue(f.reasons.any { "Kaspi" in it })
@@ -559,6 +603,31 @@ class CallScenarioTest {
         assertTrue(s.report()!!.checks.any { it.contains("нет разрешения на микрофон") })
     }
 
+    @Test fun blockedAutoListeningIsReportedNotHidden() {
+        val s = CallSession(); s.on(CallEvent.Ringing(0, "+77015550006", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550006"))))
+        s.on(CallEvent.Answered(1)); s.on(CallEvent.SpeechState(2, SpeechStatus.BLOCKED)); s.on(CallEvent.Ended(3))
+        assertTrue(s.report()!!.checks.any { it.contains("телефон не дал Saqtan включить микрофон") })
+        // if the user then starts it by hand, the report says it ran
+        val s2 = CallSession(); s2.on(CallEvent.Ringing(0, "+77015550006", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550006"))))
+        s2.on(CallEvent.Answered(1)); s2.on(CallEvent.SpeechState(2, SpeechStatus.BLOCKED)); s2.on(CallEvent.SpeechState(5, SpeechStatus.STARTED)); s2.on(CallEvent.Ended(9))
+        assertTrue(s2.report()!!.checks.any { it == "Анализ речи: запущен" })
+    }
+
+    @Test fun everySpeechStartOutcomeIsReported() {
+        for ((st, text) in listOf(SpeechStatus.STARTING to "звонок закончился раньше", SpeechStatus.MIC_BUSY to "микрофон занят звонком",
+                SpeechStatus.MODEL_FAILED to "модель распознавания речи не загрузилась")) {
+            val s = CallSession(); s.on(CallEvent.Ringing(0, "+77015550007", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550007"))))
+            s.on(CallEvent.Answered(1)); s.on(CallEvent.SpeechState(2, SpeechStatus.STARTING))
+            if (st != SpeechStatus.STARTING) s.on(CallEvent.SpeechState(3, st))
+            s.on(CallEvent.Ended(9))
+            assertTrue(st.name, s.report()!!.checks.any { it.startsWith("Анализ речи:") && it.contains(text) })
+        }
+        // once the microphone really started, a later loading note does not hide it
+        val s = CallSession(); s.on(CallEvent.Ringing(0, "+77015550007", CallChannel.CELLULAR, null, CallRisk.assess(facts("+77015550007"))))
+        s.on(CallEvent.Answered(1)); s.on(CallEvent.SpeechState(2, SpeechStatus.STARTING)); s.on(CallEvent.SpeechState(4, SpeechStatus.STARTED)); s.on(CallEvent.Ended(9))
+        assertTrue(s.report()!!.checks.any { it == "Анализ речи: запущен" })
+    }
+
     @Test fun whatsappCallDetectedAndNotDetected() {
         assertTrue(Messenger.parse("com.whatsapp", "+44 7911 123456", "Входящий голосовой звонок", true) is MessengerEvent.IncomingCall)
         // a call whose notification says nothing about a call and is not in the call category is not seen as a call
@@ -715,6 +784,52 @@ class ChunkedAeadTest {
         val other = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
         assertEquals(true, fails { ChunkedAead.decrypt(java.io.ByteArrayInputStream(sealed), other, java.io.ByteArrayOutputStream()) })
     }
+
+    // D-01: a recording whose writer was killed (no final chunk) can be read up to the last whole chunk, and says so
+
+    private val small = 1000
+    private fun sealSmall(data: ByteArray, flushed: MutableList<Long>? = null, finish: Boolean = true): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val w = ChunkedAead.Writer(out, key, small) { flushed?.add(it) }
+        w.write(data)
+        if (finish) w.close()           // finish = false: the process died before close()
+        return out.toByteArray()
+    }
+    private fun openTolerant(sealed: ByteArray): Pair<Boolean, ByteArray> {
+        val out = java.io.ByteArrayOutputStream()
+        val complete = ChunkedAead.decrypt(java.io.ByteArrayInputStream(sealed), key, out, allowTruncated = true)
+        return complete to out.toByteArray()
+    }
+
+    @Test fun smallChunksRoundTripAndReportEachChunk() {
+        val data = ByteArray(3500) { (it * 3).toByte() }
+        val flushed = mutableListOf<Long>()
+        val (complete, plain) = openTolerant(sealSmall(data, flushed))
+        assertEquals(true, complete)
+        assertEquals(true, plain.contentEquals(data))
+        assertEquals(listOf(1L, 2L, 3L), flushed)     // three full chunks sealed before the final one
+    }
+
+    @Test fun killedWriterLeavesReadablePrefixMarkedIncomplete() {
+        val data = ByteArray(3500) { (it * 5).toByte() }
+        val sealed = sealSmall(data, finish = false)  // 3 whole chunks written, the last 500 bytes still in memory
+        val (complete, plain) = openTolerant(sealed)
+        assertEquals(false, complete)
+        assertEquals(true, plain.contentEquals(data.copyOf(3000)))
+        assertEquals(true, fails { open(sealed) })   // the strict reader still refuses it
+        // cut in the middle of a chunk (power loss during a write): the partial chunk is dropped, the rest is kept
+        val (c2, p2) = openTolerant(sealed.copyOf(sealed.size - 100))
+        assertEquals(false, c2)
+        assertEquals(true, p2.contentEquals(data.copyOf(2000)))
+    }
+
+    @Test fun tolerantReadingStillRejectsChangedData() {
+        val sealed = sealSmall(ByteArray(3500) { it.toByte() }, finish = false)
+        assertEquals(true, fails { openTolerant(sealed.copyOf().also { it[50] = (it[50] + 1).toByte() }) })
+        val chunk = 4 + 12 + small + 16              // swapping two chunks is detected (chunk number is authenticated)
+        val swapped = sealed.copyOfRange(chunk, 2 * chunk) + sealed.copyOfRange(0, chunk) + sealed.copyOfRange(2 * chunk, sealed.size)
+        assertEquals(true, fails { openTolerant(swapped) })
+    }
 }
 
 /** Experimental synthetic-voice check: how 4-second pieces are cut and how the cautious verdict is made. */
@@ -788,5 +903,325 @@ class SyntheticVoiceTest {
                 assertTrue("not translated: $s -> $kk", kk != s && Regex("[әғқңөұүһі]").containsMatchIn(kk) && "синтезированный" !in kk)
             }
         } finally { I18n.kk = false }
+    }
+}
+
+/** C-02: every app-opening PendingIntent has its own identity, so one can never overwrite another's extras. */
+class AppIntentTest {
+    @Test fun requestCodesAndActionsAreUnique() {
+        val all = AppIntent.values()
+        assertEquals(all.size, all.map { it.requestCode }.toSet().size)
+        assertEquals(all.size, all.map { it.action }.toSet().size)
+    }
+
+    @Test fun reportAndTileNoLongerShareAnIdentity() {
+        // before the fix both used request code 31 on the same component with no action
+        assertNotEquals(AppIntent.OPEN_REPORT.requestCode, AppIntent.TILE_START_LISTEN.requestCode)
+        assertNotEquals(AppIntent.OPEN_REPORT.action, AppIntent.TILE_START_LISTEN.action)
+    }
+
+    @Test fun eachReportAndWarningHasItsOwnData() {
+        assertNotEquals(AppIntent.OPEN_REPORT.dataFor(1), AppIntent.OPEN_REPORT.dataFor(2))
+        assertNotEquals(AppIntent.OPEN_REPORT.dataFor(5), AppIntent.OPEN_ALERT.dataFor(5))
+        assertTrue(AppIntent.OPEN_ALERT.dataFor(42).endsWith("/42"))
+    }
+}
+
+/** C-06: one written form per number, with Kazakhstan's formats; different numbers are never merged. */
+class PhoneNumbersTest {
+    @Test fun kazakhFormatsBecomeOne() {
+        for (raw in listOf("87015550888", "+77015550888", "77015550888", "7015550888", "+7 (701) 555-08-88", "8 701 555 08 88", "8-701-555-08-88"))
+            assertEquals(raw, "+77015550888", PhoneNumbers.normalize(raw, "+7"))
+    }
+
+    @Test fun differentNumbersStayDifferent() {
+        assertNotEquals(PhoneNumbers.normalize("87015550888", "+7"), PhoneNumbers.normalize("87015550889", "+7"))
+        assertNotEquals(PhoneNumbers.normalize("87015550888", "+7"), PhoneNumbers.normalize("+447015550888", "+7"))
+    }
+
+    @Test fun internationalPrefixes() {
+        assertEquals("+447911123456", PhoneNumbers.normalize("00447911123456", "+7"))
+        assertEquals("+447911123456", PhoneNumbers.normalize("81044 7911 123456", "+7"))
+        assertEquals("+447911123456", PhoneNumbers.normalize("+44 7911 123456", "+7"))
+    }
+
+    @Test fun shortAndOtherNumbersAreNotRewritten() {
+        assertEquals("7700", PhoneNumbers.normalize("7700", "+7"))          // bank short number
+        assertEquals("1414", PhoneNumbers.normalize("1414", "+7"))
+        assertEquals("9161234567", PhoneNumbers.normalize("9161234567", "+7"))   // no rule for 10 digits not starting with 7
+        assertEquals("87015550888", PhoneNumbers.normalize("87015550888", "+44"))  // the +7 rules apply only to home code +7
+        assertNull(PhoneNumbers.normalize("Kaspi.kz", "+7"))
+        assertNull(PhoneNumbers.normalize("  ", "+7"))
+    }
+
+    @Test fun oldStoredFormsAreFound() {
+        assertEquals(listOf("+77015550888", "87015550888", "77015550888", "7015550888"), PhoneNumbers.storedForms("+77015550888"))
+        assertEquals(listOf("+447911123456"), PhoneNumbers.storedForms("+447911123456"))
+    }
+
+    @Test fun localNumberWrittenWith8IsNotInternational() {
+        val r = CallRisk.assess(CallFacts("87015550888", false, "+7", 1, false, false))
+        assertTrue(r.reasons.none { it.text.startsWith("Международный") })
+        val intl = CallRisk.assess(CallFacts("00447911123456", false, "+7", 1, false, false))
+        assertTrue(intl.reasons.any { it.text.startsWith("Международный") })
+    }
+}
+
+/** C-03: a saved "call in progress" that can no longer be true must not turn an ordinary SMS code into an alarm. */
+class CallStateGuardTest {
+    private val h = 3_600_000L
+    private val boot = 1_000_000_000_000L
+    private val now = boot + 2 * h
+
+    @Test fun callSavedBeforeRestartIsIdle() {
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", boot - 60_000, now, boot, null))
+        assertEquals("IDLE", CallStateGuard.effective("RINGING", boot - 1, now, boot, true))
+    }
+
+    @Test fun stateFromOldVersionWithoutTimeIsIdle() =
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", 0L, now, boot, null))
+
+    @Test fun systemSaysNoCallAfterGracePeriod() {
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", now - 5 * 60_000, now, boot, false))
+        // call setup: the state was saved a moment ago, the system may not report it yet
+        assertEquals("OFFHOOK", CallStateGuard.effective("OFFHOOK", now - 5_000, now, boot, false))
+    }
+
+    @Test fun systemConfirmsTheCall() {
+        // a very long call (7 h, phone on for 10 h): the system confirms it, so age does not matter
+        assertEquals("OFFHOOK", CallStateGuard.effective("OFFHOOK", now - 7 * h, now, now - 10 * h, true))
+    }
+
+    @Test fun withoutTheSystemOnlyAgeDecides() {
+        assertEquals("RINGING", CallStateGuard.effective("RINGING", now - 30_000, now, boot, null))
+        assertEquals("IDLE", CallStateGuard.effective("RINGING", now - 5 * 60_000, now, boot, null))
+        assertEquals("OFFHOOK", CallStateGuard.effective("OFFHOOK", now - h, now, boot, null))
+        assertEquals("IDLE", CallStateGuard.effective("OFFHOOK", now - 7 * h, now, boot, null))
+    }
+
+    @Test fun idleStaysIdle() = assertEquals("IDLE", CallStateGuard.effective("IDLE", now, now, boot, true))
+
+    @Test fun smsCodeAfterRestartIsNotDuringACall() {
+        // the phone restarted during a call with a stranger; an hour later an SMS with a code arrives
+        val eff = CallStateGuard.effective("OFFHOOK", boot - 10 * 60_000, now, boot, null)
+        assertNull(CellularCallWindow.riskyCall(eff, endedAt = 0L, now = now, isContact = false))
+    }
+
+    @Test fun smsCodeDuringOrRightAfterACallWithAStranger() {
+        assertEquals(true, CellularCallWindow.riskyCall("OFFHOOK", 0L, now, isContact = false))
+        assertEquals(false, CellularCallWindow.riskyCall("IDLE", now - 3 * 60_000, now, isContact = false))   // just after
+        assertNull(CellularCallWindow.riskyCall("IDLE", now - 30 * 60_000, now, isContact = false))         // long after
+        assertNull(CellularCallWindow.riskyCall("OFFHOOK", 0L, now, isContact = true))                      // a contact
+    }
+}
+
+/** M-01: a display name in a messenger notification is never taken as proof that the person is a saved contact. */
+class SenderStatusTest {
+    @Test fun numberDecidesWhenItIsShown() {
+        assertEquals(SenderStatus.CONTACT_BY_NUMBER, Messenger.senderStatus("Telegram", "+77015550888", numberInContacts = true, nameInContacts = false))
+        assertEquals(SenderStatus.STRANGER, Messenger.senderStatus("WhatsApp", "+77015550888", numberInContacts = false, nameInContacts = true))
+    }
+
+    @Test fun telegramOrViberNameIsNotProof() {
+        val st = Messenger.senderStatus("Telegram", null, numberInContacts = false, nameInContacts = true)
+        assertEquals(SenderStatus.NAME_LIKE_CONTACT, st)
+        assertFalse("a matching name must not switch off the code-during-call alarm", st.trusted)
+        assertEquals(SenderStatus.STRANGER, Messenger.senderStatus("Viber", null, numberInContacts = false, nameInContacts = false))
+    }
+
+    @Test fun whatsappNameOfASavedContact() {
+        assertTrue(Messenger.senderStatus("WhatsApp", null, numberInContacts = false, nameInContacts = true).trusted)
+        // WhatsApp business or "~profile" names that match no contact are strangers
+        assertEquals(SenderStatus.STRANGER, Messenger.senderStatus("WhatsApp", null, numberInContacts = false, nameInContacts = false))
+    }
+
+    @Test fun telegramCallFromANameIsParsedWithoutNumber() {
+        val e = Messenger.parse("org.telegram.messenger", "Aidar Bank", "Входящий звонок", true) as MessengerEvent.IncomingCall
+        assertNull(e.number)
+        assertEquals("Aidar Bank", e.caller)
+    }
+
+    @Test fun nameOnlyCallerIsExplainedNotCalledHidden() {
+        val r = CallRisk.assess(CallFacts(null, false, "+7", 1, false, false, messenger = "Telegram", callerName = "Aidar Bank"))
+        assertTrue(r.reasons.any { it.text == "Номер не виден: «Aidar Bank» нет в ваших контактах" })
+        assertTrue(r.reasons.none { it.text == "Номер скрыт" })
+        assertTrue(r.reasons.any { it.text.startsWith("Звонок через Telegram") })
+    }
+
+    @Test fun newTextsAreTranslated() {
+        I18n.kk = true
+        try {
+            for (s in listOf("Номер не виден: «Aidar» нет в ваших контактах", "Звонок в Telegram от незнакомого собеседника",
+                    "Имя совпадает с контактом, но номер не виден — это может быть другой человек", "номер не виден"))
+                assertTrue(s, I18n.core(s) != s)
+        } finally { I18n.kk = false }
+    }
+}
+
+class BootJudgeTest {
+    private val boot = 1_800_000_000_000L
+    private val min = 60_000L
+
+    @Test fun bootJudgeStartedAfterRestart() {
+        assertEquals(true, BootJudge.judge(boot, boot + 2 * min, boot - 86_400_000L, 10 * min))
+    }
+
+    @Test fun bootJudgeNotStartedAfterRestartMeansAutoStartBlocked() {
+        // recorded before the latest restart only, restarted 10 minutes ago
+        assertEquals(false, BootJudge.judge(boot, boot - 86_400_000L, boot - 2 * 86_400_000L, 10 * min))
+        assertEquals(false, BootJudge.judge(boot, 0L, boot - 86_400_000L, 10 * min))
+    }
+
+    @Test fun bootJudgeUnknownRightAfterRestartOrInstall() {
+        assertNull("the boot broadcast may come late", BootJudge.judge(boot, 0L, boot - 86_400_000L, 2 * min))
+        assertNull("installed after the restart: nothing to judge", BootJudge.judge(boot, 0L, boot + 5 * min, 30 * min))
+    }
+}
+
+class VoiceInputTest {
+    @Test fun converterDownsamplesStereo48kToMono16k() {
+        val c = PcmConverter(48_000, 2)
+        var out = 0
+        val chunk = ShortArray(4800 * 2) { 1000 }               // 0.1 s of a constant stereo signal
+        repeat(10) { out += c.push(chunk, chunk.size).size }
+        assertTrue("1 s at 48 kHz gives about 16 000 samples, got $out", out in 15_990..16_000)
+        val last = c.push(chunk, chunk.size)
+        assertTrue(last.all { it in 990..1000 })                 // level kept, channels averaged
+    }
+
+    @Test fun converterAveragesChannelsAndKeepsSameRate() {
+        val c = PcmConverter(16_000, 2)
+        val out = c.push(shortArrayOf(100, 300, 100, 300), 4)
+        assertArrayEquals(shortArrayOf(200, 200), out)
+    }
+
+    @Test fun converterUpsamples8k() {
+        val c = PcmConverter(8_000, 1)
+        var out = 0
+        repeat(10) { out += c.push(ShortArray(800) { 500 }, 800).size }
+        assertTrue("1 s at 8 kHz gives about 16 000 samples, got $out", out in 15_990..16_000)
+    }
+
+    @Test fun onlySharedContentIsRead() {
+        assertTrue(VoiceInput.acceptScheme("content"))
+        assertFalse("file:// could point into the app's own storage", VoiceInput.acceptScheme("file"))
+        assertFalse(VoiceInput.acceptScheme(null))
+        assertTrue(VoiceInput.acceptMime("audio/ogg; codecs=opus"))
+        assertTrue(VoiceInput.acceptMime("application/ogg"))
+        assertFalse(VoiceInput.acceptMime("image/jpeg"))
+        assertFalse(VoiceInput.acceptSize(VoiceInput.MAX_BYTES + 1))
+        assertTrue(VoiceInput.acceptSize(null))
+    }
+
+    @Test fun imagesAreScaledAndOnlyImagesAccepted() {
+        assertEquals("small pictures are not enlarged", 1.0, VoiceInput.imageScale(1000, 800, 2200), 1e-9)
+        assertEquals(0.5, VoiceInput.imageScale(4400, 3000, 2200), 1e-9)
+        assertTrue(VoiceInput.acceptImageMime("image/png"))
+        assertFalse(VoiceInput.acceptImageMime("audio/ogg"))
+    }
+
+    @Test fun publicScamPhrasesAreNoticed() {
+        // from the public set (experiments/text_eval_public): police and bank warnings
+        for (t in listOf("вам звонит сотрудник центробанка", "на ваше имя оформляют кредит", "идут следственные действия помогите задержать мошенников и не разглашайте информацию",
+                "тергеу құпиясын жариялауға болмайды", "жол-көлік апатына қатысты хабар бар"))
+            assertTrue(t, ScamAnalyzer.analyze(t).tactics.any { !it.weak })
+    }
+
+    @Test fun syntheticVoiceRaisesButNeverDecidesAlone() {
+        val calm = ScamAnalyzer.analyze("привет как дела")
+        val scam = ScamAnalyzer.analyze("это служба безопасности банка продиктуйте код из смс")
+        val robot = VoiceCheck(5, 4, 0.99, 0.5)
+        assertEquals(RiskLevel.LOW, VoiceInput.verdict(calm, null).first)
+        assertEquals(RiskLevel.MEDIUM, VoiceInput.verdict(calm, robot).first)
+        assertEquals(RiskLevel.HIGH, VoiceInput.verdict(scam, robot).first)
+    }
+
+    @Test fun retoldScamCallsWarn() {
+        for (t in listOf("мне позвонили из банка сказали что карту взломали и попросили продиктовать код",
+                "сказали что кто-то оформляет на меня кредит и чтобы отменить заявку нужен код из смс",
+                "ол банк қызметкерімін деп кодты айтуды сұрады",
+                "нөміріңіз өшіріледі деп кодты сұрады"))
+            assertNotEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+    }
+
+    @Test fun retoldOrdinaryCallsStayCalm() {
+        for (t in listOf("звонили из банка спросили удобно ли получить карту в отделении",
+                "из банка позвонили предложили кредитную карту я отказался",
+                "банктен қоңырау шалып жаңа карта ұсынды мен бас тарттым",
+                "курьер подъездің алдында тұрмын деді"))
+            assertEquals(t, RiskLevel.LOW, ScamAnalyzer.analyze(t).level)
+    }
+
+    @Test fun voiceAndRetellTitlesAreTranslated() {
+        I18n.kk = true
+        try {
+            assertEquals("Дауыстық хабарлама: найдено признаков обмана: 2".substringBefore(":"),
+                I18n.core("Голосовое сообщение: найдено признаков обмана: 2").substringBefore(":"))
+            assertTrue(I18n.core("Пересказ звонка: найдено признаков обмана: 1").startsWith("Қоңырауды әңгімелеу"))
+        } finally { I18n.kk = false }
+    }
+}
+
+class FamilyAlertTest {
+    @Test fun callMessageNamesNumberAndAsksToCallBack() {
+        val t = FamilyAlert.text(false, "call_report", "+7 777 123 45 67", "Просят код, пароль или данные карты.")
+        assertTrue(t, t.startsWith("Мне сейчас звонят с номера +7 777 123 45 67."))
+        assertTrue(t, t.contains("Saqtan предупредил: Просят код, пароль или данные карты."))
+        assertTrue(t.endsWith("Перезвони мне, пожалуйста."))
+    }
+
+    @Test fun messageWithoutNumberSaysWriting() {
+        val t = FamilyAlert.text(false, "voice_message", null, "Голосовое сообщение: найдено признаков обмана: 3")
+        assertTrue(t, t.startsWith("Мне сейчас пишут."))
+        assertFalse("hidden numbers are not quoted", FamilyAlert.text(false, "call_report", "скрытый номер", "x").contains("скрытый"))
+    }
+
+    @Test fun kazakhText() {
+        val t = FamilyAlert.text(true, "incoming_call", "+77001234567", "Күдікті кіріс қоңырау")
+        assertTrue(t, t.startsWith("Маған қазір +77001234567 нөмірінен қоңырау шалып жатыр."))
+        assertTrue(t.contains("код айтпаймын"))
+    }
+}
+
+class BankAppsTest {
+    @Test fun bankNotificationsAreRecognised() {
+        assertEquals(BankPushKind.CODE, BankApps.parse("kz.kaspi.mobile", "Kaspi.kz", "Код подтверждения 4821. Никому не сообщайте")?.kind)
+        assertEquals(BankPushKind.LOGIN, BankApps.parse("kz.kkb.homebank", "Halyk", "Выполнен вход в Homebank с нового устройства")?.kind)
+        assertEquals(BankPushKind.TRANSFER, BankApps.parse("kz.bcc.starbanking", "BCC", "Перевод 150 000 ₸ на карту 4400…")?.kind)
+        assertEquals(BankPushKind.CHANGE, BankApps.parse("kz.forte.bank", "ForteBank", "Лимит на переводы изменён")?.kind)
+        assertEquals("Halyk", BankApps.bankOf("kz.kkb.homebank"))
+    }
+
+    @Test fun otherAppsAndPlainNewsAreIgnored() {
+        assertNull("not a bank", BankApps.parse("com.whatsapp", "Мама", "Код от домофона 1234"))
+        assertNull("short part needs a kz. package", BankApps.parse("com.example.bcc", "x", "Перевод выполнен"))
+        assertNull("advertising, no action", BankApps.parse("kz.kaspi.mobile", "Kaspi.kz", "Скидки до 30% в Магазине"))
+    }
+
+    @Test fun bankPushDuringCallMakesTheReportHigh() {
+        val s = CallSession(bankWatch = true)
+        s.on(CallEvent.Ringing(0, "+77001234567", CallChannel.CELLULAR, null, CallRiskResult(30.0, RiskLevel.MEDIUM, emptyList(), emptyList())))
+        s.on(CallEvent.Answered(1000))
+        s.on(CallEvent.BankPushArrived(30_000, "Kaspi", BankPushKind.LOGIN, null))
+        s.on(CallEvent.Ended(90_000))
+        val r = s.report()!!
+        assertEquals(RiskLevel.HIGH, r.level)
+        assertTrue(r.findings.any { it.startsWith("Во время звонка Kaspi прислал уведомление") })
+        assertTrue(r.checks.any { it.startsWith("Уведомления банков во время звонка: было") })
+    }
+
+    @Test fun bankLinesAreTranslated() {
+        I18n.kk = true
+        try {
+            assertTrue(I18n.core("Во время звонка Kaspi прислал уведомление: код подтверждения (4••1)").startsWith("Қоңырау кезінде Kaspi"))
+            assertEquals("Қоңырау кезіндегі банк хабарламалары: қадағаланды, хабарлама келген жоқ",
+                I18n.core("Уведомления банков во время звонка: отслеживались, уведомлений не было"))
+        } finally { I18n.kk = false }
+    }
+
+    @Test fun officialBankNumbers() {
+        assertEquals("Kaspi", BankDirectory.byNumber("9999")?.name)
+        assertEquals("Halyk", BankDirectory.byNumber("7111")?.name)
+        assertNull(BankDirectory.byNumber("+77001234567"))
     }
 }

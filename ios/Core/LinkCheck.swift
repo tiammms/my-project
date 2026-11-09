@@ -18,6 +18,8 @@ public enum LinkCheck {
         ("tinkoff", ["tinkoff.ru", "tbank.ru"]), ("gosuslugi", ["gosuslugi.ru"]), ("whatsapp", ["whatsapp.com", "wa.me"]),
         ("telegram", ["telegram.org", "t.me"]), ("google", ["google.com", "google.kz"]), ("apple", ["apple.com"]),
     ]
+    static let remoteApps: Set<String> = ["anydesk.com", "rustdesk.com", "teamviewer.com", "airdroid.com", "anydesk.ru"]
+    static let apk = try! NSRegularExpression(pattern: #"(?i)\.apk(?:$|[?#])"#)
     static let shorteners: Set<String> = ["bit.ly", "clck.ru", "tinyurl.com", "goo.su", "cutt.ly", "is.gd", "t.co", "rb.gy", "u.to", "vk.cc", "shorturl.at"]
     static let riskyTlds: Set<String> = ["top", "xyz", "click", "icu", "live", "online", "site", "shop", "buzz", "rest", "link", "info", "cfd", "sbs"]
     static let credWords = try! NSRegularExpression(pattern:
@@ -65,6 +67,12 @@ public enum LinkCheck {
             score += 55; reasons.append("Похоже на «\(brand.prefix(1).uppercased() + brand.dropFirst())», но это не официальный сайт (\(official[0]))")
             break
         }
+        let noScheme = url.replacingOccurrences(of: #"(?i)^https?://"#, with: "", options: .regularExpression)
+        let path = noScheme.firstIndex(of: "/").map { String(noScheme[noScheme.index(after: $0)...]) } ?? ""
+        if has(apk, path) {
+            score += 60; reasons.append("Ссылка скачивает файл приложения (.apk) не из магазина — так устанавливают вирусы и программы для управления телефоном")
+        }
+        if remoteApps.contains(reg) { score += 40; reasons.append("Сайт программы удалённого доступа — с ней посторонний сможет управлять телефоном") }
         if h.filter({ $0 == "-" }).count >= 2 { score += 10; reasons.append("Много дефисов в адресе") }
         if has(credWords, url) && score > 0 { score += 15; reasons.append("Страница просит войти или «подтвердить» данные") }
         if url.contains("@") { score += 20; reasons.append("Символ @ в ссылке маскирует настоящий адрес") }

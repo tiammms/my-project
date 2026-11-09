@@ -1,0 +1,20 @@
+{
+ "set": "dev",
+ "scam_warned": "23/25",
+ "scam_high": "5/25",
+ "normal_false_warnings": "0/22",
+ "errors": [
+  {
+   "label": "scam",
+   "text": "сәлеметсіз бе мен банктің қауіпсіздік қызметінен хабарласып тұрмын",
+   "level": "LOW",
+   "score": 25.0
+  },
+  {
+   "label": "scam",
+   "text": "бұл туралы ешкімге айтпаңыз тергеу құпиясы",
+   "level": "LOW",
+   "score": 20.0
+  }
+ ]
+}

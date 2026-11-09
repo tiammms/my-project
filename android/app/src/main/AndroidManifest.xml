@@ -15,15 +15,28 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- turns the screen on for a few seconds when a warning arrives on a locked phone -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- after a restart: drop a call state saved before it and record that the system started the app (auto-start check) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- one-tap "do not restrict battery" dialog in Protection (ColorOS and others put background apps to sleep) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-    <!-- Only for the one-time download of the offline speech model -->
+    <!-- Only for the one-time downloads of the offline speech model and the text-recognition files -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- Android 11+: without this the app cannot see the phone's speech engine and the spoken warning stays silent -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:name=".NeuroShieldApp"
@@ -56,6 +69,39 @@
             android:exported="false"
             android:targetActivity=".MainActivity" />
 
+        <!-- "Поделиться → Saqtan" for a voice message (WhatsApp, Telegram…): reads only the shared content:// stream -->
+        <activity
+            android:name=".share.ShareVoiceActivity"
+            android:exported="true"
+            android:label="@string/share_voice"
+            android:taskAffinity=""
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/ogg" />
+            </intent-filter>
+        </activity>
+
+        <!-- "Поделиться → Saqtan" for a screenshot or photo: reads only the shared content:// image -->
+        <activity
+            android:name=".share.ShareImageActivity"
+            android:exported="true"
+            android:label="@string/share_image"
+            android:taskAffinity=""
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
         <!-- Called by Android for every incoming call from a number that is not in contacts -->
         <service
             android:name=".call.ScreeningService"
@@ -65,6 +111,17 @@
                 <action android:name="android.telecom.CallScreeningService" />
             </intent-filter>
         </service>
+
+        <!-- not exported: boot broadcasts come from the system, which reaches non-exported receivers -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".call.ReportActionReceiver"
@@ -95,6 +152,21 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
+        </service>
+
+        <!-- Experimental, off until the user turns it on in Accessibility settings: on some phones Android stops silencing
+             the microphone during a call while an app's accessibility service is on. Reads no screen content. -->
+        <service
+            android:name=".listen.CallAudioAccessibility"
+            android:exported="true"
+            android:label="Saqtan: звук звонка (эксперимент)"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/call_audio_accessibility" />
         </service>
 
         <service

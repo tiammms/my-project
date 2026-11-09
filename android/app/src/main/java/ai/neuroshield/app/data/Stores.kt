@@ -19,7 +19,7 @@ class Prefs(ctx: Context) {
 
     var homeCallingCode: String
         get() = p.getString("home_code", "+7") ?: "+7"
-        set(v) = p.edit().putString("home_code", v).apply()
+        set(v) { p.edit().putString("home_code", v).apply(); ai.neuroshield.app.core.PhoneNumbers.homeCode = v }
     var warnUnknownCallers: Boolean
         get() = p.getBoolean("warn_unknown", true)
         set(v) = p.edit().putBoolean("warn_unknown", v).apply()
@@ -55,27 +55,34 @@ class Prefs(ctx: Context) {
     var blockMarked: Boolean
         get() = p.getBoolean("block_marked", false)
         set(v) = p.edit().putBoolean("block_marked", v).apply()
+    var speakWarnings: Boolean
+        get() = p.getBoolean("speak_warnings", false)   // opt-in: the phone says a high-risk warning aloud
+        set(v) = p.edit().putBoolean("speak_warnings", v).apply()
     var onboarded: Boolean
         get() = p.getBoolean("onboarded", false)
         set(v) = p.edit().putBoolean("onboarded", v).apply()
 
     // ---- numbers the user marked ----
-    fun scamNumbers(): Set<String> = p.getStringSet("scam_numbers", emptySet())!!.toSet()
-    fun safeNumbers(): Set<String> = p.getStringSet("safe_numbers", emptySet())!!.toSet()
+    // read through the normaliser: marks saved by versions before 1.0.84 ("8701...") match today's form ("+7701...")
+    fun scamNumbers(): Set<String> = p.getStringSet("scam_numbers", emptySet())!!.mapNotNull { CallRisk.normalizeNumber(it) }.toSet()
+    fun safeNumbers(): Set<String> = p.getStringSet("safe_numbers", emptySet())!!.mapNotNull { CallRisk.normalizeNumber(it) }.toSet()
     fun mark(number: String, scam: Boolean) {
         val n = CallRisk.normalizeNumber(number) ?: return
         val s = scamNumbers().toMutableSet(); val ok = safeNumbers().toMutableSet()
         if (scam) { s += n; ok -= n } else { ok += n; s -= n }
         p.edit().putStringSet("scam_numbers", s).putStringSet("safe_numbers", ok).apply()
     }
-    fun unmark(number: String) {
+    fun unmark(raw: String) {
+        val number = CallRisk.normalizeNumber(raw) ?: return
         p.edit().putStringSet("scam_numbers", scamNumbers() - number).putStringSet("safe_numbers", safeNumbers() - number).apply()
     }
 
     // ---- call session (survives process restarts between broadcasts) ----
     var callState: String
         get() = p.getString("call_state", "IDLE") ?: "IDLE"
-        set(v) = p.edit().putString("call_state", v).apply()
+        set(v) = p.edit().putString("call_state", v).putLong("call_state_at", System.currentTimeMillis()).apply()
+    /** When [callState] was last saved (0 = saved by a version before 1.0.84). See CallStateGuard. */
+    val callStateAt: Long get() = p.getLong("call_state_at", 0L)
     var callNumber: String?
         get() = p.getString("call_number", null)
         set(v) = p.edit().putString("call_number", v).apply()
@@ -118,7 +125,9 @@ class Prefs(ctx: Context) {
 
     fun senderRisk(number: String?, now: Long = System.currentTimeMillis()): Pair<RiskLevel, List<String>>? {
         val n = CallRisk.normalizeNumber(number) ?: return null
-        val e = JSONObject(p.getString("sender_risk", "{}") ?: "{}").optJSONObject(n) ?: return null
+        val all = JSONObject(p.getString("sender_risk", "{}") ?: "{}")
+        // entries saved by older versions may use another written form of the same number
+        val e = all.optJSONObject(n) ?: all.keys().asSequence().firstOrNull { CallRisk.normalizeNumber(it) == n }?.let { all.optJSONObject(it) } ?: return null
         if (now - e.getLong("ts") > 86_400_000) return null
         val arr = e.getJSONArray("tactics")
         return RiskLevel.valueOf(e.getString("level")) to (0 until arr.length()).map { arr.getString(it) }
@@ -154,6 +163,9 @@ data class Alert(
         "incoming_call" -> tr("Входящий звонок", "Кіріс қоңырау"); "sms_code" -> tr("SMS с кодом во время звонка", "Қоңырау кезіндегі кодты SMS")
         "sms_text" -> tr("Подозрительное SMS", "Күдікті SMS"); "live_speech" -> tr("Речь во время звонка", "Қоңырау кезіндегі сөйлеу")
         "manual_text" -> tr("Проверка текста", "Мәтінді тексеру"); "face" -> tr("Проверка лица", "Бетті тексеру")
+        "voice_message" -> tr("Голосовое сообщение", "Дауыстық хабарлама"); "retell" -> tr("Пересказ звонка", "Қоңырауды әңгімелеу")
+        "image_check" -> tr("Проверка скриншота", "Скриншотты тексеру")
+        "bank_push" -> tr("Уведомление банка во время звонка", "Қоңырау кезіндегі банк хабарламасы")
         "blocked_call" -> tr("Заблокированный звонок", "Бұғатталған қоңырау"); "messenger_call" -> tr("Звонок в мессенджере", "Мессенджердегі қоңырау")
         "video_call" -> tr("Проверка видеозвонка", "Бейнеқоңырауды тексеру"); "messenger_text" -> tr("Сообщение в мессенджере", "Мессенджердегі хабарлама")
         "demo" -> tr("Демо-сценарий (учебные данные)", "Демо-сценарий (оқу деректері)"); "recording" -> tr("Запись разговора", "Әңгіме жазбасы"); "synthetic_voice" -> tr("Синтетический голос", "Синтетикалық дауыс"); "call_report" -> tr("Отчёт о звонке", "Қоңырау туралы есептеме"); else -> source
@@ -243,6 +255,11 @@ class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", 
         writableDatabase.delete("alerts", "id = ?", arrayOf(id.toString())); _version.value++
     }
     fun clear() { writableDatabase.delete("alerts", null, null); CallRecordings.deleteAll(ctx); _version.value++ }
+    /** Recording ids referenced by history entries. */
+    fun audioIds(): Set<String> = readableDatabase.rawQuery("SELECT audio FROM alerts WHERE audio IS NOT NULL", null).use { c ->
+        buildSet { while (c.moveToNext()) add(c.getString(0)) }
+    }
+
     /** Removes only the audio of a record (the report stays). */
     fun deleteAudio(id: Long, audio: String?) {
         CallRecordings.delete(ctx, audio)
@@ -251,9 +268,12 @@ class AlertStore(private val ctx: Context) : SQLiteOpenHelper(ctx, "alerts.db", 
     fun deleteSource(source: String): Int { val n = writableDatabase.delete("alerts", "source = ?", arrayOf(source)); _version.value++; return n }
     /** Local reputation: how many earlier call reports for [number] ended HIGH and MEDIUM. */
     fun reportCounts(number: String?): Pair<Int, Int> {
-        if (number.isNullOrBlank()) return 0 to 0
+        val n = CallRisk.normalizeNumber(number) ?: return 0 to 0
         var high = 0; var medium = 0
-        readableDatabase.rawQuery("SELECT level, COUNT(*) FROM alerts WHERE source = 'call_report' AND number = ? GROUP BY level", arrayOf(number)).use { c ->
+        // reports saved by versions before 1.0.84 may hold another written form of the same number
+        val forms = ai.neuroshield.app.core.PhoneNumbers.storedForms(n)
+        readableDatabase.rawQuery("SELECT level, COUNT(*) FROM alerts WHERE source = 'call_report' AND number IN (" +
+            forms.joinToString(",") { "?" } + ") GROUP BY level", forms.toTypedArray()).use { c ->
             while (c.moveToNext()) when (c.getString(0)) { "HIGH" -> high = c.getInt(1); "MEDIUM" -> medium = c.getInt(1) }
         }
         return high to medium

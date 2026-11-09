@@ -22,6 +22,15 @@ import ai.neuroshield.app.core.SmsCode
 class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
+        // with the spoken warning on, keep the app alive a few seconds after the SMS so the phrase can be said to the end
+        // (some phones, e.g. OPPO/ColorOS, stop a background app right after its receiver returns)
+        val keep = if (ctx.app.prefs.speakWarnings) goAsync() else null
+        try { handle(ctx, intent) } finally {
+            keep?.let { android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ try { it.finish() } catch (_: Exception) {} }, 8_000L) }
+        }
+    }
+
+    private fun handle(ctx: Context, intent: Intent) {
         val msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent) ?: return
         if (msgs.isEmpty()) return
         val sender = msgs[0].displayOriginatingAddress

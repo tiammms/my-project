@@ -47,7 +47,7 @@ jobs:
       - run: npm run typecheck && npm run build
         working-directory: frontend
   docker-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright has no Chromium for ubuntu-26.04 (ubuntu-latest since 10.2026)
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
@@ -78,6 +78,8 @@ jobs:
           SAQTAN_KEYSTORE_PASSWORD: ${{ secrets.SAQTAN_KEYSTORE_PASSWORD }}
           SAQTAN_KEY_ALIAS: ${{ secrets.SAQTAN_KEY_ALIAS }}
           SAQTAN_KEY_PASSWORD: ${{ secrets.SAQTAN_KEY_PASSWORD }}
+          # without the owner's key, CI test builds are signed with the public demo key (marked as test builds)
+          SAQTAN_ALLOW_DEMO_SIGNING: "1"
         run: |
           set +e
           # release key from repository secrets (if the owner added them); otherwise the public demo key is used
@@ -143,8 +145,12 @@ jobs:
           fi
           cd shots && git init -q && git checkout -q -b ci-screens && git add . && \
             git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "emulator screenshots ${{ github.sha }}" && \
-            git push -qf https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ci-screens
+            true
+          # the push and pull-request runs of one commit finish together: retry, and never fail the checks over it
+          ok=0; for i in 1 2 3; do git push -qf https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ci-screens && { ok=1; break; }; sleep $((i * 15)); done
+          [ $ok = 1 ] || echo "::warning title=screenshots::could not publish to ci-screens (another run was pushing at the same time); checks are not affected"
       - name: emulator assertions
+        if: always()
         working-directory: android
         run: |
           cat shots/asserts.txt
@@ -208,5 +214,8 @@ jobs:
           python3 -c "t=open('shots/status.txt').read() if __import__('os').path.exists('shots/status.txt') else 'no status';print('::notice title=ios-simulator::'+t[:2000].replace('\n','%0A'))"
           cd shots && git init -q && git checkout -q -b ci-screens-ios && git add . && \
             git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "iOS simulator screenshots ${{ github.sha }}" && \
-            git push -qf https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ci-screens-ios
+            true
+          # the push and pull-request runs of one commit finish together: retry, and never fail the checks over it
+          ok=0; for i in 1 2 3; do git push -qf https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ci-screens-ios && { ok=1; break; }; sleep $((i * 15)); done
+          [ $ok = 1 ] || echo "::warning title=screenshots::could not publish to ci-screens-ios (another run was pushing at the same time); checks are not affected"
 

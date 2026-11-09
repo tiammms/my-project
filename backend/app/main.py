@@ -41,6 +41,7 @@ from starlette.staticfiles import StaticFiles
 from .api.framework import SWAGGER_HTML
 from .api.routes import STATE, api, relabel_dataset
 from .api import bio_routes  # noqa: F401  (registers /api/v1/bio/* on the same API)
+from .api import radar_routes  # noqa: F401  (registers /api/v1/radar/*)
 from .biometrics.store import BioStore
 from .core.config import Settings, settings as default_settings
 from .database.db import Database, now_iso

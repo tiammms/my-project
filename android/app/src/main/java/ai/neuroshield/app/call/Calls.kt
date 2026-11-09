@@ -16,11 +16,14 @@ import ai.neuroshield.app.core.CallEvent
 import ai.neuroshield.app.core.CallFacts
 import ai.neuroshield.app.core.CallRisk
 import ai.neuroshield.app.core.CallRiskResult
+import ai.neuroshield.app.core.CallStateGuard
+import ai.neuroshield.app.core.CellularCallWindow
 import ai.neuroshield.app.core.Reason
 import ai.neuroshield.app.core.ReputationSources
 import ai.neuroshield.app.core.RiskLevel
 import ai.neuroshield.app.core.SpeechStatus
 import ai.neuroshield.app.listen.ListenService
+import ai.neuroshield.app.listen.ListenState
 import ai.neuroshield.app.listen.SpeechModels
 
 /**
@@ -63,10 +66,38 @@ class PhoneStateReceiver : BroadcastReceiver() {
 }
 
 object CallTracker {
+    /** how long the automatic start of speech analysis may take before the one-tap fallback is shown */
+    private const val AUTO_LISTEN_CHECK_MS = 6_000L
     private var lastWarnedNumber: String? = null
     private var lastWarnedAt = 0L
 
+    /**
+     * Drops a saved "ringing / in a call" state that can no longer be true (audit C-03): saved before the phone
+     * restarted, the system reports no call (an IDLE broadcast was missed), or far too old. A call session left
+     * from before a restart is discarded without a report (its real end and duration are unknown).
+     * Called when the app process starts and before every decision that depends on the call state.
+     */
+    fun reconcile(ctx: Context) {
+        val p = ctx.app.prefs
+        val stored = p.callState
+        if (stored == "IDLE") return
+        val now = System.currentTimeMillis()
+        val bootAt = now - android.os.SystemClock.elapsedRealtime()
+        val eff = CallStateGuard.effective(stored, p.callStateAt, now, bootAt, systemInCall(ctx))
+        if (eff == stored) return
+        android.util.Log.i("SaqtanCall", "stale call state $stored reset")
+        p.callState = "IDLE"
+        CallSessions.dropIfStartedBefore(ctx, if (p.callStateAt < bootAt) bootAt else now)
+    }
+
+    /** TelecomManager.isInCall needs READ_PHONE_STATE; null when it cannot be asked. */
+    private fun systemInCall(ctx: Context): Boolean? = try {
+        if (!Perms.granted(ctx, android.Manifest.permission.READ_PHONE_STATE)) null
+        else ctx.getSystemService(android.telecom.TelecomManager::class.java)?.isInCall
+    } catch (_: Exception) { null }
+
     fun isCallActiveOrRecent(ctx: Context, withinMs: Long = 10 * 60_000): Boolean {
+        reconcile(ctx)
         val p = ctx.app.prefs
         return p.callState == "OFFHOOK" || p.callState == "RINGING" || System.currentTimeMillis() - p.callEndedAt < withinMs
     }
@@ -75,11 +106,12 @@ object CallTracker {
 
     /** A cellular or messenger call with someone not in contacts that is going on now or ended < 10 min ago. */
     fun riskyCall(ctx: Context, withinMs: Long = 10 * 60_000): RiskyCall? {
+        reconcile(ctx)        // a call left over from before a restart must not turn an ordinary SMS code into an alarm
         val p = ctx.app.prefs
         val now = System.currentTimeMillis()
-        val cellActive = p.callState == "OFFHOOK" || p.callState == "RINGING"
-        if ((cellActive || now - p.callEndedAt < withinMs) && !p.callIsContact)
-            return RiskyCall(p.callNumber, p.callState == "OFFHOOK", "звонка")
+        CellularCallWindow.riskyCall(p.callState, p.callEndedAt, now, p.callIsContact, withinMs)?.let { active ->
+            return RiskyCall(p.callNumber, active, "звонка")
+        }
         if ((p.voipActive || now - p.voipEndedAt < withinMs) && !p.voipIsContact)
             return RiskyCall(p.voipNumber, p.voipActive, "звонка в ${p.voipApp ?: "мессенджере"}")
         return null
@@ -123,7 +155,7 @@ object CallTracker {
             val n = CallRisk.normalizeNumber(number)
             p.callNumber = n; p.callIsContact = Contacts.contains(ctx, n)
         }
-        Warnings.hide()
+        Warnings.hide(ctx)
         if (p.callIsContact || !CallSessions.active(ctx)) return
         CallSessions.on(ctx, CallEvent.Answered(System.currentTimeMillis()))
         // automatic speech analysis: only when it can actually run, otherwise record why and offer the manual way
@@ -137,6 +169,16 @@ object CallTracker {
         if (status == null) {
             // open the app for a moment (allowed with the overlay permission), start listening, go back to the call
             Warnings.openListen(ctx, auto = true)
+            // some phones (OPPO/ColorOS, a call answered on the lock screen) silently refuse to bring the app forward, so the
+            // microphone never starts and nothing at all happens during the call; then say so and offer the one-tap way
+            val app = ctx.applicationContext
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                if (app.app.prefs.callState == "OFFHOOK" && !ListenState.ui.value.running) {
+                    android.util.Log.i("SaqtanCall", "auto listening did not start")
+                    CallSessions.on(app, CallEvent.SpeechState(System.currentTimeMillis(), SpeechStatus.BLOCKED))
+                    Warnings.showListenOffer(app); Warnings.notifyListenOffer(app, app.app.prefs.callNumber)
+                }
+            }, AUTO_LISTEN_CHECK_MS)
         } else {
             CallSessions.on(ctx, CallEvent.SpeechState(System.currentTimeMillis(), status))
             if (p.offerListening) { Warnings.showListenOffer(ctx); Warnings.notifyListenOffer(ctx, p.callNumber) }
@@ -158,6 +200,7 @@ object CallTracker {
         val p = ctx.app.prefs
         if (p.callState != "IDLE") p.callEndedAt = System.currentTimeMillis()
         p.callState = "IDLE"
+        Warnings.cancelLowCallTip(ctx)
         Warnings.hideListenOffer()
         Warnings.cancelListenOffer(ctx)
         ListenService.stop(ctx, reason = "Звонок завершён")
